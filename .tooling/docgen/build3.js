@@ -1239,7 +1239,7 @@ function designChildren() {
   c.push(p("v0.54 · 2026-11-08 · 全流程 QA：月度考核、第 84 / 196 天成绩单、第 224 天学年结束与旧档兼容通过；修正第一天还款台词、学年结束倒计时重复文案，标题页显示版本号。", { size: SMALL, color: "666666" }));
   c.push(p("v0.55 · 2026-11-08 · 存档 UI 回归通过：空槽保存、覆盖 / 读取 / 删除确认、自动存档读取与删除均正常；文本残留检查通过，无功能改动。", { size: SMALL, color: "666666" }));
   c.push(p("v1.0 · 2026-11-08 · 首个可发布 demo：第一学年完整可玩，系统、内容、存档与文档冻结。", { size: SMALL, color: "666666" }));
-  c.push(p("v1.1 · 2026-11-08 · 加入 PWA（manifest、图标、离线缓存）、移动端布局与安全区适配；配置 GitHub Pages 自动部署。", { size: SMALL, color: "666666" }));
+  c.push(p("v1.1 · 2026-11-08 · 加入 PWA（manifest、图标、离线缓存）、移动端布局与安全区适配；配置 GitHub Pages 自动部署与 Capacitor Android APK 云构建。", { size: SMALL, color: "666666" }));
   return c;
 }
 

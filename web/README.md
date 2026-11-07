@@ -12,6 +12,17 @@ https://l-close.github.io/arcanum/
 - 首次加载完成后支持离线游玩
 - 存档保存在手机浏览器的 localStorage 中
 
+## Android APK
+
+APK 由 GitHub Actions 云构建，不需要本地 Android SDK：
+
+1. 打开仓库的 **Actions**
+2. 选择 **Build Android APK**
+3. 点 **Run workflow**，选择 `main`
+4. 构建完成后在该次运行页面下载 `arcanum-debug-apk`
+
+这个 APK 使用 debug 签名，适合自己和朋友安装，不适合上架。
+
 ## 运行
 
 ```powershell
