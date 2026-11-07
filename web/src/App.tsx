@@ -1,0 +1,2161 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useGame } from './game/store'
+import {
+  BELL_TOWER_MINUTES,
+  BELL_TOWER_OPEN_END,
+  BELL_TOWER_OPEN_START,
+  BELL_TOWER_STAMINA,
+  ACADEMY_MEAL_FEE,
+  CEMETERY_SWEEP_MINUTES,
+  CEMETERY_SWEEP_MOOD,
+  CEMETERY_SWEEP_STAMINA,
+  DRINKS,
+  ENEMIES,
+  EQUIPMENT_SLOTS,
+  FOREST_WALK_MINUTES,
+  FOREST_WALK_MOOD,
+  FOREST_WALK_STAMINA,
+  ITEMS,
+  LOCATIONS,
+  NPCS,
+  QUALITY,
+  RELIEF_CARE_MINUTES,
+  RELIEF_CARE_STAMINA,
+  RELIEF_OPEN_END,
+  RELIEF_OPEN_START,
+  RELIEF_TIDY_MINUTES,
+  RELIEF_TIDY_STAMINA,
+  RELIEF_TREAT_COST,
+  RELIEF_TREAT_HP,
+  RELIEF_TREAT_MINUTES,
+  RELIEF_VOLUNTEER_END,
+  RELIEF_VOLUNTEER_MINUTES,
+  RELIEF_VOLUNTEER_PAY,
+  RELIEF_VOLUNTEER_START,
+  RELIEF_VOLUNTEER_STAMINA,
+  REST_THRESHOLD,
+  SKILL_LABEL,
+  SKILL_ORDER,
+  SLEEP_MAX_MINUTES,
+  SLEEP_MIN_MINUTES,
+  SLEEP_MIN_RECOVERY_MINUTES,
+  SPELLS,
+  TAVERN_DRINK_END,
+  TAVERN_OPEN_END,
+  TAVERN_OPEN_START,
+  TAVERN_TALK_END,
+  TAVERN_TALK_START,
+  TAVERN_WORK_END,
+  TAVERN_WORK_START,
+  attackDamageRange,
+  classSegmentAt,
+  courseById,
+  coursesForYear,
+  currentMeal,
+  currentYear,
+  daysUntil,
+  examThresholdForDay,
+  exitsOf,
+  formatDate,
+  formatMoney,
+  formatPercent,
+  formatTime,
+  getLocation,
+  heartsText,
+  isGateOpen,
+  isVacation,
+  isTimeWindow,
+  lecturePreviewPlan,
+  locationDesc,
+  maxHp,
+  maxSpirit,
+  maxStamina,
+  mealKeyFor,
+  nextClassStart,
+  nextExamTotal,
+  nextExamThreshold,
+  nextRentTotal,
+  npcById,
+  npcsAt,
+  reliefHasPatients,
+  ritePhaseAt,
+  ritePhaseDone,
+  ritePrepAt,
+  semesterLabel,
+  semesterState,
+  shopStockAt,
+  socialTier,
+  skillPercent,
+  spellDamageRange,
+  spiritCost,
+  tierName,
+  weatherOf,
+  weatherScene,
+  WEATHER_LABEL,
+} from './game/content'
+import { formatSaveTime, listSaves, SLOT_COUNT } from './game/save'
+import { EVENTS, choiceBlockedReason, eventById, eventEffectSummary } from './game/events'
+import { STORY } from './game/story'
+import type { Gender, SkillKey } from './game/types'
+import type { Location } from './game/content'
+import { ItemIcon } from './ui/icons'
+
+const CN = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
+
+export default function App() {
+  const screen = useGame((s) => s.screen)
+  if (screen === 'title') return <TitleScreen />
+  if (screen === 'create') return <CreateScreen />
+  return <GameScreen />
+}
+
+function TitleScreen() {
+  const setScreen = useGame((s) => s.setScreen)
+  const continueGame = useGame((s) => s.continueGame)
+  const loadSlot = useGame((s) => s.loadSlot)
+  const [msg, setMsg] = useState('')
+  const [showSaves, setShowSaves] = useState(false)
+  const saves = useMemo(() => listSaves(), [])
+  const hasAuto = saves.some((s) => s?.slot === 'auto')
+  const hasAny = saves.some((s) => s !== null)
+
+  return (
+    <div className="title-screen">
+      <div className="title-mark">ARCANUM</div>
+      <div className="title-sub">长明学院 · 银月城</div>
+      <div className="title-actions">
+        <button className="menu-btn" onClick={() => setScreen('create')}>开始新游戏</button>
+        <button
+          className="menu-btn"
+          disabled={!hasAuto}
+          onClick={() => {
+            if (!continueGame()) setMsg('没有可用的自动存档。')
+          }}
+        >
+          继续
+        </button>
+        <button className="menu-btn" disabled={!hasAny} onClick={() => setShowSaves(true)}>
+          读取存档
+        </button>
+      </div>
+      {msg && <div className="title-msg">{msg}</div>}
+      <div className="title-foot">文字驱动的沙盒生活模拟 · v1.1</div>
+
+      {showSaves && (
+        <div className="overlay" onClick={() => setShowSaves(false)}>
+          <div className="panel modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <span>读取存档</span>
+              <button className="close-btn" onClick={() => setShowSaves(false)}>×</button>
+            </div>
+            <div className="save-list">
+              {Array.from({ length: SLOT_COUNT }, (_, i) => i + 1).map((slot) => {
+                const s = saves[slot - 1]
+                if (!s) return null
+                return (
+                  <div className="save-row" key={slot}>
+                    <span className="save-slot">槽位 {slot}</span>
+                    <span className="save-info">{s.name} · {formatSaveTime(s.ts)}</span>
+                    <button className="mini-btn" onClick={() => loadSlot(slot)}>读取</button>
+                  </div>
+                )
+              })}
+              {saves[SLOT_COUNT] && (
+                <div className="save-row auto">
+                  <span className="save-slot">自动</span>
+                  <span className="save-info">{formatSaveTime(saves[SLOT_COUNT]!.ts)}</span>
+                  <button className="mini-btn" onClick={() => loadSlot('auto')}>读取</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CreateScreen() {
+  const startNewGame = useGame((s) => s.startNewGame)
+  const [name, setName] = useState('')
+  const [gender, setGender] = useState<Gender>('male')
+
+  return (
+    <div className="create-screen">
+      <div className="panel create-panel">
+        <h1>入学登记</h1>
+        <p className="muted">十岁那年的事，你已经不记得了。你只知道，是诺拉修女在城外的雾里发现了你。</p>
+        <label className="field">
+          <span>姓名</span>
+          <input
+            value={name}
+            maxLength={12}
+            placeholder="输入你的名字"
+            onChange={(e) => setName(e.target.value)}
+          />
+        </label>
+        <div className="field">
+          <span>性别</span>
+          <div className="seg">
+            <button className={gender === 'male' ? 'seg-btn on' : 'seg-btn'} onClick={() => setGender('male')}>
+              男
+            </button>
+            <button className={gender === 'female' ? 'seg-btn on' : 'seg-btn'} onClick={() => setGender('female')}>
+              女
+            </button>
+          </div>
+        </div>
+        <button className="primary-btn" onClick={() => startNewGame(name, gender)}>
+          进入长明学院
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function GameScreen() {
+  const data = useGame((s) => s.data)
+  const sidebarOpen = useGame((s) => s.sidebarOpen)
+  const modal = useGame((s) => s.modal)
+  const message = useGame((s) => s.message)
+  const toggleSidebar = useGame((s) => s.toggleSidebar)
+  const playerName = useGame((s) => s.player.name)
+  const storyTarget = useGame((s) => s.storyTarget)
+  const storyRoute = useGame((s) => s.storyRoute)
+  const pendingEvent = useGame((s) => s.pendingEvent)
+  const battle = useGame((s) => s.battle)
+  const clearNotice = useGame((s) => s.clearNotice)
+  const clearMessage = useGame((s) => s.clearMessage)
+  const [npcId, setNpcId] = useState<string | null>(null)
+
+  useEffect(() => {
+    setNpcId(null)
+  }, [data.location])
+
+  const loc = getLocation(data.location)
+  const weather = weatherOf(data.day)
+  const weatherText = weatherScene(data.location, data.day)
+  const npcsHere = npcsAt(data.location, data.day, data.minutes)
+  const segment = classSegmentAt(data.location, data.minutes, data.day)
+  const meal = currentMeal(data.minutes)
+  const auto = listSaves()
+  const autoSave = auto[auto.length - 1]
+  const rentDays = daysUntil(nextRentTotal(data.day, data.minutes), data.day, data.minutes)
+  const examTotal = nextExamTotal(data.day, data.minutes)
+  const examDays = examTotal === null ? null : daysUntil(examTotal, data.day, data.minutes)
+  const semState = semesterState(data.day)
+  const inScene = data.storyStep >= 0 && data.storyStep < STORY.length && storyTarget === null
+  const inTransition = storyTarget !== null
+  const nextLeg = storyRoute[0] ? getLocation(storyRoute[0]) : null
+  const targetScene = storyTarget !== null ? STORY[storyTarget] : null
+  const objective = inTransition
+    ? nextLeg
+      ? `目标：前往${nextLeg.name}`
+      : targetScene
+        ? `目标：等到 ${formatTime(targetScene.time)}`
+        : ''
+    : ''
+
+  return (
+    <div className="game-shell">
+      <header className="topbar">
+        <div className="top-item">
+          <span className="top-label">金钱</span>
+          <span className={`top-value${data.money < 0 ? ' debt' : ''}`}>{formatMoney(data.money)}</span>
+          {data.money < 0 && <span className="debt-tag">欠款</span>}
+        </div>
+        <div className="top-item">
+          <span className="top-label">时间</span>
+          <span className="top-value">{formatTime(data.minutes)}</span>
+        </div>
+        <div className="top-item">
+          <span className="top-label">日期</span>
+          <span className="top-value">{formatDate(data.day)} · {WEATHER_LABEL[weather]}</span>
+        </div>
+        <div className="top-spacer" />
+        <div className="top-auto">{autoSave ? '自动存档可用' : '尚无存档'}</div>
+      </header>
+
+      <div className="game-body">
+        {sidebarOpen && <div className="sidebar-backdrop" onClick={toggleSidebar} />}
+        {sidebarOpen && <StatusRail />}
+        <main className="main-panel">
+          {battle ? (
+            <BattleView />
+          ) : (
+            <>
+              <div className="countdown">
+                <span>{semesterLabel(data.day)}</span>
+                <span>距离还款：{rentDays === 0 ? '今天' : `${rentDays} 天`}</span>
+                <span>
+                  {semState === 'summer' || semState === 'winter'
+                    ? '假期中'
+                    : semState === 'after'
+                      ? '本学年已结束'
+                      : `距离下一次考试：${examDays === null ? '本学期已结束' : examDays === 0 ? '今天' : `${examDays} 天`}`}
+                </span>
+              </div>
+              <div className="loc-line">
+                <span className="loc-name">{loc.name}</span>
+              </div>
+              {data.notice && (
+                <div className="notice">
+                  <span>{data.notice}</span>
+                  <button className="mini-btn" onClick={clearNotice}>知道了</button>
+                </div>
+              )}
+              {pendingEvent ? (
+                <EventView />
+              ) : inScene ? (
+                <StorySceneView />
+              ) : npcId ? (
+                <NpcView
+                  npcId={npcId}
+                  onLeave={() => {
+                    setNpcId(null)
+                  }}
+                />
+              ) : (
+                <>
+                  <div className="narration">
+                    {locationDesc(loc, data.minutes, data.day)}
+                    {weatherText && <span className="weather-line">{weatherText}</span>}
+                  </div>
+                  {npcsHere.length > 0 && (
+                    <div className="loc-npcs">现在在这里：{npcsHere.map((n) => n.short).join('、')}</div>
+                  )}
+                  {objective && <div className="objective">{objective}</div>}
+                  {message && <div className="message">{message}</div>}
+                  <Actions
+                    segment={segment}
+                    meal={meal}
+                    onPickNpc={(id) => {
+                      setNpcId(id)
+                      clearMessage()
+                    }}
+                  />
+                  {(!inTransition || storyRoute.length > 0) && (
+                    <>
+                      <div className="divider" />
+                      <div className="section-title">去别处</div>
+                      <MoveList restrictedTarget={inTransition ? storyRoute[0] ?? null : null} />
+                    </>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </main>
+      </div>
+
+      <footer className="bottombar">
+        <button className="foot-btn" onClick={toggleSidebar}>
+          {sidebarOpen ? '收起状态' : '展开状态'}
+        </button>
+        <div className="foot-spacer" />
+        <span className="foot-name">{playerName}</span>
+      </footer>
+
+      {modal === 'sleep' && <SleepModal />}
+      {modal === 'study' && <StudyModal />}
+      {modal === 'practice' && <PracticeModal />}
+      {modal === 'battleSelect' && <BattleSelectModal />}
+      {modal === 'wait' && <WaitModal />}
+      {modal === 'inventory' && <InventoryModal />}
+      {modal === 'relations' && <RelationsModal />}
+      {modal === 'stats' && <StatsModal />}
+      {modal === 'eventPicker' && <EventPickerModal />}
+      {modal === 'shop' && <ShopModal />}
+      {modal === 'drinks' && <DrinkModal />}
+      {modal === 'save' && <SavesModal />}
+      {modal === 'log' && <LogModal />}
+      {modal === 'debug' && <DebugModal />}
+      {data.pendingReport !== null && <ReportCardModal />}
+    </div>
+  )
+}
+
+function BattleView() {
+  const battle = useGame((s) => s.battle)
+  const data = useGame((s) => s.data)
+  const modal = useGame((s) => s.modal)
+  const playerName = useGame((s) => s.player.name)
+  const tick = useGame((s) => s.battleTick)
+  const openSubmenu = useGame((s) => s.battleOpenSubmenu)
+  const back = useGame((s) => s.battleBack)
+  const attack = useGame((s) => s.battleAttack)
+  const cast = useGame((s) => s.battleCast)
+  const useItem = useGame((s) => s.battleUseItem)
+  const yieldBattle = useGame((s) => s.battleYield)
+  const close = useGame((s) => s.battleClose)
+  const logRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!battle || battle.phase !== 'filling' || modal !== null) return
+    const id = window.setInterval(() => {
+      if (!document.hidden) tick()
+    }, 100)
+    return () => window.clearInterval(id)
+  }, [battle?.phase, modal, tick])
+
+  useEffect(() => {
+    const el = logRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [battle?.log.length, battle?.actions])
+
+  if (!battle) return null
+  const enemy = ENEMIES[battle.enemyId]
+  if (!enemy) return null
+
+  const hpMax = maxHp(data.skills.physique.tier)
+  const mainHand = data.equipment.mainHand
+  const weapon = mainHand ? ITEMS[mainHand] : null
+  const swordEquipped = weapon?.weapon === 'sword'
+  const hasMedium = !!weapon?.medium
+  const fireball = SPELLS.fireball
+  const knownFireball = data.spells.includes('fireball')
+  const canCast = knownFireball && hasMedium && data.mana >= fireball.mana
+  const fireballRange = spellDamageRange(fireball, data.skills.nature.tier, enemy.defense)
+  const brawlRange = attackDamageRange('brawl', data.skills.brawl.tier, mainHand, enemy.defense)
+  const swordRange = attackDamageRange('sword', data.skills.sword.tier, mainHand, enemy.defense)
+  const battleItems = Object.entries(data.inventory).filter(([id, qty]) => {
+    if (qty <= 0) return false
+    const def = ITEMS[id]
+    return def?.type === 'consumable' && !!(def.effect?.hp || def.effect?.mana)
+  })
+  const rangeText = (range: [number, number]) => `${range[0]}–${range[1]}`
+  const castReason = !knownFireball
+    ? '尚未学会火球术'
+    : !hasMedium
+      ? '需要主手媒介'
+      : data.mana < fireball.mana
+        ? '魔力不足'
+        : `${fireball.mana} 魔力`
+  const phaseLabel =
+    battle.phase === 'player'
+      ? '你的回合'
+      : battle.phase === 'submenu'
+        ? '选择行动'
+        : battle.phase === 'victory'
+          ? '胜利'
+          : battle.phase === 'defeat'
+            ? battle.kind === 'wild'
+              ? '战斗结束'
+              : '练习结束'
+            : '行动条充能中'
+
+  return (
+    <div className="battle-screen">
+      <div className="battle-head">
+        <span className="battle-title">{battle.kind === 'wild' ? '森林 · 遭遇' : '演武场 · 切磋'}</span>
+        <span className="battle-round">第 {battle.round} 回合 · {phaseLabel}</span>
+      </div>
+
+      <div className="battle-combatant enemy">
+        <div className="battle-name-row">
+          <span className="battle-name">{enemy.name}</span>
+          <span className="battle-tag">{enemy.speed > 0 ? '会还手' : '不会还手'}</span>
+        </div>
+        <div className="battle-desc">{enemy.desc}</div>
+        <BattleBar label="生命" value={battle.enemyHp} max={enemy.hp} kind="hp" />
+        <BattleBar label="魔力" value={0} max={0} kind="mana" />
+        <BattleBar
+          label="行动"
+          value={battle.enemyGauge}
+          max={100}
+          kind="gauge"
+          ready={battle.enemyGauge >= 100}
+        />
+        <div className="battle-status">状态　{battle.enemyGauge >= 100 ? '行动就绪' : '—'}</div>
+      </div>
+
+      <div className="battle-log" ref={logRef}>
+        {battle.log.map((line, i) => (
+          <div className="battle-log-line" key={i}>{line}</div>
+        ))}
+      </div>
+
+      <div className="battle-combatant player">
+        <div className="battle-name-row">
+          <span className="battle-name">{playerName}</span>
+          <span className="battle-tag">{swordEquipped ? '持剑' : hasMedium ? '持杖' : '空手'}</span>
+        </div>
+        <BattleBar label="生命" value={battle.playerHp} max={hpMax} kind="hp" />
+        <BattleBar label="魔力" value={data.mana} max={100} kind="mana" />
+        <BattleBar
+          label="行动"
+          value={battle.playerGauge}
+          max={100}
+          kind="gauge"
+          ready={battle.phase === 'player' || battle.phase === 'submenu'}
+        />
+        <div className="battle-status">状态　—</div>
+      </div>
+
+      {battle.phase === 'filling' && (
+        <div className="battle-hint">行动条充能中……充满后可以选择行动。</div>
+      )}
+
+      {battle.phase === 'player' && (
+        <div className="battle-actions">
+          <button className="battle-action-btn" onClick={() => openSubmenu('attack')}>
+            <span className="battle-action-label">攻击</span>
+            <span className="battle-action-cost">格斗 / 剑术</span>
+          </button>
+          <button
+            className="battle-action-btn"
+            disabled={!canCast}
+            onClick={() => openSubmenu('spell')}
+          >
+            <span className="battle-action-label">法术</span>
+            <span className="battle-action-cost">{castReason}</span>
+          </button>
+          <button
+            className="battle-action-btn"
+            disabled={battleItems.length === 0}
+            onClick={() => openSubmenu('item')}
+          >
+            <span className="battle-action-label">物品</span>
+            <span className="battle-action-cost">
+              {battleItems.length === 0 ? '没有可用物品' : `${battleItems.length} 种`}
+            </span>
+          </button>
+          <button className="battle-action-btn danger" onClick={yieldBattle}>
+            <span className="battle-action-label">{battle.kind === 'wild' ? '逃跑' : '认输'}</span>
+            <span className="battle-action-cost">
+              {battle.kind === 'wild' ? '退出战斗' : '结束练习'}
+            </span>
+          </button>
+        </div>
+      )}
+
+      {battle.phase === 'submenu' && battle.submenu === 'attack' && (
+        <div className="battle-subpanel">
+          <div className="battle-sub-title">选择攻击方式</div>
+          <button className="battle-sub-btn" onClick={() => attack('brawl')}>
+            <span>格斗</span>
+            <small>{weapon?.weapon === 'staff' ? '杖击' : '徒手'} · {rangeText(brawlRange)}</small>
+          </button>
+          <button
+            className="battle-sub-btn"
+            disabled={!swordEquipped}
+            onClick={() => attack('sword')}
+          >
+            <span>剑术</span>
+            <small>{swordEquipped ? `剑 · ${rangeText(swordRange)}` : '需要装备剑'}</small>
+          </button>
+          <button className="battle-back" onClick={back}>返回</button>
+        </div>
+      )}
+
+      {battle.phase === 'submenu' && battle.submenu === 'spell' && (
+        <div className="battle-subpanel">
+          <div className="battle-sub-title">选择法术</div>
+          <button
+            className="battle-sub-btn"
+            disabled={!canCast}
+            onClick={() => cast('fireball')}
+          >
+            <span>{fireball.name}</span>
+            <small>
+              {fireball.element} · {fireball.mana} 魔力 · {rangeText(fireballRange)}
+            </small>
+          </button>
+          <button className="battle-back" onClick={back}>返回</button>
+        </div>
+      )}
+
+      {battle.phase === 'submenu' && battle.submenu === 'item' && (
+        <div className="battle-subpanel">
+          <div className="battle-sub-title">选择物品</div>
+          {battleItems.length === 0 && <div className="hint">没有可以在战斗中使用的物品。</div>}
+          {battleItems.map(([id, qty]) => {
+            const def = ITEMS[id]
+            const healHp = def.effect?.hp ?? 0
+            const healMana = def.effect?.mana ?? 0
+            const hpFull = healHp > 0 && battle.playerHp >= hpMax && !healMana
+            const manaFull = healMana > 0 && data.mana >= 100 && !healHp
+            const disabled = hpFull || manaFull
+            return (
+              <button
+                key={id}
+                className="battle-sub-btn"
+                disabled={disabled}
+                onClick={() => useItem(id)}
+              >
+                <span>{def.name} ×{qty}</span>
+                <small>
+                  {disabled
+                    ? hpFull
+                      ? '生命已满'
+                      : '魔力已满'
+                    : `${healHp ? `生命 +${healHp}` : ''}${healHp && healMana ? ' · ' : ''}${healMana ? `魔力 +${healMana}` : ''}`}
+                </small>
+              </button>
+            )
+          })}
+          <button className="battle-back" onClick={back}>返回</button>
+        </div>
+      )}
+
+      {(battle.phase === 'victory' || battle.phase === 'defeat') && (
+        <div className="battle-result">
+          <div className="battle-result-title">
+            {battle.phase === 'victory'
+              ? battle.kind === 'wild'
+                ? '战斗结束'
+                : '练习结束'
+              : battle.kind === 'wild'
+                ? '你退出了战斗'
+                : '你认输了'}
+          </div>
+          <p>{battle.result}</p>
+          <div className="battle-result-reward">
+            获得：
+            {battle.phase === 'victory' && battle.usedSkills.length > 0
+              ? battle.usedSkills
+                  .map((key) => `${SKILL_LABEL[key]}经验 +${enemy.expValue}`)
+                  .join(' · ')
+              : '未获得技能经验'}
+          </div>
+          <div className="battle-result-meta">
+            用时约 {Math.max(1, battle.actions)} 分钟 · 生命 {Math.max(1, battle.playerHp)} / {hpMax}
+          </div>
+          <button className="primary-btn" onClick={close}>
+            {battle.kind === 'wild' ? '结束战斗' : '结束练习'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function BattleBar({
+  label,
+  value,
+  max,
+  kind,
+  ready,
+}: {
+  label: string
+  value: number
+  max: number
+  kind: 'hp' | 'mana' | 'gauge'
+  ready?: boolean
+}) {
+  const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0
+  const num = max > 0 ? `${Math.max(0, Math.round(value))} / ${max}` : '-- / --'
+  return (
+    <div className="battle-stat">
+      <span className="battle-stat-label">{label}</span>
+      <div className="battle-bar">
+        <div
+          className={`battle-bar-fill ${kind} ${ready ? 'ready' : ''}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className={`battle-stat-num ${ready ? 'ready' : ''}`}>
+        {kind === 'gauge' && ready ? '行动就绪' : num}
+      </span>
+    </div>
+  )
+}
+
+function StorySceneView() {
+  const data = useGame((s) => s.data)
+  const reply = useGame((s) => s.storyReply)
+  const choose = useGame((s) => s.storyChoose)
+  const cont = useGame((s) => s.storyContinue)
+  const scene = STORY[data.storyStep]
+  if (!scene) return null
+  const paragraphs = reply ?? scene.text
+
+  return (
+    <div className="story">
+      <div className="story-text">
+        {paragraphs.map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
+      </div>
+      {reply ? (
+        <button className="primary-btn story-continue" onClick={cont}>继续</button>
+      ) : scene.choices ? (
+        <div className="story-choices">
+          {scene.choices.map((c, i) => (
+            <button key={i} className="story-choice" onClick={() => choose(i)}>
+              {c.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <button className="primary-btn story-continue" onClick={cont}>
+          {scene.continueLabel ?? '继续'}
+        </button>
+      )}
+    </div>
+  )
+}
+
+function EventView() {
+  const data = useGame((s) => s.data)
+  const pendingEvent = useGame((s) => s.pendingEvent)
+  const eventResult = useGame((s) => s.eventResult)
+  const choose = useGame((s) => s.eventChoose)
+  const cont = useGame((s) => s.eventContinue)
+  const event = pendingEvent ? eventById(pendingEvent) : null
+  if (!event) return null
+
+  return (
+    <div className="event-view">
+      <div className="event-title">{event.title}</div>
+      <div className="story-text">
+        {(eventResult ? [eventResult] : event.text).map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
+      </div>
+      {eventResult ? (
+        <button className="primary-btn story-continue" onClick={cont}>继续</button>
+      ) : (
+        <div className="story-choices">
+          {event.choices.map((c, i) => {
+            const blocked = choiceBlockedReason(data, c.effects)
+            return (
+              <button
+                key={i}
+                className="story-choice"
+                disabled={!!blocked}
+                onClick={() => choose(i)}
+              >
+                <span className="story-choice-label">
+                  {c.label}
+                  {blocked && <span className="choice-note">（{blocked}）</span>}
+                </span>
+                <span className="choice-effects">
+                  {eventEffectSummary(c.effects, data, event.expCapTier)}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function StatusRail() {
+  const data = useGame((s) => s.data)
+  const battle = useGame((s) => s.battle)
+  const setModal = useGame((s) => s.setModal)
+  const staminaMax = maxStamina(data.skills.physique.tier)
+  const spiritMax = maxSpirit(data.skills.will.tier)
+  const hpMax = maxHp(data.skills.physique.tier)
+  return (
+    <aside className="sidebar">
+      <div className="side-title">状态</div>
+      <Meter label="生命" value={battle ? battle.playerHp : data.hp} max={hpMax} kind="hp" />
+      <Meter label="体力" value={data.stamina} max={staminaMax} kind="stamina" />
+      <Meter label="精神" value={data.spirit} max={spiritMax} kind="spirit" />
+      <Meter label="心情" value={data.mood} max={100} kind="mood" />
+      <Meter label="魔力" value={data.mana} max={100} kind="mana" />
+      <div className="side-sep" />
+      <div className="side-menu">
+        <button className="side-menu-btn full" onClick={() => setModal('stats')}>属性</button>
+        <button className="side-menu-btn full" onClick={() => setModal('relations')}>关系</button>
+        <button className="side-menu-btn" onClick={() => setModal('inventory')}>物品</button>
+        <button className="side-menu-btn" onClick={() => setModal('log')}>日志</button>
+        <button className="side-menu-btn" onClick={() => setModal('save')}>存档</button>
+        <button className="side-menu-btn" onClick={() => setModal('debug')}>调试</button>
+      </div>
+    </aside>
+  )
+}
+
+type MeterKind = 'hp' | 'stamina' | 'spirit' | 'mood' | 'mana'
+
+function Meter({ label, value, max, kind }: { label: string; value: number; max: number; kind: MeterKind }) {
+  const desc = meterDesc(value, max, kind)
+  const pct = Math.max(0, Math.min(100, (value / Math.max(1, max)) * 100))
+  return (
+    <div className="meter">
+      <div className="meter-head">
+        <span className="meter-label">{label}</span>
+        <span className={`meter-desc ${desc.tone}`}>{desc.text}</span>
+      </div>
+      <div className="bar">
+        <div className={`bar-fill ${desc.tone} ${kind}`} style={{ width: `${pct}%` }} />
+      </div>
+      <div className="meter-num">{Math.round(value)} / {max}</div>
+    </div>
+  )
+}
+
+function meterDesc(value: number, max: number, kind: MeterKind) {
+  if (kind === 'hp') {
+    const pct = (value / Math.max(1, max)) * 100
+    if (pct >= 80) return { text: '你身上没什么伤。', tone: 'good' }
+    if (pct >= 50) return { text: '你身上有些擦伤。', tone: 'neutral' }
+    if (pct >= 25) return { text: '你伤得不轻。', tone: 'warn' }
+    return { text: '你快站不住了。', tone: 'bad' }
+  }
+  if (kind === 'mood') {
+    if (value >= 80) return { text: '你心情不错。', tone: 'good' }
+    if (value >= 50) return { text: '你还算平静。', tone: 'neutral' }
+    if (value >= 30) return { text: '你有些提不起劲。', tone: 'warn' }
+    return { text: '你心里堵得慌。', tone: 'bad' }
+  }
+  if (kind === 'mana') {
+    if (value >= 80) return { text: '魔力充盈。', tone: 'good' }
+    if (value >= 50) return { text: '魔力尚可。', tone: 'neutral' }
+    if (value >= 25) return { text: '魔力有些枯竭。', tone: 'warn' }
+    return { text: '魔力几乎见底。', tone: 'bad' }
+  }
+  const pct = (value / Math.max(1, max)) * 100
+  if (kind === 'spirit') {
+    if (pct >= 80) return { text: '你思路清晰。', tone: 'good' }
+    if (pct >= 50) return { text: '你还能集中。', tone: 'neutral' }
+    if (pct >= 25) return { text: '你有些头昏。', tone: 'warn' }
+    return { text: '你几乎无法思考。', tone: 'bad' }
+  }
+  if (pct >= 80) return { text: '你体力充足。', tone: 'good' }
+  if (pct >= 50) return { text: '你还有力气。', tone: 'neutral' }
+  if (pct >= 25) return { text: '你有点累了。', tone: 'warn' }
+  return { text: '你快撑不住了。', tone: 'bad' }
+}
+
+function Actions({
+  segment,
+  meal,
+  onPickNpc,
+}: {
+  segment: ReturnType<typeof classSegmentAt>
+  meal: string | null
+  onPickNpc: (id: string) => void
+}) {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  const attendClass = useGame((s) => s.attendClass)
+  const slackClass = useGame((s) => s.slackClass)
+  const previewClass = useGame((s) => s.previewClass)
+  const eat = useGame((s) => s.eat)
+  const rest = useGame((s) => s.rest)
+  const workShop = useGame((s) => s.workShop)
+  const workTavern = useGame((s) => s.workTavern)
+  const listenTavern = useGame((s) => s.listenTavern)
+  const pray = useGame((s) => s.pray)
+  const helpBackyard = useGame((s) => s.helpBackyard)
+  const helpOrphanKids = useGame((s) => s.helpOrphanKids)
+  const joinRite = useGame((s) => s.joinRite)
+  const prepareRite = useGame((s) => s.prepareRite)
+  const sweepGrave = useGame((s) => s.sweepGrave)
+  const walkForest = useGame((s) => s.walkForest)
+  const tidyDonations = useGame((s) => s.tidyDonations)
+  const careForPatients = useGame((s) => s.careForPatients)
+  const treatAtRelief = useGame((s) => s.treatAtRelief)
+  const volunteerAtRelief = useGame((s) => s.volunteerAtRelief)
+  const climbBellTower = useGame((s) => s.climbBellTower)
+  const storyTarget = useGame((s) => s.storyTarget)
+  const storyRoute = useGame((s) => s.storyRoute)
+  const storyWait = useGame((s) => s.storyWait)
+  const wait = useGame((s) => s.wait)
+  const loc = data.location
+  const lecturePlan = loc === 'lecture' ? lecturePreviewPlan(data.day, data.minutes) : null
+  const remain = segment ? segment.segmentEnd - data.minutes : 0
+  const nextClass = nextClassStart(loc, data.day, data.minutes)
+  const waitToClass = nextClass === null ? null : nextClass - data.minutes
+  const canWaitToClass = waitToClass !== null && waitToClass > 0 && waitToClass <= 30
+  const physicalClass = segment ? courseById(segment.courseId)?.kind === 'physical' : false
+  const canteenFee = loc === 'canteen' && isVacation(data.day) ? ACADEMY_MEAL_FEE : 0
+  const ritePhase = loc === 'chapel' ? ritePhaseAt(data.day, data.minutes) : null
+  const riteDone = ritePhase ? ritePhaseDone(data.rite, data.day, ritePhase.key) : false
+  const ritePrep = loc === 'chapel' ? ritePrepAt(data.day, data.minutes) : null
+  const classActions = segment ? (
+    <>
+      <ActionBtn
+        onClick={attendClass}
+        label={`${physicalClass ? '训练' : '听课'} · ${segment.subject}`}
+        cost={
+          remain >= 15
+            ? `${remain} 分钟 · ${physicalClass ? '体力 -3' : `精神 -${spiritCost(2, data.mood)}`}`
+            : `${remain} 分钟 · 无收益`
+        }
+      />
+      <ActionBtn onClick={slackClass} label="摸鱼" cost={`${remain} 分钟`} />
+    </>
+  ) : null
+
+  if (storyTarget !== null) {
+    if (storyRoute.length > 0) return null
+    const scene = STORY[storyTarget]
+    const remain = Math.max(0, scene.time - data.minutes)
+    return (
+      <div className="actions">
+        <div className="section-title">行动</div>
+        <ActionBtn
+          onClick={storyWait}
+          label={`等到 ${formatTime(scene.time)}`}
+          cost={`${remain} 分钟`}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div className="actions">
+      <div className="section-title">行动</div>
+      {loc === 'lecture' && (
+        segment ? (
+          classActions
+        ) : lecturePlan?.ok ? (
+          <ActionBtn
+            onClick={previewClass}
+            label={`预习 · ${lecturePlan.subject}`}
+            cost={`${lecturePlan.minutes} 分钟 · 精神 -${spiritCost(3, data.mood)}`}
+          />
+        ) : (
+          <>
+            <div className="hint">{lecturePlan?.reason ?? '现在没有课。'}</div>
+            {canWaitToClass && lecturePlan && !lecturePlan.ok && (
+              <ActionBtn
+                onClick={() => wait(waitToClass!)}
+                label="等到上课"
+                cost={`${waitToClass} 分钟 · ${formatTime(nextClass!)}`}
+              />
+            )}
+          </>
+        )
+      )}
+      {loc === 'library' && (
+        <ActionBtn
+          onClick={() => setModal('study')}
+          label="自习"
+          cost={`0.5 小时 · 精神 -${spiritCost(3, data.mood)}`}
+        />
+      )}
+      {(loc === 'canteen' || loc === 'orphanCanteen') &&
+        (() => {
+          if (!meal) return <div className="hint">现在不是用餐时间。</div>
+          const key = mealKeyFor(meal)
+          if (key && data.meals.day === data.day && data.meals[key]) {
+            return <div className="hint">你已经吃过{meal}了。</div>
+          }
+          if (canteenFee > 0 && data.money < canteenFee) {
+            return <div className="hint">吃饭需要 {canteenFee} 铜。</div>
+          }
+          return (
+            <ActionBtn
+              onClick={eat}
+              label={`吃饭 · ${meal}`}
+              cost={`0.5 小时 · 体力 +12${canteenFee > 0 ? ` · ${canteenFee} 铜` : ''}`}
+            />
+          )
+        })()}
+      {loc === 'yard' && (
+        segment ? (
+          classActions
+        ) : (
+          <>
+            <div className="hint">现在没有体术课。</div>
+            <ActionBtn onClick={() => setModal('practice')} label="练习" cost="0.5 小时 · 体力 -4" />
+            <ActionBtn onClick={() => setModal('battleSelect')} label="切磋" cost="木桩 / 练习人偶" />
+            {canWaitToClass && (
+              <ActionBtn
+                onClick={() => wait(waitToClass!)}
+                label="等到上课"
+                cost={`${waitToClass} 分钟 · ${formatTime(nextClass!)}`}
+              />
+            )}
+          </>
+        )
+      )}
+      {loc === 'backyard' && (
+        <>
+          <ActionBtn onClick={helpBackyard} label="打理后院" cost="2 小时 · 体力 -10" />
+          <ActionBtn onClick={() => setModal('practice')} label="练习" cost="0.5 小时" />
+        </>
+      )}
+      {loc === 'dorm' && <ActionBtn onClick={() => setModal('sleep')} label="睡觉" cost="1 小时起" />}
+      {loc === 'shop' && (
+        <>
+          <ActionBtn onClick={() => setModal('shop')} label="购买" cost="—" />
+          <ActionBtn onClick={workShop} label="打工" cost="2 小时 · 体力 -10" />
+        </>
+      )}
+      {loc === 'weaponShop' && (
+        <ActionBtn onClick={() => setModal('shop')} label="购买" cost="—" />
+      )}
+      {loc === 'tavern' &&
+        (() => {
+          if (!isTimeWindow(data.minutes, TAVERN_OPEN_START, TAVERN_OPEN_END)) {
+            return <div className="hint">酒馆已经打烊了。</div>
+          }
+          if (!isTimeWindow(data.minutes, TAVERN_OPEN_START, TAVERN_DRINK_END)) {
+            return <div className="hint">快打烊了。</div>
+          }
+
+          const workOpen = isTimeWindow(data.minutes, TAVERN_WORK_START, TAVERN_WORK_END)
+          const talkOpen = isTimeWindow(data.minutes, TAVERN_TALK_START, TAVERN_TALK_END)
+          const beforeWork = isTimeWindow(data.minutes, TAVERN_OPEN_START, TAVERN_WORK_START)
+          const afterTalk = isTimeWindow(data.minutes, TAVERN_TALK_END, TAVERN_OPEN_END)
+
+          return (
+            <>
+              {workOpen ? (
+                <ActionBtn onClick={workTavern} label="打工" cost="2 小时 · 体力 -10" />
+              ) : (
+                <div className="hint">
+                  {beforeWork ? '再晚一点才热闹。' : '今晚的活已经干完了。'}
+                </div>
+              )}
+              <ActionBtn onClick={() => setModal('drinks')} label="来一杯" cost="10–15 分钟" />
+              {talkOpen ? (
+                <ActionBtn
+                  onClick={listenTavern}
+                  label="听人聊天"
+                  cost={
+                    data.skills.knowledge.tier < 1
+                      ? '15 分钟 · 可能获得学识'
+                      : '15 分钟 · 心情 +1'
+                  }
+                />
+              ) : (
+                <div className="hint">
+                  {afterTalk ? '客人已经散得差不多了。' : '再晚一点才热闹。'}
+                </div>
+              )}
+            </>
+          )
+        })()}
+      {loc === 'chapel' && <ActionBtn onClick={pray} label="祷告" cost="0.5 小时" />}
+      {loc === 'relief' &&
+        (() => {
+          if (!isTimeWindow(data.minutes, RELIEF_OPEN_START, RELIEF_OPEN_END)) {
+            return <div className="hint">救济院已经熄灯了。</div>
+          }
+          const hasPatients = reliefHasPatients(data.day)
+          const cared = data.relief.day === data.day && data.relief.cared
+          const treated = data.relief.day === data.day && data.relief.treated
+          const volunteered = data.relief.day === data.day && data.relief.volunteered
+          const hpMax = maxHp(data.skills.physique.tier)
+          return (
+            <>
+              <ActionBtn
+                onClick={tidyDonations}
+                label="整理捐赠"
+                cost={`${RELIEF_TIDY_MINUTES} 分钟 · 体力 -${RELIEF_TIDY_STAMINA}`}
+              />
+              {hasPatients ? (
+                cared ? (
+                  <div className="hint">今天已经照顾过了。病人已经休息了。</div>
+                ) : (
+                  <ActionBtn
+                    onClick={careForPatients}
+                    label="照顾病人"
+                    cost={`${RELIEF_CARE_MINUTES} 分钟 · 体力 -${RELIEF_CARE_STAMINA}`}
+                  />
+                )
+              ) : (
+                <div className="hint">今天救济院很安静，床位都空着。</div>
+              )}
+              {treated ? (
+                <div className="hint">今天已经接受过治疗了。</div>
+              ) : data.hp >= hpMax ? (
+                <div className="hint">你现在不需要治疗。</div>
+              ) : data.money < RELIEF_TREAT_COST ? (
+                <div className="hint">治疗需要 {RELIEF_TREAT_COST} 铜。</div>
+              ) : (
+                <ActionBtn
+                  onClick={treatAtRelief}
+                  label="接受治疗"
+                  cost={`${RELIEF_TREAT_MINUTES} 分钟 · ${RELIEF_TREAT_COST} 铜 · 生命 +${RELIEF_TREAT_HP}`}
+                />
+              )}
+              {data.flags.church_volunteer &&
+                (volunteered ? (
+                  <div className="hint">今天已经帮过忙了。</div>
+                ) : isTimeWindow(data.minutes, RELIEF_VOLUNTEER_START, RELIEF_VOLUNTEER_END) ? (
+                  <ActionBtn
+                    onClick={volunteerAtRelief}
+                    label="义工"
+                    cost={`${RELIEF_VOLUNTEER_MINUTES / 60} 小时 · +${RELIEF_VOLUNTEER_PAY} 铜`}
+                  />
+                ) : (
+                  <div className="hint">这个时间救济院不需要帮手。</div>
+                ))}
+            </>
+          )
+        })()}
+      {loc === 'orphanage' &&
+        (isVacation(data.day) ? (
+          data.vacation.day === data.day && data.vacation.kids ? (
+            <div className="hint">今天已经陪过孩子们了。</div>
+          ) : (
+            <ActionBtn onClick={helpOrphanKids} label="陪孩子们" cost="1 小时 · 体力 -3 · 心情 +2" />
+          )
+        ) : null)}
+      {loc === 'chapel' && ritePrep && (
+        <ActionBtn
+          onClick={prepareRite}
+          label="圣祷准备"
+          cost={`${ritePrep.night ? '2 小时' : '1 小时'} · 体力 -${ritePrep.night ? 7 : 4} · 心情 +${ritePrep.night ? 2 : 1}`}
+        />
+      )}
+      {loc === 'chapel' &&
+        ritePhase &&
+        (riteDone ? (
+          <div className="hint">这一段已经参加过了。</div>
+        ) : (
+          <ActionBtn
+            onClick={joinRite}
+            label={`参加${ritePhase.night === 'summer' ? '夏夜圣祷' : ritePhase.night === 'winter' ? '冬夜圣祷' : '圣祷'} · ${ritePhase.name}`}
+            cost={`${Math.min(30, ritePhase.end - data.minutes)} 分钟 · 精神 +${ritePhase.night ? 2 : 1} · 心情 +${ritePhase.night ? 2 : 1}`}
+          />
+        ))}
+      {loc === 'bellTower' &&
+        (isTimeWindow(data.minutes, BELL_TOWER_OPEN_START, BELL_TOWER_OPEN_END) ? (
+          <ActionBtn
+            onClick={climbBellTower}
+            label="登钟楼"
+            cost={`${BELL_TOWER_MINUTES} 分钟 · 体力 -${BELL_TOWER_STAMINA}`}
+          />
+        ) : (
+          <div className="hint">钟楼的门锁着。</div>
+        ))}
+      {loc === 'gate' && !isGateOpen(data.minutes) && (
+        <div className="hint">城门已经关了。</div>
+      )}
+      {loc === 'cemetery' && (
+        <ActionBtn
+          onClick={sweepGrave}
+          label="扫墓"
+          cost={`${CEMETERY_SWEEP_MINUTES} 分钟 · 体力 -${CEMETERY_SWEEP_STAMINA} · 心情 +${CEMETERY_SWEEP_MOOD}`}
+        />
+      )}
+      {loc === 'forest' && (
+        <ActionBtn
+          onClick={walkForest}
+          label="走走"
+          cost={`${FOREST_WALK_MINUTES} 分钟 · 体力 -${FOREST_WALK_STAMINA} · 心情 +${FOREST_WALK_MOOD}`}
+        />
+      )}
+      {data.stamina < REST_THRESHOLD && (
+        <ActionBtn onClick={rest} label="原地休息" cost="30 分钟" />
+      )}
+      <ActionBtn onClick={() => setModal('wait')} label="等待" cost="5 分钟起" />
+      <PeopleHere onPick={onPickNpc} />
+    </div>
+  )
+}
+
+function PeopleHere({ onPick }: { onPick: (id: string) => void }) {
+  const data = useGame((s) => s.data)
+  const people = npcsAt(data.location, data.day, data.minutes)
+  if (people.length === 0) return null
+  return (
+    <>
+      <div className="section-title">人物</div>
+      <div className="people-list">
+        {people.map((npc) => (
+          <button key={npc.id} className="person-btn" onClick={() => onPick(npc.id)}>
+            <span className="person-name">{npc.name}</span>
+            <span className="person-title">{npc.title}</span>
+          </button>
+        ))}
+      </div>
+    </>
+  )
+}
+
+function NpcView({ npcId, onLeave }: { npcId: string; onLeave: () => void }) {
+  const data = useGame((s) => s.data)
+  const message = useGame((s) => s.message)
+  const chat = useGame((s) => s.chatWithNpc)
+  const npc = npcById(npcId)
+  if (!npc) return null
+  const isFamiliarity = npc.relationship === 'familiarity'
+  const value = isFamiliarity ? data.familiarity[npc.id] ?? 0 : data.affinity[npc.id] ?? 0
+  const tier = socialTier(value)
+  const today = data.social.day === data.day ? data.social.counts[npc.id] ?? 0 : 0
+
+  return (
+    <div className="npc-view">
+      <div className="npc-head">
+        <span className="npc-name">{npc.name}</span>
+        <span className="npc-title">{npc.title}</span>
+      </div>
+      <div className="npc-meta">
+        {!isFamiliarity && (
+          <>
+            <span className="npc-aff">好感 {value}</span>
+            <span className="npc-hearts">{heartsText(value)}</span>
+          </>
+        )}
+        <span className="npc-today">今日{today >= 1 ? '已聊' : '未聊'}</span>
+      </div>
+      {!isFamiliarity && <div className="npc-impression">{npc.impression[tier]}</div>}
+      <div className="narration">{npc.status}</div>
+      {message && <div className="message">{message}</div>}
+      <div className="actions">
+        <div className="section-title">行动</div>
+        <ActionBtn
+          onClick={() => {
+            if (!chat(npc.id)) onLeave()
+          }}
+          label="闲聊"
+          cost="15 分钟"
+        />
+        <button className="action-btn" onClick={onLeave}>
+          <span className="action-label">离开</span>
+          <span className="action-cost">返回{getLocation(data.location).name}</span>
+        </button>
+      </div>
+      {today >= 1 && (
+        <div className="hint">
+          {isFamiliarity ? '今天已经聊过了。再聊只是闲聊。' : '今天已经聊过了。再聊不会增加好感。'}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ActionBtn({ label, cost, onClick }: { label: string; cost: string; onClick: () => void }) {
+  return (
+    <button className="action-btn" onClick={onClick}>
+      <span className="action-label">{label}</span>
+      <span className="action-cost">{cost}</span>
+    </button>
+  )
+}
+
+function MoveList({ restrictedTarget }: { restrictedTarget?: string | null }) {
+  const data = useGame((s) => s.data)
+  const moveTo = useGame((s) => s.moveTo)
+  const storyTravel = useGame((s) => s.storyTravel)
+  const loc = getLocation(data.location)
+
+  if (restrictedTarget) {
+    const target = getLocation(restrictedTarget)
+    return (
+      <div className="move-list">
+        <div className="district">
+          <div className="district-name">下一步</div>
+          <button className="loc-btn" onClick={storyTravel}>
+            <span>{target.name}</span>
+            <span className="loc-cost">5 分</span>
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const exits = exitsOf(data.location)
+    .filter((e) => e.to !== data.location)
+    .map((e) => ({ loc: getLocation(e.to), minutes: e.minutes }))
+
+  const children = exits.filter((e) => e.loc.parent === loc.id)
+  const siblingIds = new Set(
+    exits
+      .filter((e) => loc.parent !== undefined && e.loc.parent === loc.parent && e.loc.id !== loc.id)
+      .map((e) => e.loc.id),
+  )
+  const siblings = exits.filter((e) => siblingIds.has(e.loc.id))
+  const shown = new Set([...children, ...siblings].map((e) => e.loc.id))
+  const others = exits.filter(
+    (e) => !shown.has(e.loc.id) && !(e.loc.id === loc.parent && e.loc.kind === 'district'),
+  )
+
+  const item = (target: Location, minutes: number) => (
+    <button key={target.id} className="loc-btn" onClick={() => moveTo(target.id)}>
+      <span>{target.name}</span>
+      <span className="loc-cost">{minutes} 分</span>
+    </button>
+  )
+
+  return (
+    <div className="move-list">
+      {children.length > 0 && (
+        <div className="district">
+          <div className="district-name">{loc.childLabel ?? '地点'}</div>
+          {children.map((e) => item(e.loc, e.minutes))}
+        </div>
+      )}
+      {siblings.length > 0 && (
+        <div className="district">
+          <div className="district-name">同区地点</div>
+          {siblings.map((e) => item(e.loc, e.minutes))}
+        </div>
+      )}
+      {others.length > 0 && (
+        <div className="district">
+          <div className="district-name">{loc.kind === 'gate' ? '城门两侧' : '离开'}</div>
+          {others.map((e) => item(e.loc, e.minutes))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ModalShell({
+  title,
+  children,
+  onClose,
+  wide,
+}: {
+  title: string
+  children: React.ReactNode
+  onClose: () => void
+  wide?: boolean
+}) {
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className={`panel modal ${wide ? 'wide' : ''}`} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <span>{title}</span>
+          <button className="close-btn" onClick={onClose}>×</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function defaultWakeTime(now: number): string {
+  const target = Math.ceil((now + 480) / 5) * 5
+  const m = ((target % 1440) + 1440) % 1440
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+}
+
+function SleepModal() {
+  const data = useGame((s) => s.data)
+  const sleep = useGame((s) => s.sleep)
+  const sleepUntil = useGame((s) => s.sleepUntil)
+  const close = useGame((s) => s.setModal)
+  const [wake, setWake] = useState(() => defaultWakeTime(data.minutes))
+  const firstDay = data.day === 0
+  const match = /^(\d{2}):(\d{2})$/.exec(wake)
+  const target = match ? Number(match[1]) * 60 + Number(match[2]) : null
+  let duration: number | null = null
+  if (target !== null) {
+    duration = target - data.minutes
+    if (duration <= 0) duration += 1440
+  }
+  const timeError =
+    duration === null
+      ? '请选择时间。'
+      : duration < SLEEP_MIN_MINUTES
+        ? '至少睡 1 小时。'
+        : duration > SLEEP_MAX_MINUTES
+          ? '最多只能睡 12 小时。'
+          : null
+
+  return (
+    <ModalShell title="睡觉" onClose={() => close(null)}>
+      <p className="muted">
+        你只能在自己的寝室睡觉。睡 7 小时以上会额外恢复体力与心情；少于{' '}
+        {SLEEP_MIN_RECOVERY_MINUTES / 60} 小时只会跳过时间。
+      </p>
+      <div className="btn-grid">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((h) => (
+          <button
+            key={h}
+            className="choice-btn"
+            disabled={firstDay && h !== 8}
+            onClick={() => sleep(h)}
+          >
+            {h} 小时
+          </button>
+        ))}
+      </div>
+      {firstDay ? (
+        <p className="hint">第一天只能睡 8 小时。</p>
+      ) : (
+        <>
+          <div className="sleep-time-row">
+            <span className="sleep-time-label">睡到</span>
+            <input
+              className="sleep-time-input"
+              type="time"
+              step={300}
+              value={wake}
+              onChange={(e) => setWake(e.target.value)}
+            />
+            <button
+              className="choice-btn sleep-time-btn"
+              disabled={!!timeError}
+              onClick={() => {
+                if (target !== null && !timeError) sleepUntil(target)
+              }}
+            >
+              睡觉
+            </button>
+          </div>
+          {timeError && <p className="hint">{timeError}</p>}
+        </>
+      )}
+    </ModalShell>
+  )
+}
+
+function StudyModal() {
+  const study = useGame((s) => s.study)
+  const close = useGame((s) => s.setModal)
+  return (
+    <ModalShell title="自习" onClose={() => close(null)}>
+      <p className="muted">选择一项内容，花 0.5 小时。</p>
+      <div className="btn-grid">
+        <button className="choice-btn" onClick={() => study('knowledge')}>古典文学</button>
+        <button className="choice-btn" onClick={() => study('nature')}>自然系</button>
+      </div>
+    </ModalShell>
+  )
+}
+
+function PracticeModal() {
+  const practice = useGame((s) => s.practice)
+  const location = useGame((s) => s.data.location)
+  const close = useGame((s) => s.setModal)
+  return (
+    <ModalShell title="练习" onClose={() => close(null)}>
+      <p className="muted">
+        {location === 'backyard'
+          ? '后院只能自行练习，不计入体术课程掌握度。'
+          : '选择一项，花 0.5 小时，体力 -4。'}
+      </p>
+      <div className="btn-grid">
+        <button className="choice-btn" onClick={() => practice('brawl')}>格斗</button>
+        <button className="choice-btn" onClick={() => practice('sword')}>剑术</button>
+      </div>
+    </ModalShell>
+  )
+}
+
+function BattleSelectModal() {
+  const startBattle = useGame((s) => s.startBattle)
+  const close = useGame((s) => s.setModal)
+  return (
+    <ModalShell title="演武场切磋" onClose={() => close(null)}>
+      <p className="muted">切磋不会造成真正的伤害。生命归零只是判负。</p>
+      <div className="battle-select-list">
+        <button className="battle-select-row" onClick={() => startBattle('dummy')}>
+          <span className="battle-select-name">木桩</span>
+          <span className="battle-select-desc">不会还手。用来熟悉行动条和攻击方式。</span>
+        </button>
+        <button className="battle-select-row" onClick={() => startBattle('practice_dummy')}>
+          <span className="battle-select-name">练习人偶</span>
+          <span className="battle-select-desc">会还手。用来测试生命、魔力和火球术。</span>
+        </button>
+      </div>
+    </ModalShell>
+  )
+}
+
+function WaitModal() {
+  const wait = useGame((s) => s.wait)
+  const close = useGame((s) => s.setModal)
+  return (
+    <ModalShell title="等待" onClose={() => close(null)}>
+      <p className="muted">推进时间，不会恢复或消耗体力、精神、心情、魔力。</p>
+      <div className="btn-grid">
+        {[5, 15, 30, 60].map((m) => (
+          <button key={m} className="choice-btn" onClick={() => wait(m)}>
+            {m === 60 ? '1 小时' : `${m} 分钟`}
+          </button>
+        ))}
+      </div>
+    </ModalShell>
+  )
+}
+
+type PendingSaveAction = {
+  action: 'overwrite' | 'load' | 'delete'
+  slot: number | 'auto'
+} | null
+
+function SavesModal() {
+  const setModal = useGame((s) => s.setModal)
+  const battle = useGame((s) => s.battle)
+  const saveSlot = useGame((s) => s.saveSlot)
+  const loadSlot = useGame((s) => s.loadSlot)
+  const removeSlot = useGame((s) => s.removeSlot)
+  const savesRev = useGame((s) => s.savesRev)
+  const saves = useMemo(() => listSaves(), [savesRev])
+  const [pending, setPending] = useState<PendingSaveAction>(null)
+
+  const slotLabel = (slot: number | 'auto') => (slot === 'auto' ? '自动存档' : `槽位 ${slot}`)
+
+  const confirmPending = () => {
+    if (!pending) return
+    if (pending.action === 'overwrite' && typeof pending.slot === 'number') {
+      saveSlot(pending.slot)
+    } else if (pending.action === 'load') {
+      loadSlot(pending.slot)
+    } else if (pending.action === 'delete') {
+      removeSlot(pending.slot)
+    }
+    setPending(null)
+  }
+
+  const confirmBlock = (slot: number | 'auto', oldSave: { name: string; ts: number } | null | undefined) => {
+    if (!pending || pending.slot !== slot) return null
+    const label = slotLabel(slot)
+    let text = ''
+    let confirmLabel = '确认'
+    let danger = false
+    if (pending.action === 'overwrite') {
+      text = oldSave
+        ? `${label} 已有存档：${oldSave.name} · ${formatSaveTime(oldSave.ts)}。覆盖后无法恢复。`
+        : `${label} 已有存档，覆盖后无法恢复。`
+      confirmLabel = '确认覆盖'
+    } else if (pending.action === 'load') {
+      text = `读取${label}？当前未保存的进度会丢失。`
+      confirmLabel = '读取'
+    } else {
+      text = `删除${label}？删除后无法恢复。`
+      confirmLabel = '确认删除'
+      danger = true
+    }
+    return (
+      <div className={`save-confirm ${danger ? 'danger' : ''}`}>
+        <div className="save-confirm-text">{text}</div>
+        <div className="save-confirm-actions">
+          <button className={`mini-btn ${danger ? 'danger' : ''}`} onClick={confirmPending}>
+            {confirmLabel}
+          </button>
+          <button className="mini-btn" onClick={() => setPending(null)}>
+            取消
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <ModalShell title="存档" onClose={() => setModal(null)}>
+      {battle && <p className="hint">战斗中无法存档或读档。</p>}
+      <div className="save-list">
+        {Array.from({ length: SLOT_COUNT }, (_, i) => i + 1).map((slot) => {
+          const s = saves[slot - 1]
+          return (
+            <div className="save-entry" key={slot}>
+              <div className="save-row">
+                <span className="save-slot">槽位 {slot}</span>
+                <span className="save-info">{s ? `${s.name} · ${formatSaveTime(s.ts)}` : '空'}</span>
+                <button
+                  className="mini-btn"
+                  onClick={() => {
+                    if (s) setPending({ action: 'overwrite', slot })
+                    else saveSlot(slot)
+                  }}
+                  disabled={!!battle}
+                >
+                  保存
+                </button>
+                <button
+                  className="mini-btn"
+                  onClick={() => setPending({ action: 'load', slot })}
+                  disabled={!s || !!battle}
+                >
+                  读取
+                </button>
+                <button
+                  className="mini-btn danger"
+                  onClick={() => setPending({ action: 'delete', slot })}
+                  disabled={!s}
+                >
+                  删
+                </button>
+              </div>
+              {confirmBlock(slot, s)}
+            </div>
+          )
+        })}
+        <div className="save-entry">
+          <div className="save-row auto">
+            <span className="save-slot">自动</span>
+            <span className="save-info">
+              {saves[SLOT_COUNT] ? formatSaveTime(saves[SLOT_COUNT]!.ts) : '空'}
+            </span>
+            <button
+              className="mini-btn"
+              onClick={() => setPending({ action: 'load', slot: 'auto' })}
+              disabled={!saves[SLOT_COUNT] || !!battle}
+            >
+              读取
+            </button>
+            <button
+              className="mini-btn danger"
+              onClick={() => setPending({ action: 'delete', slot: 'auto' })}
+              disabled={!saves[SLOT_COUNT]}
+            >
+              删
+            </button>
+          </div>
+          {confirmBlock('auto', saves[SLOT_COUNT])}
+        </div>
+      </div>
+    </ModalShell>
+  )
+}
+
+function LogModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  return (
+    <ModalShell title="日志" onClose={() => setModal(null)}>
+      <div className="log-list">
+        {[...data.log].reverse().map((l, i) => (
+          <div className="log-line" key={i}>{l}</div>
+        ))}
+      </div>
+    </ModalShell>
+  )
+}
+
+function StatsModal() {
+  const data = useGame((s) => s.data)
+  const battle = useGame((s) => s.battle)
+  const setModal = useGame((s) => s.setModal)
+  const year = currentYear(data.day)
+  const courses = coursesForYear(year)
+  const nextThreshold = nextExamThreshold(data.day, data.minutes)
+
+  const attributeDesc = (key: 'physique' | 'knowledge' | 'will', tier: number): string => {
+    const tables = {
+      physique: [
+        '你身体单薄。',
+        '你身体还算结实。',
+        '你比同龄人强壮。',
+        '你身体结实而耐久。',
+        '你的身体远超常人。',
+        '你的身体已经不像凡人。',
+      ],
+      knowledge: [
+        '你还没读过多少书。',
+        '你开始能读懂一些书。',
+        '你读过不少书。',
+        '你的知识已经相当扎实。',
+        '你几乎什么都读过。',
+        '你的学识深不见底。',
+      ],
+      will: [
+        '你容易动摇。',
+        '你尚能坚持。',
+        '你比多数人坚定。',
+        '你很难被撼动。',
+        '你的意志像铁一样。',
+        '你几乎不会动摇。',
+      ],
+    }
+    return tables[key][Math.min(5, Math.max(0, tier))]
+  }
+
+  const attributeCard = (key: 'physique' | 'knowledge' | 'will') => {
+    const skill = data.skills[key]
+    const pct = skill.tier >= 5 ? 100 : skillPercent(skill.tier, skill.exp)
+    return (
+      <div className="stat-card" key={key}>
+        <div className="stat-card-head">
+          <span className="stat-name">{SKILL_LABEL[key]}</span>
+          <span className="stat-tier">{tierName(key, skill.tier)}</span>
+          <span className="stat-pct">{formatPercent(skill.tier, skill.exp)}</span>
+        </div>
+        <div className="stat-desc">{attributeDesc(key, skill.tier)}</div>
+        <div className="stat-bar">
+          <div className="stat-fill" style={{ width: `${Math.min(100, pct)}%` }} />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <ModalShell title="属性" wide onClose={() => setModal(null)}>
+      <div className="stat-section">
+        <div className="stat-section-title">核心属性</div>
+        {attributeCard('physique')}
+        {attributeCard('knowledge')}
+        {attributeCard('will')}
+        {(() => {
+          const hpMax = maxHp(data.skills.physique.tier)
+          const hpValue = battle ? battle.playerHp : data.hp
+          const pct = Math.max(0, Math.min(100, (hpValue / hpMax) * 100))
+          return (
+            <div className="stat-card">
+              <div className="stat-card-head">
+                <span className="stat-name">生命</span>
+                <span className="stat-pct">{Math.round(hpValue)} / {hpMax}</span>
+              </div>
+              <div className="stat-desc">战斗中的生命值，与体力分开计算。</div>
+              <div className="stat-bar">
+                <div className="stat-fill" style={{ width: `${pct}%`, background: 'var(--red)' }} />
+              </div>
+            </div>
+          )
+        })()}
+      </div>
+
+      <div className="stat-section">
+        <div className="stat-section-title">学校课程</div>
+        {courses.length === 0 ? (
+          <div className="hint">第二学年课程尚未开放。</div>
+        ) : (
+          courses.map((course) => {
+            const value = data.courseMastery[course.id] ?? 0
+            const pct = nextThreshold === null ? 0 : Math.min(100, (value / nextThreshold) * 100)
+            return (
+              <div className="stat-card" key={course.id}>
+                <div className="stat-card-head">
+                  <span className="stat-name">{course.name}</span>
+                  <span className="stat-pct">掌握度 {Math.floor(value)}</span>
+                </div>
+                <div className="stat-desc">
+                  {nextThreshold === null ? '考试安排待定' : `下次考试：${nextThreshold}`}
+                </div>
+                <div className="stat-bar">
+                  <div className="stat-fill" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      <div className="stat-section">
+        <div className="stat-section-title">法术</div>
+        {data.spells.includes('fireball') ? (
+          <div className="stat-card">
+            <div className="stat-card-head">
+              <span className="stat-name">火球术</span>
+              <span className="stat-tier">自然系 · 火</span>
+            </div>
+            <div className="stat-desc">消耗 8 魔力，对单个目标造成伤害。需要主手施法媒介。</div>
+          </div>
+        ) : (
+          <div className="hint">尚未学会战斗法术。法术导论掌握度达到 20 后可以学会火球术。</div>
+        )}
+      </div>
+
+      <div className="stat-section">
+        <div className="stat-section-title">技能</div>
+        {SKILL_ORDER.filter((k) => !['physique', 'knowledge', 'will'].includes(k)).map((k) => {
+          const skill = data.skills[k]
+          const pct = skill.tier >= 5 ? 100 : skillPercent(skill.tier, skill.exp)
+          return (
+            <div className="stat-card" key={k}>
+              <div className="stat-card-head">
+                <span className="stat-name">{SKILL_LABEL[k]}</span>
+                <span className="stat-tier">{tierName(k, skill.tier)}</span>
+                <span className="stat-pct">{formatPercent(skill.tier, skill.exp)}</span>
+              </div>
+              <div className="stat-bar">
+                <div className="stat-fill" style={{ width: `${Math.min(100, pct)}%` }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </ModalShell>
+  )
+}
+
+function RelationsModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  return (
+    <ModalShell title="关系" onClose={() => setModal(null)}>
+      <div className="relation-list">
+        {NPCS.filter((n) => n.relationship !== 'familiarity').map((npc) => {
+          const affinity = data.affinity[npc.id] ?? 0
+          const tier = socialTier(affinity)
+          const today = data.social.day === data.day ? data.social.counts[npc.id] ?? 0 : 0
+          return (
+            <div className="relation-row" key={npc.id}>
+              <div className="relation-head">
+                <span className="relation-name">{npc.name}</span>
+                <span className="relation-title">{npc.title}</span>
+                <span className="relation-aff">好感 {affinity}</span>
+              </div>
+              <div className="relation-meta">
+                <span className="relation-hearts">{heartsText(affinity)}</span>
+                <span className="relation-today">今日{today >= 1 ? '已聊' : '未聊'}</span>
+              </div>
+              <div className="relation-impression">{npc.impression[tier]}</div>
+            </div>
+          )
+        })}
+      </div>
+      <p className="hint">每位人物每天第一次闲聊增加 1 点好感，之后仍可聊天但不再增加。</p>
+    </ModalShell>
+  )
+}
+
+function InventoryModal() {
+  const data = useGame((s) => s.data)
+  const battle = useGame((s) => s.battle)
+  const setModal = useGame((s) => s.setModal)
+  const useItem = useGame((s) => s.useItem)
+  const equipItem = useGame((s) => s.equipItem)
+  const unequipSlot = useGame((s) => s.unequipSlot)
+  const [selected, setSelected] = useState<string | null>(null)
+  const equippedIds = Object.values(data.equipment).filter((x): x is string => !!x)
+  const entries = Object.entries(data.inventory).filter(
+    ([id, qty]) => qty > 0 && !equippedIds.includes(id),
+  )
+  const slots: Array<[string, number] | null> = Array.from({ length: 24 }, (_, i) => entries[i] ?? null)
+  const selectedDef = selected ? ITEMS[selected] : null
+  const selectedQty = selected ? data.inventory[selected] ?? 0 : 0
+  const selectedQuality = selectedDef ? QUALITY[selectedDef.quality] : null
+  const selectedSlot = selectedDef?.slot
+  const equippedInSlot = selectedSlot ? data.equipment[selectedSlot] === selectedDef?.id : false
+  const selectedSlotLabel = selectedSlot
+    ? EQUIPMENT_SLOTS.find((s) => s.key === selectedSlot)?.label
+    : undefined
+
+  useEffect(() => {
+    if (selected && !equippedIds.includes(selected) && (data.inventory[selected] ?? 0) <= 0) {
+      setSelected(null)
+    }
+  }, [data.inventory, equippedIds, selected])
+
+  const qualityStyle = (color?: string) =>
+    color ? { borderColor: color, background: `${color}18` } : undefined
+
+  const slotButton = (slot: (typeof EQUIPMENT_SLOTS)[number]) => {
+    const id = data.equipment[slot.key]
+    const def = id ? ITEMS[id] : null
+    const q = def ? QUALITY[def.quality] : null
+    return (
+      <div className="equip-block" key={slot.key}>
+        <div className="equip-label">{slot.label}</div>
+        <button
+          className={`equip-slot ${def ? 'filled' : 'empty'} ${id && selected === id ? 'selected' : ''}`}
+          style={qualityStyle(q?.color)}
+          title={def ? def.name : '空'}
+          onClick={() => id && setSelected(id)}
+        >
+          {def ? <ItemIcon id={def.id} size={38} /> : <span className="empty-text">空</span>}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <ModalShell title="物品" wide onClose={() => setModal(null)}>
+      {battle && <p className="hint">战斗中无法更换装备或使用普通物品。</p>}
+      <div className="inventory-body">
+        <div className="equip-area">
+          <div className="inv-section-title">装备</div>
+          <div className="equip-layout">
+            <div className="equip-col">
+              {slotButton(EQUIPMENT_SLOTS[0])}
+              {slotButton(EQUIPMENT_SLOTS[1])}
+            </div>
+            <div className="equip-center" />
+            <div className="equip-col">
+              {slotButton(EQUIPMENT_SLOTS[2])}
+              {slotButton(EQUIPMENT_SLOTS[3])}
+            </div>
+          </div>
+        </div>
+
+        <div className="bag-panel">
+          <div className="inv-section-title">背包</div>
+          <div className="bag-grid">
+            {slots.map((entry, i) => {
+              if (!entry) return <div className="inv-slot empty" key={`empty-${i}`} />
+              const [id, qty] = entry
+              const def = ITEMS[id]
+              if (!def) return <div className="inv-slot empty" key={`empty-${i}`} />
+              const q = QUALITY[def.quality]
+              return (
+                <button
+                  key={id}
+                  className={`inv-slot filled ${selected === id ? 'selected' : ''}`}
+                  style={qualityStyle(q.color)}
+                  title={def.name}
+                  onClick={() => setSelected(id)}
+                >
+                  <ItemIcon id={id} size={30} />
+                  {qty > 1 && <span className="inv-qty">×{qty}</span>}
+                  <span className="slot-tip">{def.name}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="inv-details">
+        {selectedDef && selectedQuality ? (
+          <>
+            <div className="detail-head">
+              <span className="detail-name">{selectedDef.name}</span>
+              <span className="detail-qty">×{selectedQty}</span>
+              {selectedSlotLabel && <span className="detail-slot">{selectedSlotLabel}</span>}
+              <span className="detail-quality" style={{ color: selectedQuality.color }}>
+                {selectedQuality.name}
+              </span>
+            </div>
+            <div className="detail-desc">
+              {selectedDef.desc}
+              {selectedDef.medium && <span className="detail-medium">可作为施法媒介</span>}
+              {selectedDef.weapon === 'sword' && <span className="detail-medium">可作主手武器</span>}
+            </div>
+            {selectedDef.type === 'equipment' && selectedSlot ? (
+              equippedInSlot ? (
+                <button className="primary-btn detail-action" disabled={!!battle} onClick={() => unequipSlot(selectedSlot)}>卸下</button>
+              ) : (
+                <button className="primary-btn detail-action" disabled={!!battle} onClick={() => equipItem(selectedDef.id)}>装备</button>
+              )
+            ) : selectedDef.type === 'consumable' ? (
+              <button className="primary-btn detail-action" disabled={!!battle} onClick={() => useItem(selectedDef.id)}>使用</button>
+            ) : (
+              <div className="hint">材料，可在杂货店出售。</div>
+            )}
+          </>
+        ) : (
+          <div className="hint">选择一件物品</div>
+        )}
+      </div>
+    </ModalShell>
+  )
+}
+
+function ShopModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  const buyItem = useGame((s) => s.buyItem)
+  const sellItem = useGame((s) => s.sellItem)
+  const stock = shopStockAt(data.location)
+  const soldToday = data.shop.day === data.day ? data.shop.sold : {}
+  const materials = Object.entries(data.inventory).filter(
+    ([id, qty]) => qty > 0 && ITEMS[id]?.type === 'material',
+  )
+
+  return (
+    <ModalShell title={getLocation(data.location).name} onClose={() => setModal(null)}>
+      <div className={`shop-money${data.money < 0 ? ' debt' : ''}`}>持有：{formatMoney(data.money)}</div>
+      <div className="shop-list">
+        {Object.entries(stock).length === 0 && <div className="hint">这里今天没有货。</div>}
+        {Object.entries(stock).map(([id, stockCount]) => {
+          const def = ITEMS[id]
+          if (!def) return null
+          const sold = soldToday[`${data.location}:${id}`] ?? 0
+          const left = Math.max(0, stockCount - sold)
+          return (
+            <div className="shop-row" key={id}>
+              <div className="row-head">
+                <span className="item-name">{def.name}</span>
+                <span className="shop-price">{def.price} 铜</span>
+                <span className="shop-stock">剩 {left}</span>
+                <button
+                  className="mini-btn"
+                  disabled={left <= 0 || data.money < def.price}
+                  onClick={() => buyItem(id)}
+                >
+                  购买
+                </button>
+              </div>
+              <div className="item-desc">{def.desc}</div>
+            </div>
+          )
+        })}
+      </div>
+      {data.location === 'shop' && materials.length > 0 && (
+        <div className="shop-sell">
+          <div className="section-title">收购</div>
+          {materials.map(([id, qty]) => {
+            const def = ITEMS[id]
+            return (
+              <div className="shop-row" key={id}>
+                <div className="row-head">
+                  <span className="item-name">{def.name} ×{qty}</span>
+                  <span className="shop-price">{def.price} 铜 / 个</span>
+                  <button className="mini-btn" onClick={() => sellItem(id, false)}>卖 1 个</button>
+                  <button className="mini-btn" onClick={() => sellItem(id, true)}>全部卖出</button>
+                </div>
+                <div className="item-desc">全部卖出可得 {def.price * qty} 铜</div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </ModalShell>
+  )
+}
+
+function DrinkModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  const orderDrink = useGame((s) => s.orderDrink)
+  return (
+    <ModalShell title="来一杯" onClose={() => setModal(null)}>
+      <div className={`shop-money${data.money < 0 ? ' debt' : ''}`}>持有：{formatMoney(data.money)}</div>
+      <p className="muted">酒馆里没有烈酒。格蕾塔也不会给喝醉的人再倒一杯。</p>
+      <div className="drink-list">
+        {DRINKS.map((drink) => {
+          const effects = [
+            drink.effect.mood ? `心情 +${drink.effect.mood}` : '',
+            drink.effect.spirit ? `精神 +${drink.effect.spirit}` : '',
+            drink.effect.stamina ? `体力 +${drink.effect.stamina}` : '',
+          ].filter(Boolean).join(' · ')
+          return (
+            <button
+              key={drink.id}
+              className="drink-row"
+              disabled={data.money < drink.price}
+              onClick={() => orderDrink(drink.id)}
+            >
+              <span className="drink-name">{drink.name}</span>
+              <span className="drink-desc">{drink.desc}</span>
+              <span className="drink-meta">
+                {drink.price} 铜 · {drink.minutes} 分钟 · {effects}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </ModalShell>
+  )
+}
+
+function ReportCardModal() {
+  const data = useGame((s) => s.data)
+  const reportCard = data.pendingReport
+  const close = useGame((s) => s.closeReport)
+  if (reportCard === null) return null
+  const threshold = examThresholdForDay(reportCard === 1 ? 83 : 195)
+  const courses = coursesForYear(1)
+  const rows = courses.map((course) => {
+    const value = data.courseMastery[course.id] ?? 0
+    return { course, value, pass: value >= threshold }
+  })
+  const allPass = rows.every((r) => r.pass)
+  return (
+    <ModalShell
+      title={reportCard === 1 ? '第一学期成绩单' : '第二学期成绩单'}
+      onClose={close}
+    >
+      <div className="report-list">
+        {rows.map(({ course, value, pass }) => (
+          <div className="report-row" key={course.id}>
+            <span className="report-name">{course.name}</span>
+            <span className="report-value">掌握度 {Math.floor(value)}</span>
+            <span className={`report-status ${pass ? 'pass' : 'fail'}`}>
+              {pass ? '及格' : '不及格'}
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="report-result">{allPass ? '全部及格。' : '有课程未及格。'}</p>
+      <button className="primary-btn" onClick={close}>继续</button>
+    </ModalShell>
+  )
+}
+
+function EventPickerModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  const debugEvent = useGame((s) => s.debugEvent)
+  const [filter, setFilter] = useState<'all' | 'npc'>('all')
+  const filtered = EVENTS.filter((e) => filter === 'all' || !!e.requires?.npc)
+
+  const triggerLabel = (event: (typeof EVENTS)[number]) => {
+    if (event.trigger.type === 'enter') return '进入地点'
+    const labels: Record<string, string> = {
+      class: '上课结束',
+      study: '自习结束',
+      practice: '练习结束',
+      work: '打工结束',
+      pray: '祷告结束',
+      eat: '吃饭结束',
+      backyard: '帮后院结束',
+    }
+    const base = labels[event.trigger.action] ?? '行动结束'
+    return event.trigger.subject ? `${base} · ${event.trigger.subject}` : base
+  }
+
+  const groups = LOCATIONS.map((loc) => ({
+    loc,
+    events: filtered.filter((e) => e.locations[0] === loc.id),
+  })).filter((g) => g.events.length > 0)
+
+  return (
+    <ModalShell title="事件调试" wide onClose={() => setModal(null)}>
+      <div className="event-picker-tabs">
+        <button
+          className={`event-picker-tab ${filter === 'all' ? 'on' : ''}`}
+          onClick={() => setFilter('all')}
+        >
+          全部
+        </button>
+        <button
+          className={`event-picker-tab ${filter === 'npc' ? 'on' : ''}`}
+          onClick={() => setFilter('npc')}
+        >
+          NPC 线
+        </button>
+      </div>
+      <div className="event-picker-list">
+        {groups.map((group) => (
+          <div className="event-group" key={group.loc.id}>
+            <div className="event-group-title">
+              {group.loc.kind === 'room' && group.loc.parent
+                ? `${getLocation(group.loc.parent).name} · ${group.loc.name}`
+                : group.loc.name}
+            </div>
+            {group.events.map((event) => {
+              const seen = data.events.seen.includes(event.id)
+              const locations = event.locations
+                .map((id) => getLocation(id).name)
+                .join(' / ')
+              const times = event.timeRanges
+                ? event.timeRanges
+                    .map(([start, end]) => `${formatTime(start)}–${formatTime(end)}`)
+                    .join('，')
+                : '全天'
+              const days =
+                event.days === 'workday' ? '工作日' : event.days === 'weekend' ? '周末' : '每天'
+              return (
+                <button className="event-pick-row" key={event.id} onClick={() => debugEvent(event.id)}>
+                  <div className="event-pick-head">
+                    <span className="event-pick-title">{event.title}</span>
+                    {seen && <span className="event-seen">已触发</span>}
+                  </div>
+                  <div className="event-pick-meta">
+                    {triggerLabel(event)} · {locations} · {days} {times}
+                  </div>
+                  <div className="event-pick-id">{event.id}</div>
+                </button>
+              )
+            })}
+          </div>
+        ))}
+      </div>
+    </ModalShell>
+  )
+}
+
+function DebugModal() {
+  const setModal = useGame((s) => s.setModal)
+  const money = useGame((s) => s.debugMoney)
+  const exp = useGame((s) => s.debugExp)
+  const hour = useGame((s) => s.debugHour)
+  const day = useGame((s) => s.debugDay)
+  const spell = useGame((s) => s.debugSpell)
+  const heal = useGame((s) => s.debugHeal)
+  const reset = useGame((s) => s.resetGame)
+  return (
+    <ModalShell title="调试" onClose={() => setModal(null)}>
+      <p className="hint">“选择事件…”会忽略地点、时间、好感与一次性记录。</p>
+      <div className="btn-grid">
+        <button className="choice-btn" onClick={money}>金钱 +100</button>
+        <button className="choice-btn" onClick={exp}>全技能经验 +50</button>
+        <button className="choice-btn" onClick={hour}>时间 +1 小时</button>
+        <button className="choice-btn" onClick={day}>跳到第二天早上</button>
+        <button className="choice-btn" onClick={spell}>学会火球术</button>
+        <button className="choice-btn" onClick={heal}>生命回满</button>
+        <button className="choice-btn" onClick={() => setModal('eventPicker')}>选择事件…</button>
+        <button className="choice-btn danger" onClick={reset}>回到标题</button>
+      </div>
+    </ModalShell>
+  )
+}
