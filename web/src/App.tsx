@@ -53,6 +53,7 @@ import {
   coursesForYear,
   currentMeal,
   currentYear,
+  ageOf,
   daysUntil,
   examThresholdForDay,
   exitsOf,
@@ -88,7 +89,9 @@ import {
   skillPercent,
   spellDamageRange,
   spiritCost,
+  TELEPORT_YEAR,
   tierName,
+  yearLabel,
   weatherOf,
   weatherScene,
   WEATHER_LABEL,
@@ -139,7 +142,7 @@ function TitleScreen() {
         </button>
       </div>
       {msg && <div className="title-msg">{msg}</div>}
-      <div className="title-foot">文字驱动的沙盒生活模拟 · v1.1</div>
+      <div className="title-foot">文字驱动的沙盒生活模拟 · v2.0</div>
 
       {showSaves && (
         <div className="overlay" onClick={() => setShowSaves(false)}>
@@ -843,6 +846,7 @@ function Actions({
   const listenTavern = useGame((s) => s.listenTavern)
   const pray = useGame((s) => s.pray)
   const helpBackyard = useGame((s) => s.helpBackyard)
+  const teleport = useGame((s) => s.teleport)
   const helpOrphanKids = useGame((s) => s.helpOrphanKids)
   const joinRite = useGame((s) => s.joinRite)
   const prepareRite = useGame((s) => s.prepareRite)
@@ -973,7 +977,7 @@ function Actions({
           <ActionBtn onClick={() => setModal('practice')} label="练习" cost="0.5 小时" />
         </>
       )}
-      {loc === 'dorm' && <ActionBtn onClick={() => setModal('sleep')} label="睡觉" cost="1 小时起" />}
+      {(loc === 'dorm' || loc === 'westInn') && <ActionBtn onClick={() => setModal('sleep')} label="睡觉" cost="1 小时起" />}
       {loc === 'shop' && (
         <>
           <ActionBtn onClick={() => setModal('shop')} label="购买" cost="—" />
@@ -1110,6 +1114,15 @@ function Actions({
             cost={`${Math.min(30, ritePhase.end - data.minutes)} 分钟 · 精神 +${ritePhase.night ? 2 : 1} · 心情 +${ritePhase.night ? 2 : 1}`}
           />
         ))}
+      {loc === 'teleportRoom' &&
+        (currentYear(data.day) >= TELEPORT_YEAR ? (
+          <ActionBtn onClick={() => teleport('west')} label="前往边区小镇" cost="即时" />
+        ) : (
+          <div className="hint">传送阵还没有对你开放。</div>
+        ))}
+      {loc === 'westGate' && (
+        <ActionBtn onClick={() => teleport('town')} label="返回长明学院" cost="即时" />
+      )}
       {loc === 'bellTower' &&
         (isTimeWindow(data.minutes, BELL_TOWER_OPEN_START, BELL_TOWER_OPEN_END) ? (
           <ActionBtn
@@ -1350,7 +1363,7 @@ function SleepModal() {
   return (
     <ModalShell title="睡觉" onClose={() => close(null)}>
       <p className="muted">
-        你只能在自己的寝室睡觉。睡 7 小时以上会额外恢复体力与心情；少于{' '}
+        可以在孤儿院寝室或边区小镇旅店房间睡觉。睡 7 小时以上会额外恢复体力与心情；少于{' '}
         {SLEEP_MIN_RECOVERY_MINUTES / 60} 小时只会跳过时间。
       </p>
       <div className="btn-grid">
@@ -1673,6 +1686,13 @@ function StatsModal() {
         {attributeCard('physique')}
         {attributeCard('knowledge')}
         {attributeCard('will')}
+        <div className="stat-card">
+          <div className="stat-card-head">
+            <span className="stat-name">年龄</span>
+            <span className="stat-pct">{ageOf(data.day)} 岁</span>
+          </div>
+          <div className="stat-desc">按学年增长。</div>
+        </div>
         {(() => {
           const hpMax = maxHp(data.skills.physique.tier)
           const hpValue = battle ? battle.playerHp : data.hp
@@ -1695,7 +1715,7 @@ function StatsModal() {
       <div className="stat-section">
         <div className="stat-section-title">学校课程</div>
         {courses.length === 0 ? (
-          <div className="hint">第二学年课程尚未开放。</div>
+          <div className="hint">本学年课程尚未配置。</div>
         ) : (
           courses.map((course) => {
             const value = data.courseMastery[course.id] ?? 0
@@ -2022,16 +2042,18 @@ function ReportCardModal() {
   const reportCard = data.pendingReport
   const close = useGame((s) => s.closeReport)
   if (reportCard === null) return null
-  const threshold = examThresholdForDay(reportCard === 1 ? 83 : 195)
-  const courses = coursesForYear(1)
+  const thresholdDay = (reportCard.year - 1) * 224 + (reportCard.semester === 1 ? 83 : 195)
+  const threshold = examThresholdForDay(thresholdDay)
+  const courses = coursesForYear(reportCard.year)
   const rows = courses.map((course) => {
     const value = data.courseMastery[course.id] ?? 0
     return { course, value, pass: value >= threshold }
   })
   const allPass = rows.every((r) => r.pass)
+  const yearLabelText = yearLabel(reportCard.year)
   return (
     <ModalShell
-      title={reportCard === 1 ? '第一学期成绩单' : '第二学期成绩单'}
+      title={`${yearLabelText} · ${reportCard.semester === 1 ? '第一学期' : '第二学期'}成绩单`}
       onClose={close}
     >
       <div className="report-list">

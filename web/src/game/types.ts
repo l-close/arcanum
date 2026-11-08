@@ -53,7 +53,7 @@ export type GameData = {
     lastAt: number
     seen: string[]
   }
-  pendingReport: 1 | 2 | null
+  pendingReport: { year: number; semester: 1 | 2 } | null
   notice: string
   log: string[]
   prologueSeen: boolean

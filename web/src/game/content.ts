@@ -553,6 +553,34 @@ export const LOCATIONS: Location[] = [
     kind: 'room',
     desc: '树木很快密了起来，脚下的落叶踩上去很软。远处偶尔传来枝叶晃动的声音。',
   },
+  {
+    id: 'teleportRoom',
+    name: '传送室',
+    parent: 'academy',
+    kind: 'room',
+    desc: '房间中央嵌着一圈发暗的金属纹路，边缘刻着细小的符文。空气里有轻微的嗡鸣。',
+  },
+  {
+    id: 'westTown',
+    name: '边区小镇',
+    kind: 'zone',
+    childLabel: '小镇地点',
+    desc: '一座比银月城小得多的镇子，屋顶压得很低，风里带着湿土和柴烟的味道。',
+  },
+  {
+    id: 'westGate',
+    name: '镇口',
+    parent: 'westTown',
+    kind: 'room',
+    desc: '镇口立着一圈石砌的传送阵，边缘长着青苔。再往外就是通往田野的土路。',
+  },
+  {
+    id: 'westInn',
+    name: '旅店房间',
+    parent: 'westTown',
+    kind: 'room',
+    desc: '房间不大，一张床、一张桌子、一扇朝南的窗。楼下偶尔传来碗碟的声响。',
+  },
 ]
 
 export function getLocation(id: string): Location {
@@ -1408,6 +1436,9 @@ export type NpcDef = {
 export const SOCIAL_MINUTES = 15
 export const SOCIAL_DAILY_GAIN = 1
 
+export const SLEEP_LOCATIONS: string[] = ['dorm', 'westInn']
+export const TELEPORT_YEAR = 2
+
 export const ACADEMY_MEAL_FEE = 2
 export const SUMMER_RITE_DAY = 104
 export const WINTER_RITE_DAY = 216
@@ -1706,6 +1737,7 @@ const EXITS: Record<string, Exit[]> = {
     { to: 'library', minutes: 5 },
     { to: 'canteen', minutes: 5 },
     { to: 'yard', minutes: 5 },
+    { to: 'teleportRoom', minutes: 5 },
     { to: 'town', minutes: 5 },
   ],
   lecture: [
@@ -1835,6 +1867,21 @@ const EXITS: Record<string, Exit[]> = {
   forest: [
     { to: 'outside', minutes: 5 },
     { to: 'cemetery', minutes: 5 },
+  ],
+  teleportRoom: [
+    { to: 'academy', minutes: 5 },
+  ],
+  westTown: [
+    { to: 'westGate', minutes: 5 },
+    { to: 'westInn', minutes: 5 },
+  ],
+  westGate: [
+    { to: 'westTown', minutes: 5 },
+    { to: 'westInn', minutes: 5 },
+  ],
+  westInn: [
+    { to: 'westTown', minutes: 5 },
+    { to: 'westGate', minutes: 5 },
   ],
 }
 
@@ -2041,44 +2088,139 @@ export type CourseDef = {
   name: string
   skill: SkillKey
   kind: 'literature' | 'nature' | 'physical'
+  location: 'lecture' | 'yard'
+  start: number
+  end: number
 }
 
 export const COURSES: CourseDef[] = [
-  { id: 'y1_literature', year: 1, name: '古典文学', skill: 'knowledge', kind: 'literature' },
-  { id: 'y1_nature', year: 1, name: '法术导论', skill: 'nature', kind: 'nature' },
-  { id: 'y1_physical', year: 1, name: '体术', skill: 'brawl', kind: 'physical' },
+  {
+    id: 'y1_literature',
+    year: 1,
+    name: '古典文学',
+    skill: 'knowledge',
+    kind: 'literature',
+    location: 'lecture',
+    start: 9 * 60,
+    end: 11 * 60,
+  },
+  {
+    id: 'y1_nature',
+    year: 1,
+    name: '法术导论',
+    skill: 'nature',
+    kind: 'nature',
+    location: 'lecture',
+    start: 13 * 60,
+    end: 15 * 60,
+  },
+  {
+    id: 'y1_physical',
+    year: 1,
+    name: '体术课',
+    skill: 'brawl',
+    kind: 'physical',
+    location: 'yard',
+    start: 15 * 60 + 30,
+    end: 17 * 60 + 30,
+  },
+  // 第二学年占位课程，名称与技能待定稿
+  {
+    id: 'y2_course_a',
+    year: 2,
+    name: '二年级课程一',
+    skill: 'knowledge',
+    kind: 'literature',
+    location: 'lecture',
+    start: 9 * 60,
+    end: 11 * 60,
+  },
+  {
+    id: 'y2_course_b',
+    year: 2,
+    name: '二年级课程二',
+    skill: 'nature',
+    kind: 'nature',
+    location: 'lecture',
+    start: 13 * 60,
+    end: 15 * 60,
+  },
+  {
+    id: 'y2_course_c',
+    year: 2,
+    name: '二年级课程三',
+    skill: 'brawl',
+    kind: 'physical',
+    location: 'yard',
+    start: 15 * 60 + 30,
+    end: 17 * 60 + 30,
+  },
 ]
 
 export const YEAR_DAYS = 224
 export const SEMESTER_DAYS = 84
 export const HOLIDAY_DAYS = 28
+export const MAX_YEAR = 2
 
 export type SemesterState = 'semester1' | 'summer' | 'semester2' | 'winter' | 'after'
 
+export const EXAM_OFFSETS = [27, 55, 83, 139, 167, 195]
+
+const YEAR_THRESHOLDS: Record<number, number[]> = {
+  1: [20, 60, 100, 120, 160, 200],
+  // 第二学年考试线待平衡
+  2: [20, 60, 100, 120, 160, 200],
+}
+
+const YEAR_LABEL: Record<number, string> = {
+  1: '第一学年',
+  2: '第二学年',
+  3: '第三学年',
+}
+
+export function currentYear(day: number): number {
+  return Math.floor(day / YEAR_DAYS) + 1
+}
+
+export function dayInYear(day: number): number {
+  return day % YEAR_DAYS
+}
+
+export function ageOf(day: number): number {
+  return 14 + Math.floor(day / YEAR_DAYS)
+}
+
 export function semesterState(day: number): SemesterState {
-  if (day >= YEAR_DAYS) return 'after'
-  if (day < SEMESTER_DAYS) return 'semester1'
-  if (day < SEMESTER_DAYS + HOLIDAY_DAYS) return 'summer'
-  if (day < SEMESTER_DAYS * 2 + HOLIDAY_DAYS) return 'semester2'
+  if (currentYear(day) > MAX_YEAR) return 'after'
+  const d = dayInYear(day)
+  if (d < SEMESTER_DAYS) return 'semester1'
+  if (d < SEMESTER_DAYS + HOLIDAY_DAYS) return 'summer'
+  if (d < SEMESTER_DAYS * 2 + HOLIDAY_DAYS) return 'semester2'
   return 'winter'
+}
+
+export function yearLabel(year: number): string {
+  return YEAR_LABEL[year] ?? `第${year}学年`
 }
 
 export function semesterLabel(day: number): string {
   const state = semesterState(day)
-  if (state === 'semester1') return '第一学期'
-  if (state === 'summer') return '暑假'
-  if (state === 'semester2') return '第二学期'
-  if (state === 'winter') return '寒假'
-  return '第二学年尚未开放'
+  if (state === 'after') return '第三学年尚未开放'
+  const term =
+    state === 'semester1'
+      ? '第一学期'
+      : state === 'summer'
+        ? '暑假'
+        : state === 'semester2'
+          ? '第二学期'
+          : '寒假'
+  const year = currentYear(day)
+  return year === 1 ? term : `${yearLabel(year)} · ${term}`
 }
 
 export function isClassDay(day: number): boolean {
   const state = semesterState(day)
   return weekday(day) < 5 && (state === 'semester1' || state === 'semester2')
-}
-
-export function currentYear(day: number): number {
-  return Math.floor(day / YEAR_DAYS) + 1
 }
 
 export function coursesForYear(year: number): CourseDef[] {
@@ -2090,12 +2232,10 @@ export function courseById(id: string): CourseDef | undefined {
 }
 
 export function examThresholdForDay(day: number): number {
-  if (day === 27) return 20
-  if (day === 55) return 60
-  if (day === 83) return 100
-  if (day === 139) return 120
-  if (day === 167) return 160
-  return 200
+  const year = currentYear(day)
+  const idx = EXAM_OFFSETS.indexOf(dayInYear(day))
+  const table = YEAR_THRESHOLDS[year] ?? YEAR_THRESHOLDS[1]
+  return table[idx < 0 ? table.length - 1 : idx]
 }
 
 export function nextExamThreshold(day: number, minutes: number): number | null {
@@ -2121,40 +2261,32 @@ export function classSegmentAt(location: string, minutes: number, day: number): 
   const wd = weekday(day)
   if (wd >= 5) return null
 
-  let start = 0
-  let end = 0
-  let subject = ''
-  let skill: SkillKey = 'knowledge'
-  let extraSkill: SkillKey | undefined
-  let courseId = ''
+  const course = coursesForYear(currentYear(day)).find(
+    (c) => c.location === location && minutes >= c.start && minutes < c.end,
+  )
+  if (!course) return null
 
-  if (location === 'lecture' && minutes >= 9 * 60 && minutes < 11 * 60) {
-    start = 9 * 60
-    end = 11 * 60
-    subject = '古典文学'
-    skill = 'knowledge'
-    courseId = 'y1_literature'
-  } else if (location === 'lecture' && minutes >= 13 * 60 && minutes < 15 * 60) {
-    start = 13 * 60
-    end = 15 * 60
-    subject = '法术导论'
-    skill = 'nature'
-    courseId = 'y1_nature'
-  } else if (location === 'yard' && minutes >= 15 * 60 + 30 && minutes < 17 * 60 + 30) {
-    start = 15 * 60 + 30
-    end = 17 * 60 + 30
-    subject = '体术课'
+  let skill = course.skill
+  let extraSkill: SkillKey | undefined
+  if (course.kind === 'physical') {
     skill = wd === 0 || wd === 2 || wd === 4 ? 'brawl' : 'sword'
     extraSkill = 'physique'
-    courseId = 'y1_physical'
-  } else {
-    return null
   }
 
-  const index = Math.floor((minutes - start) / 30)
-  const segmentStart = start + index * 30
-  const segmentEnd = Math.min(segmentStart + 30, end)
-  return { subject, skill, extraSkill, courseId, start, end, segmentStart, segmentEnd, index }
+  const index = Math.floor((minutes - course.start) / 30)
+  const segmentStart = course.start + index * 30
+  const segmentEnd = Math.min(segmentStart + 30, course.end)
+  return {
+    subject: course.name,
+    skill,
+    extraSkill,
+    courseId: course.id,
+    start: course.start,
+    end: course.end,
+    segmentStart,
+    segmentEnd,
+    index,
+  }
 }
 
 export function classWindowAt(
@@ -2163,26 +2295,19 @@ export function classWindowAt(
   minutes: number,
 ): { start: number; end: number } | null {
   if (!isClassDay(day)) return null
-  if (location === 'lecture') {
-    for (const start of [9 * 60, 13 * 60]) {
-      if (minutes >= start && minutes < start + 120) return { start, end: start + 120 }
-    }
-  }
-  if (location === 'yard' && minutes >= 15 * 60 + 30 && minutes < 17 * 60 + 30) {
-    return { start: 15 * 60 + 30, end: 17 * 60 + 30 }
-  }
-  return null
+  const course = coursesForYear(currentYear(day)).find(
+    (c) => c.location === location && minutes >= c.start && minutes < c.end,
+  )
+  return course ? { start: course.start, end: course.end } : null
 }
 
 export function nextClassStart(location: string, day: number, minutes: number): number | null {
   if (!isClassDay(day)) return null
-  if (location === 'lecture') {
-    return [9 * 60, 13 * 60].find((s) => s > minutes) ?? null
-  }
-  if (location === 'yard') {
-    return 15 * 60 + 30 > minutes ? 15 * 60 + 30 : null
-  }
-  return null
+  const starts = coursesForYear(currentYear(day))
+    .filter((c) => c.location === location)
+    .map((c) => c.start)
+    .sort((a, b) => a - b)
+  return starts.find((s) => s > minutes) ?? null
 }
 
 export type LecturePreviewPlan =
@@ -2210,13 +2335,18 @@ export function lecturePreviewPlan(day: number, minutes: number): LecturePreview
   if (available < 15) {
     return { ok: false, reason: `还有 ${available} 分钟上课，来不及预习了。` }
   }
-  const literature = next === 9 * 60
+  const course = coursesForYear(currentYear(day)).find(
+    (c) => c.location === 'lecture' && c.start === next,
+  )
+  if (!course) {
+    return { ok: false, reason: '今天没有下一节课了。' }
+  }
   return {
     ok: true,
     minutes: available,
-    subject: literature ? '古典文学' : '法术导论',
-    skill: literature ? 'knowledge' : 'nature',
-    courseId: literature ? 'y1_literature' : 'y1_nature',
+    subject: course.name,
+    skill: course.skill,
+    courseId: course.id,
   }
 }
 
@@ -2238,14 +2368,27 @@ export function nextRentTotal(day: number, minutes: number): number {
 
 export function nextExamTotal(day: number, minutes: number): number | null {
   const t = absoluteMinutes(day, minutes)
-  const exams = [27, 55, 83, 139, 167, 195].map((d) => d * 1440 + 22 * 60)
-  return exams.find((x) => x > t) ?? null
+  const year = currentYear(day)
+  const candidates: number[] = []
+  for (let y = year; y <= Math.min(MAX_YEAR, year + 1); y++) {
+    for (const offset of EXAM_OFFSETS) {
+      candidates.push(((y - 1) * YEAR_DAYS + offset) * 1440 + 22 * 60)
+    }
+  }
+  return candidates.filter((x) => x > t).sort((a, b) => a - b)[0] ?? null
 }
 
-export function semesterEndFor(prevDay: number, day: number): 1 | 2 | null {
-  if (prevDay < SEMESTER_DAYS && day >= SEMESTER_DAYS) return 1
-  if (prevDay < SEMESTER_DAYS * 2 + HOLIDAY_DAYS && day >= SEMESTER_DAYS * 2 + HOLIDAY_DAYS) {
-    return 2
+export type ReportKey = { year: number; semester: 1 | 2 }
+
+export function semesterEndFor(prevDay: number, day: number): ReportKey | null {
+  for (let y = currentYear(prevDay); y <= currentYear(day); y++) {
+    const ends: Array<{ at: number; semester: 1 | 2 }> = [
+      { at: (y - 1) * YEAR_DAYS + SEMESTER_DAYS, semester: 1 },
+      { at: (y - 1) * YEAR_DAYS + SEMESTER_DAYS * 2 + HOLIDAY_DAYS, semester: 2 },
+    ]
+    for (const end of ends) {
+      if (prevDay < end.at && day >= end.at) return { year: y, semester: end.semester }
+    }
   }
   return null
 }

@@ -52,6 +52,10 @@ import {
   SLEEP_MAX_MINUTES,
   SLEEP_MIN_MINUTES,
   SLEEP_MIN_RECOVERY_MINUTES,
+  SLEEP_LOCATIONS,
+  TELEPORT_YEAR,
+  EXAM_OFFSETS,
+  MAX_YEAR,
   SKILL_LABEL,
   SOCIAL_MINUTES,
   SPELLS,
@@ -231,7 +235,17 @@ export function normalizeData(raw: GameData): GameData {
       lastAt: raw.events?.lastAt ?? -9999,
       seen: raw.events?.seen ?? [],
     },
-    pendingReport: raw.pendingReport ?? null,
+    pendingReport: (() => {
+      const report = raw.pendingReport as unknown
+      if (!report) return null
+      if (typeof report === 'number') {
+        return { year: 1, semester: report === 2 ? 2 : 1 }
+      }
+      if (typeof report === 'object' && 'year' in report && 'semester' in report) {
+        return report as { year: number; semester: 1 | 2 }
+      }
+      return null
+    })(),
     notice: raw.notice ?? '',
     storyStep: raw.storyStep ?? -1,
     storyDone: raw.storyDone ?? true,
@@ -345,10 +359,11 @@ function applyFaint(d: GameData, place?: string): void {
 
 function advanceTime(d: GameData, minutes: number): boolean {
   const beforeTotal = d.day * 1440 + d.minutes
+  const beforeDay = Math.floor(beforeTotal / 1440)
   const afterTotal = beforeTotal + minutes
   d.day = Math.floor(afterTotal / 1440)
   d.minutes = afterTotal % 1440
-  const daysPassed = d.day - Math.floor(beforeTotal / 1440)
+  const daysPassed = d.day - beforeDay
   for (let i = 0; i < daysPassed; i++) {
     if (d.mood > 60) d.mood = clamp(d.mood - 1, 0, 100)
   }
@@ -361,16 +376,30 @@ function advanceTime(d: GameData, minutes: number): boolean {
     if (b > beforeTotal) settleWeek(d)
   }
 
-  for (const day of [27, 55, 83, 139, 167, 195]) {
-    const b = day * 1440 + 22 * 60
-    if (b > beforeTotal && b <= afterTotal) runExam(d, day)
+  for (let y = 1; y <= MAX_YEAR; y++) {
+    for (const offset of EXAM_OFFSETS) {
+      const day = (y - 1) * YEAR_DAYS + offset
+      const b = day * 1440 + 22 * 60
+      if (b > beforeTotal && b <= afterTotal) runExam(d, day)
+    }
   }
 
-  if (d.day >= YEAR_DAYS && !d.flags.year2_notice) {
-    d.flags.year2_notice = true
-    const text = '第一学年结束了。第二学年内容尚未开放。'
+  if (beforeDay < YEAR_DAYS && d.day >= YEAR_DAYS) {
+    d.flags.year2_started = true
+    d.courseMastery = {}
+    const text = '第二学年开始了。边区支援项目在等你。'
     d.notice = d.notice ? `${d.notice} ${text}` : text
     pushLog(d, text)
+  } else if (d.day >= YEAR_DAYS && !d.flags.year2_started) {
+    d.flags.year2_started = true
+  }
+  if (beforeDay < YEAR_DAYS * 2 && d.day >= YEAR_DAYS * 2) {
+    d.flags.year3_notice = true
+    const text = '第二学年结束了。第三学年内容尚未开放。'
+    d.notice = d.notice ? `${d.notice} ${text}` : text
+    pushLog(d, text)
+  } else if (d.day >= YEAR_DAYS * 2 && !d.flags.year3_notice) {
+    d.flags.year3_notice = true
   }
 
   return d.day > Math.floor(beforeTotal / 1440)
@@ -497,6 +526,7 @@ type Store = {
   battleClose: () => void
 
   moveTo: (id: string) => void
+  teleport: (to: 'west' | 'town') => void
   eat: () => void
   rest: () => void
   sleep: (hours: number) => void
@@ -551,9 +581,12 @@ export const useGame = create<Store>((set, get) => {
     const msg = fn(next)
     const learned = maybeLearnSpells(next)
     const report = semesterEndFor(data.day, next.day)
-    if (report && !next.flags[`report_s${report}`]) {
-      next.flags[`report_s${report}`] = true
-      next.pendingReport = report
+    if (report) {
+      const key = `report_s${report.year}_${report.semester}`
+      if (!next.flags[key]) {
+        next.flags[key] = true
+        next.pendingReport = report
+      }
     }
     set({ data: next, message: learned ? (msg ? `${msg} ${learned}` : learned) : msg })
     if (next.day !== data.day) {
@@ -1074,9 +1107,12 @@ export const useGame = create<Store>((set, get) => {
         }
       }
       const report = semesterEndFor(data.day, next.day)
-      if (report && !next.flags[`report_s${report}`]) {
-        next.flags[`report_s${report}`] = true
-        next.pendingReport = report
+      if (report) {
+        const key = `report_s${report.year}_${report.semester}`
+        if (!next.flags[key]) {
+          next.flags[key] = true
+          next.pendingReport = report
+        }
       }
       const text =
         (battle.kind === 'wild'
@@ -1116,6 +1152,36 @@ export const useGame = create<Store>((set, get) => {
         }
         return text
       })
+      maybeEvent({ type: 'enter' })
+    },
+
+    teleport: (to) => {
+      const { data } = get()
+      if (currentYear(data.day) < TELEPORT_YEAR) {
+        set({ message: '传送阵还没有对你开放。' })
+        return
+      }
+      if (to === 'west') {
+        if (data.location !== 'teleportRoom') {
+          set({ message: '你需要到学院的传送室。' })
+          return
+        }
+        mutate((d) => {
+          d.location = 'westGate'
+          pushLog(d, '你站上传送阵，眼前一白，来到了边区小镇。')
+          return '你站上传送阵，眼前一白，来到了边区小镇镇口。'
+        })
+      } else {
+        if (data.location !== 'westGate') {
+          set({ message: '你需要到镇口的传送阵。' })
+          return
+        }
+        mutate((d) => {
+          d.location = 'teleportRoom'
+          pushLog(d, '你通过传送阵回到了长明学院。')
+          return '你通过传送阵回到了长明学院的传送室。'
+        })
+      }
       maybeEvent({ type: 'enter' })
     },
 
@@ -1167,8 +1233,8 @@ export const useGame = create<Store>((set, get) => {
     sleep: (hours) => {
       const { data } = get()
       const minutes = Math.round(hours * 60)
-      if (data.location !== 'dorm') {
-        set({ message: '你只能在自己的寝室睡觉。', modal: null })
+      if (!SLEEP_LOCATIONS.includes(data.location)) {
+        set({ message: '这里不能睡觉。', modal: null })
         return
       }
       if (minutes < SLEEP_MIN_MINUTES || minutes > SLEEP_MAX_MINUTES) {
@@ -1207,8 +1273,8 @@ export const useGame = create<Store>((set, get) => {
 
     sleepUntil: (targetMinutes) => {
       const { data } = get()
-      if (data.location !== 'dorm') {
-        set({ message: '你只能在自己的寝室睡觉。', modal: null })
+      if (!SLEEP_LOCATIONS.includes(data.location)) {
+        set({ message: '这里不能睡觉。', modal: null })
         return
       }
       let minutes = targetMinutes - data.minutes
