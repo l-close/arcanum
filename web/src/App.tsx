@@ -48,6 +48,7 @@ import {
   TAVERN_WORK_END,
   TAVERN_WORK_START,
   attackDamageRange,
+  areaNeighbors,
   classSegmentAt,
   courseById,
   coursesForYear,
@@ -64,6 +65,7 @@ import {
   getLocation,
   heartsText,
   isGateOpen,
+  isCityArea,
   isVacation,
   isTimeWindow,
   lecturePreviewPlan,
@@ -392,6 +394,7 @@ function GameScreen() {
                     {locationDesc(loc, data.minutes, data.day)}
                     {weatherText && <span className="weather-line">{weatherText}</span>}
                   </div>
+                  <CityMap location={data.location} />
                   {npcsHere.length > 0 && (
                     <div className="loc-npcs">现在在这里：{npcsHere.map((n) => n.short).join('、')}</div>
                   )}
@@ -916,6 +919,7 @@ function Actions({
   const listenTavern = useGame((s) => s.listenTavern)
   const pray = useGame((s) => s.pray)
   const meditate = useGame((s) => s.meditate)
+  const walkPlaza = useGame((s) => s.walkPlaza)
   const helpBackyard = useGame((s) => s.helpBackyard)
   const teleport = useGame((s) => s.teleport)
   const helpOrphanKids = useGame((s) => s.helpOrphanKids)
@@ -1048,6 +1052,7 @@ function Actions({
           <ActionBtn onClick={() => setModal('practice')} label="练习" cost="0.5 小时" />
         </>
       )}
+      {loc === 'town' && <ActionBtn onClick={walkPlaza} label="散步" cost="15 分钟 · 体力 -1" />}
       {(loc === 'dorm' || loc === 'westInn') && <ActionBtn onClick={() => setModal('sleep')} label="睡觉" cost="1 小时起" />}
       {loc === 'dorm' && <ActionBtn onClick={meditate} label="冥想" cost="1 小时" />}
       {loc === 'shop' && (
@@ -1312,6 +1317,37 @@ function ActionBtn({ label, cost, onClick }: { label: string; cost: string; onCl
   )
 }
 
+function CityMap({ location }: { location: string }) {
+  if (!isCityArea(location)) return null
+  const near = new Set(areaNeighbors(location))
+  const node = (id: string) => {
+    const loc = getLocation(id)
+    const state = id === location ? 'current' : near.has(id) ? 'near' : 'far'
+    return (
+      <span key={id} className={`map-node ${state}`}>
+        {loc.name}
+      </span>
+    )
+  }
+  return (
+    <div className="city-map" aria-label="银月城街区">
+      <div className="map-row">{node('churchStreet')}</div>
+      <div className="map-connector" />
+      <div className="map-row">
+        {node('orphanStreet')}
+        <span className="map-edge" />
+        {node('town')}
+        <span className="map-edge" />
+        {node('academyStreet')}
+      </div>
+      <div className="map-connector" />
+      <div className="map-row">{node('commercial')}</div>
+      <div className="map-connector" />
+      <div className="map-row">{node('gate')}</div>
+    </div>
+  )
+}
+
 function MoveList({ restrictedTarget }: { restrictedTarget?: string | null }) {
   const data = useGame((s) => s.data)
   const moveTo = useGame((s) => s.moveTo)
@@ -1320,13 +1356,14 @@ function MoveList({ restrictedTarget }: { restrictedTarget?: string | null }) {
 
   if (restrictedTarget) {
     const target = getLocation(restrictedTarget)
+    const step = exitsOf(data.location).find((e) => e.to === restrictedTarget)
     return (
       <div className="move-list">
         <div className="district">
           <div className="district-name">下一步</div>
           <button className="loc-btn" onClick={storyTravel}>
             <span>{target.name}</span>
-            <span className="loc-cost">5 分</span>
+            <span className="loc-cost">{step?.minutes ?? 5} 分</span>
           </button>
         </div>
       </div>
@@ -1338,16 +1375,10 @@ function MoveList({ restrictedTarget }: { restrictedTarget?: string | null }) {
     .map((e) => ({ loc: getLocation(e.to), minutes: e.minutes }))
 
   const children = exits.filter((e) => e.loc.parent === loc.id)
-  const siblingIds = new Set(
-    exits
-      .filter((e) => loc.parent !== undefined && e.loc.parent === loc.parent && e.loc.id !== loc.id)
-      .map((e) => e.loc.id),
-  )
-  const siblings = exits.filter((e) => siblingIds.has(e.loc.id))
-  const shown = new Set([...children, ...siblings].map((e) => e.loc.id))
-  const others = exits.filter(
-    (e) => !shown.has(e.loc.id) && !(e.loc.id === loc.parent && e.loc.kind === 'district'),
-  )
+  const back = exits.filter((e) => loc.parent !== undefined && e.loc.id === loc.parent)
+  const adjacent = exits.filter((e) => loc.kind === 'area' && e.loc.kind === 'area')
+  const shown = new Set([...children, ...back, ...adjacent].map((e) => e.loc.id))
+  const others = exits.filter((e) => !shown.has(e.loc.id))
 
   const item = (target: Location, minutes: number) => (
     <button key={target.id} className="loc-btn" onClick={() => moveTo(target.id)}>
@@ -1360,19 +1391,25 @@ function MoveList({ restrictedTarget }: { restrictedTarget?: string | null }) {
     <div className="move-list">
       {children.length > 0 && (
         <div className="district">
-          <div className="district-name">{loc.childLabel ?? '地点'}</div>
+          <div className="district-name">{loc.childLabel ?? '此处'}</div>
           {children.map((e) => item(e.loc, e.minutes))}
         </div>
       )}
-      {siblings.length > 0 && (
+      {adjacent.length > 0 && (
         <div className="district">
-          <div className="district-name">同区地点</div>
-          {siblings.map((e) => item(e.loc, e.minutes))}
+          <div className="district-name">相邻街区</div>
+          {adjacent.map((e) => item(e.loc, e.minutes))}
+        </div>
+      )}
+      {back.length > 0 && (
+        <div className="district">
+          <div className="district-name">返回</div>
+          {back.map((e) => item(e.loc, e.minutes))}
         </div>
       )}
       {others.length > 0 && (
         <div className="district">
-          <div className="district-name">{loc.kind === 'gate' ? '城门两侧' : '离开'}</div>
+          <div className="district-name">离开</div>
           {others.map((e) => item(e.loc, e.minutes))}
         </div>
       )}

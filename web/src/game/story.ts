@@ -35,7 +35,7 @@ export type StoryScene = {
 export const STORY: StoryScene[] = [
   {
     id: 'prologue',
-    time: 6 * 60,
+    time: 7 * 60 + 30,
     location: 'dorm',
     text: [
       '十岁那年的事，你已经不记得了。',
@@ -47,7 +47,7 @@ export const STORY: StoryScene[] = [
   },
   {
     id: 'morning',
-    time: 6 * 60,
+    time: 7 * 60 + 30,
     location: 'dorm',
     text: [
       '雾还没散。',
@@ -78,7 +78,7 @@ export const STORY: StoryScene[] = [
   },
   {
     id: 'breakfast',
-    time: 6 * 60 + 30,
+    time: 7 * 60 + 45,
     location: 'orphanCanteen',
     duration: 30,
     text: [
@@ -107,7 +107,7 @@ export const STORY: StoryScene[] = [
   },
   {
     id: 'pack',
-    time: 7 * 60,
+    time: 8 * 60 + 15,
     location: 'dorm',
     duration: 15,
     text: [
@@ -120,14 +120,14 @@ export const STORY: StoryScene[] = [
   },
   {
     id: 'walk',
-    time: 8 * 60 + 15,
+    time: 8 * 60 + 30,
     location: 'orphanage',
-    duration: 15,
+    duration: 5,
     text: [
       '你回房间收拾好课本。册子很旧，边角卷起。',
       '出门时，诺拉在门口叫住你，伸手替你理了理衣领。',
       '“路上小心。”',
-      '雾散了一些，石板路还是湿的。你沿着主街往城东走。店铺刚开门，面包房飘出热气，有人把一桶水泼在门口的石板上。',
+      '雾散了一些，石板路还是湿的。你沿着孤儿院街往东走，经过中央广场，再上学院街。店铺刚开门，面包房飘出热气，有人把一桶水泼在门口的石板上。',
       '长明学院在坡上，石阶被晨露打湿。你走上去的时候，钟声正好响了一下。',
       '学院比你想的要安静。石墙修得整齐，墙根的藤蔓被修剪过，顺着墙面往上爬。',
       '正门上方刻着一行符号。不是通用文字，也不像你在教会见过的任何经文。你看了一会儿，没看出什么，便跟着人群往里走。',

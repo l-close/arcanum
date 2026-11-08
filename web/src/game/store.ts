@@ -110,7 +110,8 @@ import {
   socialTier,
   spellDamageRange,
   spiritCost,
-  travelCost,
+  exitsOf,
+  ENTER_MINUTES,
   weekday,
 } from './content'
 import {
@@ -144,7 +145,7 @@ export function freshData(): GameData {
   return {
     version: 1,
     day: 0,
-    minutes: 6 * 60,
+    minutes: 7 * 60 + 30,
     location: 'dorm',
     money: 40,
     stamina: 100,
@@ -541,6 +542,7 @@ type Store = {
   battleClose: () => void
 
   moveTo: (id: string) => void
+  walkPlaza: () => void
   teleport: (to: 'west' | 'town') => void
   eat: () => void
   rest: () => void
@@ -840,7 +842,8 @@ export const useGame = create<Store>((set, get) => {
       const leg = storyRoute[0]
       const remaining = storyRoute.slice(1)
       const next = structuredClone(data)
-      advanceTime(next, 5)
+      const step = exitsOf(data.location).find((e) => e.to === leg)
+      advanceTime(next, step?.minutes ?? ENTER_MINUTES)
       next.location = leg
       pushLog(next, `你走到了${getLocation(leg).name}。`)
       set({ data: next, storyRoute: remaining, message: '' })
@@ -1150,11 +1153,16 @@ export const useGame = create<Store>((set, get) => {
       if (data.location === id) return
       const from = getLocation(data.location)
       const to = getLocation(id)
+      const edge = exitsOf(data.location).find((e) => e.to === id)
+      if (!edge) {
+        set({ message: '从这里走不过去。' })
+        return
+      }
       if (data.location === 'gate' && id === 'outside' && !isGateOpen(data.minutes)) {
         set({ message: '城门已经关了。' })
         return
       }
-      const cost = travelCost(data.location, id)
+      const cost = edge.minutes
       mutate((d) => {
         advanceTime(d, cost)
         d.location = id
@@ -1175,6 +1183,21 @@ export const useGame = create<Store>((set, get) => {
         return text
       })
       maybeEvent({ type: 'enter' })
+    },
+
+    walkPlaza: () => {
+      const { data } = get()
+      if (data.location !== 'town') {
+        set({ message: '这里不是广场。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, 15)
+        d.stamina = clamp(d.stamina - 1, 0, maxStamina(d.skills.physique.tier))
+        d.mood = clamp(d.mood + 1, 0, 100)
+        pushLog(d, '你在广场上走了一圈。')
+        return '你在广场上走了一圈。心情 +1。'
+      })
     },
 
     teleport: (to) => {

@@ -381,24 +381,44 @@ export type Location = {
   id: string
   name: string
   parent?: string
-  kind: 'zone' | 'district' | 'room' | 'gate'
+  kind: 'area' | 'venue' | 'room' | 'wild'
   childLabel?: string
   desc: string
 }
 
+export const ENTER_MINUTES = 2
+
 export const LOCATIONS: Location[] = [
   {
     id: 'town',
-    name: '银月城',
-    kind: 'zone',
-    childLabel: '可访问区域',
-    desc: '石板路被晨雾打湿，店铺刚开门。往东是长明学院的坡道，往西是孤儿院所在的小街。',
+    name: '中央广场',
+    kind: 'area',
+    childLabel: '广场',
+    desc: '广场中央有一座旧喷泉，四周是店铺和往来的行人。往东是学院街，往西是孤儿院街。',
+  },
+  {
+    id: 'academyStreet',
+    name: '学院街',
+    kind: 'area',
+    desc: '一条缓缓向上的坡道，尽头是长明学院的门楼。路上多是抱着书的学生。',
+  },
+  {
+    id: 'orphanStreet',
+    name: '孤儿院街',
+    kind: 'area',
+    desc: '一条窄小安静的街，墙根长着草，尽头是孤儿院的院门。',
+  },
+  {
+    id: 'churchStreet',
+    name: '教堂街',
+    kind: 'area',
+    desc: '钟声从街尽头传过来。教堂的尖顶立在屋顶之间，石阶被扫得很干净。',
   },
   {
     id: 'academy',
     name: '长明学院',
-    parent: 'town',
-    kind: 'district',
+    parent: 'academyStreet',
+    kind: 'venue',
     childLabel: '学院设施',
     desc: '石墙修得整齐，藤蔓顺着墙面往上爬。门内是一片铺着石板的庭院。',
   },
@@ -433,8 +453,8 @@ export const LOCATIONS: Location[] = [
   {
     id: 'orphanage',
     name: '孤儿院',
-    parent: 'town',
-    kind: 'district',
+    parent: 'orphanStreet',
+    kind: 'venue',
     childLabel: '房间',
     desc: '一栋旧但收拾得很干净的房子，门口有一小片菜地。',
   },
@@ -468,9 +488,8 @@ export const LOCATIONS: Location[] = [
   },
   {
     id: 'commercial',
-    name: '商业区',
-    parent: 'town',
-    kind: 'district',
+    name: '商业街',
+    kind: 'area',
     childLabel: '店铺',
     desc: '街道两侧开着店铺，招牌在风里轻轻晃。人来人往，比学院那边热闹。',
   },
@@ -498,8 +517,8 @@ export const LOCATIONS: Location[] = [
   {
     id: 'church',
     name: '教堂',
-    parent: 'town',
-    kind: 'district',
+    parent: 'churchStreet',
+    kind: 'venue',
     childLabel: '教堂设施',
     desc: '钟声从高处落下来。石阶被扫得很干净，门口站着一尊女性形象的神像。',
   },
@@ -527,15 +546,13 @@ export const LOCATIONS: Location[] = [
   {
     id: 'gate',
     name: '城门',
-    parent: 'town',
-    kind: 'gate',
-    childLabel: '城门',
+    kind: 'area',
     desc: '两扇厚重的木门嵌在石墙里，门洞上方刻着褪色的纹章。几名骑士守在两侧。',
   },
   {
     id: 'outside',
     name: '城外',
-    kind: 'zone',
+    kind: 'wild',
     childLabel: '城外地点',
     desc: '出了城门，风一下子大了。土路往南分岔，一边通向墓园，一边通向林子。',
   },
@@ -563,7 +580,7 @@ export const LOCATIONS: Location[] = [
   {
     id: 'westTown',
     name: '边区小镇',
-    kind: 'zone',
+    kind: 'wild',
     childLabel: '小镇地点',
     desc: '一座比银月城小得多的镇子，屋顶压得很低，风里带着湿土和柴烟的味道。',
   },
@@ -737,6 +754,72 @@ const SEASON_DESC: Record<string, SeasonDesc> = {
       '天还没亮透，街上的雪被踩成灰白的一层。',
       '石板路上的雪迟迟不化。',
       '街上很早就空了，只有几盏灯还亮着。',
+    ],
+  },
+  academyStreet: {
+    spring: [
+      '坡道两侧的树刚抽新芽，路面上落着几片湿叶子。学院的门楼在前方。',
+      '坡道上人来人往，抱着书的学生三三两两。学院门楼在前方。',
+      '坡道静了下来，学院门楼的灯还亮着。',
+    ],
+    summer: [
+      '天亮得早，坡道上已经有学生往学院走。树叶被晒得发亮。',
+      '日头很烈，坡道上升起一层薄薄的热气。',
+      '夜风从坡道上吹下来，带着一点白天的余温。',
+    ],
+    autumn: [
+      '坡道上落了一层黄叶，踩上去有细小的响声。',
+      '风把落叶卷到路边，学生裹紧了外衣。',
+      '坡道很暗，只有学院门楼亮着灯。',
+    ],
+    winter: [
+      '坡道上的雪被踩出几道脚印，学院门楼在雾里。',
+      '雪还在下，坡道上的人走得很快。',
+      '坡道结了薄冰，学院门楼的灯照出一小片光。',
+    ],
+  },
+  orphanStreet: {
+    spring: [
+      '小街很窄，墙根冒出新草。孤儿院的屋顶在前头。',
+      '有人把洗好的衣服晾在窗外，水滴在石板上。',
+      '小街只剩几盏灯，孤儿院的窗还亮着。',
+    ],
+    summer: [
+      '小街很安静，墙上的藤蔓被晒得发亮。',
+      '孩子们在街口跑来跑去，笑声传得很远。',
+      '小街闷热，有人坐在门口乘凉。',
+    ],
+    autumn: [
+      '落叶堆在墙根，风一吹就散开。',
+      '小街上有股柴火味，谁家在准备晚饭。',
+      '风穿过小街，把晾衣绳吹得轻轻响。',
+    ],
+    winter: [
+      '小街的雪没扫干净，脚印一直通到孤儿院门口。',
+      '屋檐下挂着冰棱，孩子们缩着脖子跑过。',
+      '小街很黑，只有孤儿院门口的灯亮着。',
+    ],
+  },
+  churchStreet: {
+    spring: [
+      '钟声从街尽头传过来，石阶上还留着晨露。',
+      '教堂的尖顶立在屋顶之间，街上的人放慢了脚步。',
+      '教堂的窗透出暖光，钟楼沉在夜色里。',
+    ],
+    summer: [
+      '早祷的钟声刚落，街上还很安静。',
+      '石墙被晒得发烫，教堂门口有人歇脚。',
+      '夜风从教堂那边吹来，带着蜡烛的味道。',
+    ],
+    autumn: [
+      '风把落叶扫到教堂石阶下。',
+      '钟声在秋日的街上显得格外清楚。',
+      '教堂的窗还亮着，街上的灯一盏盏熄灭。',
+    ],
+    winter: [
+      '石阶上结了霜，教堂门口有人在扫雪。',
+      '雪落在教堂的尖顶上，钟声听起来很远。',
+      '教堂的灯在雪夜里亮着，街上几乎没有人。',
     ],
   },
   academy: {
@@ -992,6 +1075,9 @@ export function locationDesc(loc: Location, minutes: number, day: number): strin
 
 const OUTDOOR = new Set([
   'town',
+  'academyStreet',
+  'orphanStreet',
+  'churchStreet',
   'academy',
   'orphanage',
   'commercial',
@@ -1094,6 +1180,84 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
       cloudy: '云层压着城墙，街上的雪被踩成灰白的泥。',
       overcast: '天色灰沉，呼出的白气散得很慢。',
       snow: '雪落在街心，脚印很快又被盖住。',
+    },
+  },
+  academyStreet: {
+    spring: {
+      sunny: '阳光落在坡道上，新叶的影子一晃一晃。',
+      cloudy: '云从学院门楼上空滑过，坡道忽明忽暗。',
+      overcast: '天色发灰，坡道上的学生走得比平时快。',
+      rain: '细雨打在坡道上，石板有些滑。',
+    },
+    summer: {
+      sunny: '日头直晒坡道，路面泛着白光。',
+      cloudy: '云挡住太阳，坡道上还是闷。',
+      overcast: '天色沉下来，远处有闷雷。',
+      rain: '骤雨砸在坡道上，学生挤在门楼下躲雨。',
+    },
+    autumn: {
+      sunny: '阳光穿过黄叶，坡道上落着碎金一样的光。',
+      cloudy: '风卷着落叶从坡道上滚下去。',
+      overcast: '天阴得早，学院门楼看上去灰蒙蒙的。',
+      rain: '冷雨打湿了坡道，落叶贴在石板上。',
+    },
+    winter: {
+      sunny: '雪后的坡道很亮，脚印一直通到学院门口。',
+      cloudy: '云压着学院门楼，雪还没化。',
+      overcast: '天光很淡，坡道上几乎没有人。',
+      snow: '雪落在坡道上，很快盖住了脚印。',
+    },
+  },
+  orphanStreet: {
+    spring: {
+      sunny: '阳光落在小街的墙上，新草从石缝里钻出来。',
+      cloudy: '云影扫过小街，晾着的衣服轻轻晃。',
+      overcast: '天色发灰，小街上的门都关着。',
+      rain: '细雨落在小街上，墙根积起小水洼。',
+    },
+    summer: {
+      sunny: '小街被晒得发白，孩子们躲在屋檐下。',
+      cloudy: '云把太阳挡住，小街还是闷得很。',
+      overcast: '天色暗下来，远处的雷声滚过。',
+      rain: '雨点砸在小街上，孩子们笑着往屋里跑。',
+    },
+    autumn: {
+      sunny: '阳光照在落叶上，小街一片暖黄。',
+      cloudy: '风把落叶吹到墙根，堆成一小堆。',
+      overcast: '小街阴沉沉的，谁家的烟囱冒着烟。',
+      rain: '冷雨打湿了小街，柴火味更重了。',
+    },
+    winter: {
+      sunny: '雪光映着小街，屋檐下挂着一排冰棱。',
+      cloudy: '云压得很低，小街的雪没有化。',
+      overcast: '天光很淡，小街上的脚印很少。',
+      snow: '雪落在小街上，孤儿院的灯显得很暖。',
+    },
+  },
+  churchStreet: {
+    spring: {
+      sunny: '阳光落在教堂的石墙上，钟楼的影子拉得很长。',
+      cloudy: '云从钟楼后面飘过，街上的光暗了一下。',
+      overcast: '天色发灰，教堂的尖顶看上去更冷。',
+      rain: '细雨落在石阶上，教堂门口有人在收伞。',
+    },
+    summer: {
+      sunny: '钟楼被晒得发白，石阶烫脚。',
+      cloudy: '云挡住太阳，教堂街安静下来。',
+      overcast: '天色闷沉，钟声传得很远。',
+      rain: '骤雨落在教堂街上，石阶很快湿透。',
+    },
+    autumn: {
+      sunny: '阳光穿过落叶，教堂的窗映出暖光。',
+      cloudy: '风把落叶扫到石阶下，钟声照常响。',
+      overcast: '天阴得早，教堂的窗更亮了。',
+      rain: '冷雨打在教堂街上，石阶一片湿滑。',
+    },
+    winter: {
+      sunny: '雪落在教堂的尖顶上，钟楼在阳光里发亮。',
+      cloudy: '云压着钟楼，街上的雪没有脚印。',
+      overcast: '天光很淡，教堂的窗透出一点暖色。',
+      snow: '雪落在石阶上，教堂门口的灯一直亮着。',
     },
   },
   academy: {
@@ -1746,137 +1910,44 @@ export function npcsAt(location: string, day: number, minutes: number): NpcDef[]
 
 export type Exit = { to: string; minutes: number }
 
-const EXITS: Record<string, Exit[]> = {
+const AREA_LINKS: Record<string, Exit[]> = {
   town: [
-    { to: 'academy', minutes: 5 },
-    { to: 'orphanage', minutes: 5 },
+    { to: 'orphanStreet', minutes: 5 },
+    { to: 'academyStreet', minutes: 5 },
     { to: 'commercial', minutes: 5 },
-    { to: 'church', minutes: 5 },
+    { to: 'churchStreet', minutes: 5 },
+  ],
+  orphanStreet: [{ to: 'town', minutes: 5 }],
+  academyStreet: [{ to: 'town', minutes: 5 }],
+  churchStreet: [{ to: 'town', minutes: 5 }],
+  commercial: [
+    { to: 'town', minutes: 5 },
     { to: 'gate', minutes: 5 },
   ],
-  academy: [
-    { to: 'lecture', minutes: 5 },
-    { to: 'library', minutes: 5 },
-    { to: 'canteen', minutes: 5 },
-    { to: 'yard', minutes: 5 },
-    { to: 'teleportRoom', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
-  lecture: [
-    { to: 'library', minutes: 5 },
-    { to: 'canteen', minutes: 5 },
-    { to: 'yard', minutes: 5 },
-    { to: 'academy', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
-  library: [
-    { to: 'lecture', minutes: 5 },
-    { to: 'canteen', minutes: 5 },
-    { to: 'yard', minutes: 5 },
-    { to: 'academy', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
-  canteen: [
-    { to: 'lecture', minutes: 5 },
-    { to: 'library', minutes: 5 },
-    { to: 'yard', minutes: 5 },
-    { to: 'academy', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
-  yard: [
-    { to: 'lecture', minutes: 5 },
-    { to: 'library', minutes: 5 },
-    { to: 'canteen', minutes: 5 },
-    { to: 'academy', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
-  orphanage: [
-    { to: 'dorm', minutes: 5 },
-    { to: 'orphanCanteen', minutes: 5 },
-    { to: 'backyard', minutes: 5 },
-    { to: 'office', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
-  dorm: [
-    { to: 'orphanCanteen', minutes: 5 },
-    { to: 'backyard', minutes: 5 },
-    { to: 'office', minutes: 5 },
-    { to: 'orphanage', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
-  orphanCanteen: [
-    { to: 'dorm', minutes: 5 },
-    { to: 'backyard', minutes: 5 },
-    { to: 'office', minutes: 5 },
-    { to: 'orphanage', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
-  backyard: [
-    { to: 'dorm', minutes: 5 },
-    { to: 'orphanCanteen', minutes: 5 },
-    { to: 'office', minutes: 5 },
-    { to: 'orphanage', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
-  office: [
-    { to: 'dorm', minutes: 5 },
-    { to: 'orphanCanteen', minutes: 5 },
-    { to: 'backyard', minutes: 5 },
-    { to: 'orphanage', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
-  commercial: [
-    { to: 'shop', minutes: 5 },
-    { to: 'weaponShop', minutes: 5 },
-    { to: 'tavern', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
-  shop: [
-    { to: 'weaponShop', minutes: 5 },
-    { to: 'tavern', minutes: 5 },
-    { to: 'commercial', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
-  weaponShop: [
-    { to: 'shop', minutes: 5 },
-    { to: 'tavern', minutes: 5 },
-    { to: 'commercial', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
-  tavern: [
-    { to: 'shop', minutes: 5 },
-    { to: 'weaponShop', minutes: 5 },
-    { to: 'commercial', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
-  church: [
-    { to: 'chapel', minutes: 5 },
-    { to: 'relief', minutes: 5 },
-    { to: 'bellTower', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
-  chapel: [
-    { to: 'relief', minutes: 5 },
-    { to: 'bellTower', minutes: 5 },
-    { to: 'church', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
-  relief: [
-    { to: 'chapel', minutes: 5 },
-    { to: 'bellTower', minutes: 5 },
-    { to: 'church', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
-  bellTower: [
-    { to: 'chapel', minutes: 5 },
-    { to: 'relief', minutes: 5 },
-    { to: 'church', minutes: 5 },
-    { to: 'town', minutes: 5 },
-  ],
   gate: [
-    { to: 'town', minutes: 5 },
+    { to: 'commercial', minutes: 5 },
     { to: 'outside', minutes: 5 },
   ],
+}
+
+export const CITY_AREA_IDS = [
+  'churchStreet',
+  'orphanStreet',
+  'town',
+  'academyStreet',
+  'commercial',
+  'gate',
+]
+
+export function isCityArea(id: string): boolean {
+  return CITY_AREA_IDS.includes(id)
+}
+
+export function areaNeighbors(id: string): string[] {
+  return (AREA_LINKS[id] ?? []).map((e) => e.to)
+}
+
+const LEGACY_EXITS: Record<string, Exit[]> = {
   outside: [
     { to: 'gate', minutes: 5 },
     { to: 'cemetery', minutes: 5 },
@@ -1889,9 +1960,6 @@ const EXITS: Record<string, Exit[]> = {
   forest: [
     { to: 'outside', minutes: 5 },
     { to: 'cemetery', minutes: 5 },
-  ],
-  teleportRoom: [
-    { to: 'academy', minutes: 5 },
   ],
   westTown: [
     { to: 'westGate', minutes: 5 },
@@ -1908,7 +1976,28 @@ const EXITS: Record<string, Exit[]> = {
 }
 
 export function exitsOf(id: string): Exit[] {
-  return EXITS[id] ?? []
+  const loc = getLocation(id)
+  if (loc.kind === 'area') {
+    const links = AREA_LINKS[id] ?? []
+    const children = LOCATIONS.filter((l) => l.parent === id).map((l) => ({
+      to: l.id,
+      minutes: ENTER_MINUTES,
+    }))
+    return [...links, ...children]
+  }
+  if (loc.kind === 'venue') {
+    const back = loc.parent ? [{ to: loc.parent, minutes: ENTER_MINUTES }] : []
+    const children = LOCATIONS.filter((l) => l.parent === id).map((l) => ({
+      to: l.id,
+      minutes: ENTER_MINUTES,
+    }))
+    return [...back, ...children]
+  }
+  if (loc.kind === 'room') {
+    if (LEGACY_EXITS[id]) return LEGACY_EXITS[id]
+    return loc.parent ? [{ to: loc.parent, minutes: ENTER_MINUTES }] : []
+  }
+  return LEGACY_EXITS[id] ?? []
 }
 
 function shortestPath(from: string, to: string): { minutes: number; path: string[] } | null {

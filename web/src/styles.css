@@ -353,6 +353,35 @@ button:disabled {
   font-size: 15px;
 }
 
+.city-map {
+  margin: 10px 0 2px;
+  padding: 10px 8px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.015);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.map-row { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.map-node {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.map-node.near { color: var(--text); border-color: rgba(255, 255, 255, 0.18); }
+.map-node.current {
+  color: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 0 10px rgba(201, 162, 39, 0.18);
+}
+.map-node.far { opacity: 0.4; }
+.map-edge { width: 18px; height: 1px; background: var(--line); }
+.map-connector { width: 1px; height: 10px; background: var(--line); }
+
 .loc-npcs {
   margin-top: 8px;
   color: var(--muted);
