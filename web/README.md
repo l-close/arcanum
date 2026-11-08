@@ -14,12 +14,16 @@ https://l-close.github.io/arcanum/
 
 ## Android APK
 
-APK 由 GitHub Actions 云构建，不需要本地 Android SDK：
+APK 由 GitHub Actions 云构建，不需要本地 Android SDK。默认**不随网页更新自动构建**：
 
 1. 打开仓库的 **Actions**
 2. 选择 **Build Android APK**
 3. 点 **Run workflow**，选择 `main`
 4. 构建完成后在该次运行页面下载 `arcanum-debug-apk`
+
+也可以用 `apk-vX.Y.Z` 标签触发；普通的 `vX.Y.Z` 标签只作网页版本记录，不会构建 APK。
+
+建议节奏：网页随时更新，APK 每 3–5 次网页更新或一次大功能完成后构建一次。
 
 这个 APK 使用 debug 签名，适合自己和朋友安装，不适合上架。
 
