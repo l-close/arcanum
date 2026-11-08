@@ -118,8 +118,21 @@ export function encodeBundle(bundle: SaveBundle): string {
 }
 
 export type BundleParseResult =
-  | { ok: true; bundle: SaveBundle }
+  | { ok: true; bundle: SaveBundle; upgraded: boolean }
   | { ok: false; reason: string }
+
+function parseVersion(value: string): number[] | null {
+  const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(value.trim())
+  if (!match) return null
+  return [Number(match[1]), Number(match[2]), Number(match[3])]
+}
+
+function compareVersion(a: number[], b: number[]): number {
+  for (let i = 0; i < 3; i += 1) {
+    if (a[i] !== b[i]) return a[i] < b[i] ? -1 : 1
+  }
+  return 0
+}
 
 export function parseBundleText(text: string): BundleParseResult {
   const trimmed = text.trim()
@@ -138,12 +151,33 @@ export function parseBundleText(text: string): BundleParseResult {
   if (!bundle || bundle.app !== SAVE_APP_ID) {
     return { ok: false, reason: '这不是 arcanum 的存档。' }
   }
-  if (bundle.version !== APP_VERSION) {
+
+  const savedRaw = typeof bundle.version === 'string' ? bundle.version : ''
+  const saved = parseVersion(savedRaw)
+  const current = parseVersion(APP_VERSION)
+  let upgraded = false
+  if (saved && current) {
+    if (saved[0] !== current[0]) {
+      return {
+        ok: false,
+        reason: `存档主版本 ${saved[0]}，当前主版本 ${current[0]}，无法导入。`,
+      }
+    }
+    const order = compareVersion(saved, current)
+    if (order > 0) {
+      return {
+        ok: false,
+        reason: `存档版本 ${savedRaw} 高于当前版本 ${APP_VERSION}，请更新游戏后再导入。`,
+      }
+    }
+    upgraded = order < 0
+  } else if (savedRaw !== APP_VERSION) {
     return {
       ok: false,
-      reason: `存档版本 ${bundle.version || '未知'}，当前版本 ${APP_VERSION}，无法导入。`,
+      reason: `存档版本 ${savedRaw || '未知'}，当前版本 ${APP_VERSION}，无法导入。`,
     }
   }
+
   if (bundle.kind !== 'current' && bundle.kind !== 'all') {
     return { ok: false, reason: '存档类型无法识别。' }
   }
@@ -153,7 +187,7 @@ export function parseBundleText(text: string): BundleParseResult {
   if (bundle.kind === 'all' && (!bundle.saves || typeof bundle.saves !== 'object')) {
     return { ok: false, reason: '存档内容不完整。' }
   }
-  return { ok: true, bundle }
+  return { ok: true, bundle, upgraded }
 }
 
 export function importCurrentToSlot(bundle: SaveBundle, slot: number): boolean {

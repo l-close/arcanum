@@ -1858,8 +1858,8 @@ function ExportPanel({ mode }: { mode: 'title' | 'game' }) {
 }
 
 type PendingImport =
-  | { kind: 'current'; slot: number; bundle: SaveBundle }
-  | { kind: 'all'; bundle: SaveBundle; written: number[]; removed: number[] }
+  | { kind: 'current'; slot: number; bundle: SaveBundle; upgraded: boolean }
+  | { kind: 'all'; bundle: SaveBundle; written: number[]; removed: number[]; upgraded: boolean }
   | null
 
 function ImportPanel({ mode }: { mode: 'title' | 'game' }) {
@@ -1886,7 +1886,7 @@ function ImportPanel({ mode }: { mode: 'title' | 'game' }) {
     reader.readAsText(file)
   }
 
-  const applyCurrent = (bundle: SaveBundle, target: number) => {
+  const applyCurrent = (bundle: SaveBundle, target: number, upgraded: boolean) => {
     if (!importCurrentToSlot(bundle, target)) {
       setError('写入失败，请检查浏览器存储空间。')
       return
@@ -1894,7 +1894,9 @@ function ImportPanel({ mode }: { mode: 'title' | 'game' }) {
     refreshSaves()
     setText('')
     setPending(null)
-    setStatus(`已导入当前进度到槽位 ${target}。`)
+    setStatus(
+      `已导入当前进度到槽位 ${target}。${upgraded ? ' 旧版本存档已自动补全字段。' : ''}`,
+    )
     setError('')
   }
 
@@ -1909,14 +1911,19 @@ function ImportPanel({ mode }: { mode: 'title' | 'game' }) {
       return
     }
     if (loadGame(slot)) {
-      setPending({ kind: 'current', slot, bundle: parsed.bundle })
+      setPending({
+        kind: 'current',
+        slot,
+        bundle: parsed.bundle,
+        upgraded: parsed.upgraded,
+      })
       setError('')
       return
     }
-    applyCurrent(parsed.bundle, slot)
+    applyCurrent(parsed.bundle, slot, parsed.upgraded)
   }
 
-  const applyAll = (bundle: SaveBundle) => {
+  const applyAll = (bundle: SaveBundle, upgraded: boolean) => {
     const plan = importAllSlots(bundle)
     refreshSaves()
     setText('')
@@ -1924,7 +1931,7 @@ function ImportPanel({ mode }: { mode: 'title' | 'game' }) {
     setStatus(
       `已导入 ${plan.written.length} 个槽位${
         plan.removed.length ? `，并删除 ${plan.removed.length} 个本机多余槽位` : ''
-      }。`,
+      }。${upgraded ? ' 旧版本存档已自动补全字段。' : ''}`,
     )
     setError('')
   }
@@ -1940,7 +1947,12 @@ function ImportPanel({ mode }: { mode: 'title' | 'game' }) {
       return
     }
     const plan = planAllImport(parsed.bundle)
-    setPending({ kind: 'all', bundle: parsed.bundle, ...plan })
+    setPending({
+      kind: 'all',
+      bundle: parsed.bundle,
+      ...plan,
+      upgraded: parsed.upgraded,
+    })
     setError('')
   }
 
@@ -2020,9 +2032,13 @@ function ImportPanel({ mode }: { mode: 'title' | 'game' }) {
         <div className="save-confirm danger">
           <div className="save-confirm-text">
             槽位 {pending.slot} 已有存档，导入后会覆盖，无法恢复。
+            {pending.upgraded ? ' 这是旧版本存档，导入后会自动补全字段。' : ''}
           </div>
           <div className="save-confirm-actions">
-            <button className="mini-btn danger" onClick={() => applyCurrent(pending.bundle, pending.slot)}>
+            <button
+              className="mini-btn danger"
+              onClick={() => applyCurrent(pending.bundle, pending.slot, pending.upgraded)}
+            >
               确认导入
             </button>
             <button className="mini-btn" onClick={() => setPending(null)}>
@@ -2040,9 +2056,10 @@ function ImportPanel({ mode }: { mode: 'title' | 'game' }) {
             {pending.removed.length
               ? `，并删除本机 ${pending.removed.length} 个不在备份中的槽位（槽位 ${pending.removed.join('、')}）。`
               : '，本机其余槽位保留。'}
+            {pending.upgraded ? ' 这是旧版本存档，导入后会自动补全字段。' : ''}
           </div>
           <div className="save-confirm-actions">
-            <button className="mini-btn danger" onClick={() => applyAll(pending.bundle)}>
+            <button className="mini-btn danger" onClick={() => applyAll(pending.bundle, pending.upgraded)}>
               确认导入
             </button>
             <button className="mini-btn" onClick={() => setPending(null)}>
