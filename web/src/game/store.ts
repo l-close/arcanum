@@ -481,7 +481,9 @@ function applyStoryEffects(d: GameData, e?: StoryEffects): void {
   if (e.location) d.location = e.location
 }
 
-type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | null
+type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | null
+
+type TitlePanel = 'saves' | 'export' | 'import' | null
 
 type Store = {
   screen: Screen
@@ -489,6 +491,7 @@ type Store = {
   data: GameData
   sidebarOpen: boolean
   modal: Modal
+  titlePanel: TitlePanel
   message: string
   savesRev: number
   storyReply: string[] | null
@@ -504,6 +507,7 @@ type Store = {
   continueGame: () => boolean
   toggleSidebar: () => void
   setModal: (m: Modal) => void
+  setTitlePanel: (p: TitlePanel) => void
   clearNotice: () => void
   clearMessage: () => void
   storyChoose: (index: number) => void
@@ -563,6 +567,8 @@ type Store = {
   saveSlot: (slot: number | 'auto') => void
   loadSlot: (slot: number | 'auto') => void
   removeSlot: (slot: number | 'auto') => void
+  refreshSaves: () => void
+  autosave: () => void
 
   debugMoney: () => void
   debugExp: () => void
@@ -715,6 +721,7 @@ export const useGame = create<Store>((set, get) => {
     data: freshData(),
     sidebarOpen: typeof window !== 'undefined' ? window.innerWidth > 860 : true,
     modal: null,
+    titlePanel: null,
     message: '',
     savesRev: 0,
     storyReply: null,
@@ -733,6 +740,7 @@ export const useGame = create<Store>((set, get) => {
         player: { name: name.trim() || '无名', gender },
         data,
         modal: null,
+        titlePanel: null,
         message: '',
         storyReply: null,
         storyNext: null,
@@ -753,6 +761,7 @@ export const useGame = create<Store>((set, get) => {
         player: s.player,
         data: normalizeData(s.data),
         modal: null,
+        titlePanel: null,
         message: '',
         storyReply: null,
         storyNext: null,
@@ -766,6 +775,7 @@ export const useGame = create<Store>((set, get) => {
     },
     toggleSidebar: () => set({ sidebarOpen: !get().sidebarOpen }),
     setModal: (modal) => set({ modal }),
+    setTitlePanel: (titlePanel) => set({ titlePanel }),
     clearNotice: () => {
       const next = structuredClone(get().data)
       next.notice = ''
@@ -2099,6 +2109,7 @@ export const useGame = create<Store>((set, get) => {
         player: s.player,
         data: normalizeData(s.data),
         modal: null,
+        titlePanel: null,
         message: '读取成功。',
         storyReply: null,
         storyNext: null,
@@ -2112,6 +2123,12 @@ export const useGame = create<Store>((set, get) => {
     removeSlot: (slot) => {
       deleteSave(slot)
       set({ savesRev: get().savesRev + 1, message: '已删除存档。' })
+    },
+    refreshSaves: () => set({ savesRev: get().savesRev + 1 }),
+    autosave: () => {
+      const { screen, battle, player, data } = get()
+      if (screen !== 'game' || battle) return
+      saveGame('auto', player, data)
     },
 
     debugMoney: () => mutate((d) => {
@@ -2166,6 +2183,7 @@ export const useGame = create<Store>((set, get) => {
         data: freshData(),
         player: { name: '', gender: 'male' },
         modal: null,
+        titlePanel: null,
         message: '',
         storyReply: null,
         storyNext: null,

@@ -96,30 +96,108 @@ import {
   weatherScene,
   WEATHER_LABEL,
 } from './game/content'
-import { formatSaveTime, listSaves, SLOT_COUNT } from './game/save'
+import { formatSaveTime, listSaves, loadGame, SLOT_COUNT } from './game/save'
+import {
+  buildAllBundle,
+  buildCurrentBundle,
+  downloadText,
+  encodeBundle,
+  importAllSlots,
+  importCurrentToSlot,
+  isAndroidRuntime,
+  parseBundleText,
+  planAllImport,
+  stampForFile,
+} from './game/save'
+import type { SaveBundle } from './game/save'
 import { EVENTS, choiceBlockedReason, eventById, eventEffectSummary } from './game/events'
 import { STORY } from './game/story'
 import type { Gender, SkillKey } from './game/types'
 import type { Location } from './game/content'
 import { ItemIcon } from './ui/icons'
+import { APP_VERSION } from './version'
 
 const CN = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
 
 export default function App() {
   const screen = useGame((s) => s.screen)
+
+  useEffect(() => setupAndroidBackButton(), [])
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') useGame.getState().autosave()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [])
+
   if (screen === 'title') return <TitleScreen />
   if (screen === 'create') return <CreateScreen />
   return <GameScreen />
+}
+
+function setupAndroidBackButton(): () => void {
+  let disposed = false
+  let remove: (() => void) | null = null
+  void (async () => {
+    try {
+      const { Capacitor } = await import('@capacitor/core')
+      if (!Capacitor.isNativePlatform()) return
+      const { App: NativeApp } = await import('@capacitor/app')
+      const handleBack = () => {
+        const state = useGame.getState()
+        if (state.screen === 'title') {
+          if (state.titlePanel) {
+            state.setTitlePanel(null)
+            return
+          }
+          void NativeApp.exitApp()
+          return
+        }
+        if (state.screen !== 'game') {
+          void NativeApp.minimizeApp()
+          return
+        }
+        if (state.modal) {
+          state.setModal(null)
+          return
+        }
+        if (state.battle) {
+          useGame.setState({ message: '战斗中无法离开。' })
+          return
+        }
+        void NativeApp.minimizeApp()
+      }
+      const backListener = await NativeApp.addListener('backButton', handleBack)
+      const stateListener = await NativeApp.addListener('appStateChange', ({ isActive }) => {
+        if (!isActive) useGame.getState().autosave()
+      })
+      remove = () => {
+        void backListener.remove()
+        void stateListener.remove()
+      }
+      if (disposed) remove()
+    } catch {
+      // 非安卓环境或插件不可用
+    }
+  })()
+  return () => {
+    disposed = true
+    remove?.()
+  }
 }
 
 function TitleScreen() {
   const setScreen = useGame((s) => s.setScreen)
   const continueGame = useGame((s) => s.continueGame)
   const savesRev = useGame((s) => s.savesRev)
+  const titlePanel = useGame((s) => s.titlePanel)
+  const setTitlePanel = useGame((s) => s.setTitlePanel)
   const [msg, setMsg] = useState('')
-  const [showSaves, setShowSaves] = useState(false)
   const saves = useMemo(() => listSaves(), [savesRev])
-  const hasAuto = saves.some((s) => s?.slot === 'auto')
+  const auto = useMemo(() => loadGame('auto'), [savesRev])
+  const hasAuto = auto !== null
   const hasAny = saves.some((s) => s !== null)
 
   return (
@@ -129,7 +207,7 @@ function TitleScreen() {
       <div className="title-actions">
         <button className="menu-btn" onClick={() => setScreen('create')}>开始新游戏</button>
         <button
-          className="menu-btn"
+          className={`menu-btn${hasAuto ? ' highlight' : ''}`}
           disabled={!hasAuto}
           onClick={() => {
             if (!continueGame()) setMsg('没有可用的自动存档。')
@@ -137,23 +215,32 @@ function TitleScreen() {
         >
           继续
         </button>
-        <button className="menu-btn" disabled={!hasAny} onClick={() => setShowSaves(true)}>
+        <button className="menu-btn" disabled={!hasAny} onClick={() => setTitlePanel('saves')}>
           读取存档
         </button>
       </div>
-      {msg && <div className="title-msg">{msg}</div>}
-      <div className="title-foot">文字驱动的沙盒生活模拟 · v2.0</div>
-
-      {showSaves && (
-        <div className="overlay" onClick={() => setShowSaves(false)}>
-          <div className="panel modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-head">
-              <span>读取存档</span>
-              <button className="close-btn" onClick={() => setShowSaves(false)}>×</button>
-            </div>
-            <SaveSlots mode="title" />
-          </div>
+      {auto && (
+        <div className="title-save-hint">
+          上次存档：{formatDate(auto.data.day)} · {semesterLabel(auto.data.day)} · {formatTime(auto.data.minutes)}
         </div>
+      )}
+      {msg && <div className="title-msg">{msg}</div>}
+      <div className="title-foot">文字驱动的沙盒生活模拟 · v{APP_VERSION}</div>
+
+      {titlePanel === 'saves' && (
+        <ModalShell title="读取存档" onClose={() => setTitlePanel(null)}>
+          <SaveSlots mode="title" onTransfer={(kind) => setTitlePanel(kind)} />
+        </ModalShell>
+      )}
+      {titlePanel === 'export' && (
+        <ModalShell title="导出存档" onClose={() => setTitlePanel('saves')}>
+          <ExportPanel mode="title" />
+        </ModalShell>
+      )}
+      {titlePanel === 'import' && (
+        <ModalShell title="导入存档" onClose={() => setTitlePanel('saves')}>
+          <ImportPanel mode="title" />
+        </ModalShell>
       )}
     </div>
   )
@@ -352,6 +439,8 @@ function GameScreen() {
       {modal === 'shop' && <ShopModal />}
       {modal === 'drinks' && <DrinkModal />}
       {modal === 'save' && <SavesModal />}
+      {modal === 'export' && <ExportModal />}
+      {modal === 'import' && <ImportModal />}
       {modal === 'log' && <LogModal />}
       {modal === 'debug' && <DebugModal />}
       {data.pendingReport !== null && <ReportCardModal />}
@@ -1464,15 +1553,21 @@ type PendingSaveAction = {
   slot: number | 'auto'
 } | null
 
-function SaveSlots({ mode }: { mode: 'title' | 'game' }) {
+function SaveSlots({ mode, onTransfer }: { mode: 'title' | 'game'; onTransfer?: (kind: 'export' | 'import') => void }) {
   const battle = useGame((s) => s.battle)
   const saveSlot = useGame((s) => s.saveSlot)
   const loadSlot = useGame((s) => s.loadSlot)
   const removeSlot = useGame((s) => s.removeSlot)
+  const setModal = useGame((s) => s.setModal)
   const savesRev = useGame((s) => s.savesRev)
   const saves = useMemo(() => listSaves(), [savesRev])
   const [pending, setPending] = useState<PendingSaveAction>(null)
   const isTitle = mode === 'title'
+
+  const openTransfer = (kind: 'export' | 'import') => {
+    if (onTransfer) onTransfer(kind)
+    else setModal(kind)
+  }
 
   const slotLabel = (slot: number | 'auto') => (slot === 'auto' ? '自动存档' : `槽位 ${slot}`)
 
@@ -1593,6 +1688,14 @@ function SaveSlots({ mode }: { mode: 'title' | 'game' }) {
           </div>
           {confirmBlock('auto', saves[SLOT_COUNT])}
         </div>
+        <div className="save-io-row">
+          <button className="mini-btn" onClick={() => openTransfer('export')}>
+            导出
+          </button>
+          <button className="mini-btn" onClick={() => openTransfer('import')}>
+            导入
+          </button>
+        </div>
       </div>
     </>
   )
@@ -1604,6 +1707,357 @@ function SavesModal() {
     <ModalShell title="存档" onClose={() => setModal(null)}>
       <SaveSlots mode="game" />
     </ModalShell>
+  )
+}
+
+function ExportModal() {
+  const setModal = useGame((s) => s.setModal)
+  return (
+    <ModalShell title="导出存档" onClose={() => setModal('save')}>
+      <ExportPanel mode="game" />
+    </ModalShell>
+  )
+}
+
+function ImportModal() {
+  const setModal = useGame((s) => s.setModal)
+  return (
+    <ModalShell title="导入存档" onClose={() => setModal('save')}>
+      <ImportPanel mode="game" />
+    </ModalShell>
+  )
+}
+
+function ExportPanel({ mode }: { mode: 'title' | 'game' }) {
+  const player = useGame((s) => s.player)
+  const data = useGame((s) => s.data)
+  const battle = useGame((s) => s.battle)
+  const [text, setText] = useState('')
+  const [status, setStatus] = useState('')
+  const [error, setError] = useState('')
+  const textRef = useRef<HTMLTextAreaElement>(null)
+  const android = isAndroidRuntime()
+  const canCurrent = mode === 'game' && !battle
+
+  const saveFile = (bundle: SaveBundle, name: string) => {
+    const filename = `arcanum-${name}-${stampForFile()}.json`
+    if (downloadText(filename, JSON.stringify(bundle, null, 2))) {
+      setStatus(`已导出文件：${filename}`)
+      setError('')
+    } else {
+      setError('文件导出失败，请改用文本导出。')
+    }
+  }
+
+  const makeCurrentText = () => {
+    setText(encodeBundle(buildCurrentBundle(player, data)))
+    setStatus('已生成当前进度的存档文本。')
+    setError('')
+  }
+
+  const makeAllText = () => {
+    setText(encodeBundle(buildAllBundle()))
+    setStatus('已生成全部手动槽位的存档文本。')
+    setError('')
+  }
+
+  const copyText = async () => {
+    if (!text) return
+    try {
+      await navigator.clipboard.writeText(text)
+      setStatus('已复制到剪贴板。')
+      setError('')
+      return
+    } catch {
+      // 退回手动选中复制
+    }
+    const node = textRef.current
+    if (node) {
+      node.focus()
+      node.select()
+      try {
+        if (document.execCommand('copy')) {
+          setStatus('已复制到剪贴板。')
+          setError('')
+          return
+        }
+      } catch {
+        // ignore
+      }
+    }
+    setError('复制失败，请手动选中文本复制。')
+  }
+
+  const actionRow = (onFile: () => void, onText: () => void) => (
+    <div className="io-actions">
+      {!android && (
+        <button className="mini-btn" onClick={onFile}>
+          导出文件
+        </button>
+      )}
+      <button className="mini-btn" onClick={onText}>
+        生成文本
+      </button>
+      {android && (
+        <button className="mini-btn" onClick={onFile}>
+          导出文件
+        </button>
+      )}
+    </div>
+  )
+
+  return (
+    <>
+      <div className="io-section">
+        <div className="io-title">当前进度</div>
+        {canCurrent ? (
+          actionRow(
+            () => saveFile(buildCurrentBundle(player, data), 'current'),
+            makeCurrentText,
+          )
+        ) : (
+          <div className="hint">
+            {mode === 'title' ? '标题界面没有进行中的进度。' : '战斗中无法导出当前进度。'}
+          </div>
+        )}
+      </div>
+
+      <div className="io-section">
+        <div className="io-title">全部手动槽位</div>
+        {actionRow(() => saveFile(buildAllBundle(), 'slots'), makeAllText)}
+      </div>
+
+      <p className="hint">自动存档不参与导出，只会导出当前进度与 10 个手动槽位。</p>
+      {android && <p className="hint">安卓上文件导出可能不可用，建议使用文本。</p>}
+
+      {text && (
+        <div className="io-section">
+          <div className="io-title">存档文本</div>
+          <textarea className="io-text" readOnly value={text} ref={textRef} />
+          <div className="io-actions">
+            <button className="mini-btn" onClick={copyText}>
+              复制文本
+            </button>
+            <button
+              className="mini-btn"
+              onClick={() => {
+                setText('')
+                setStatus('')
+              }}
+            >
+              清空
+            </button>
+          </div>
+        </div>
+      )}
+
+      {status && <p className="hint">{status}</p>}
+      {error && <p className="hint error-text">{error}</p>}
+    </>
+  )
+}
+
+type PendingImport =
+  | { kind: 'current'; slot: number; bundle: SaveBundle }
+  | { kind: 'all'; bundle: SaveBundle; written: number[]; removed: number[] }
+  | null
+
+function ImportPanel({ mode }: { mode: 'title' | 'game' }) {
+  const refreshSaves = useGame((s) => s.refreshSaves)
+  const [slot, setSlot] = useState(1)
+  const [text, setText] = useState('')
+  const [status, setStatus] = useState('')
+  const [error, setError] = useState('')
+  const [pending, setPending] = useState<PendingImport>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const android = isAndroidRuntime()
+
+  const readFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      setText(String(reader.result ?? ''))
+      setStatus(`已载入文件：${file.name}`)
+      setError('')
+      setPending(null)
+    }
+    reader.readAsText(file)
+  }
+
+  const applyCurrent = (bundle: SaveBundle, target: number) => {
+    if (!importCurrentToSlot(bundle, target)) {
+      setError('写入失败，请检查浏览器存储空间。')
+      return
+    }
+    refreshSaves()
+    setText('')
+    setPending(null)
+    setStatus(`已导入当前进度到槽位 ${target}。`)
+    setError('')
+  }
+
+  const startCurrent = () => {
+    const parsed = parseBundleText(text)
+    if (!parsed.ok) {
+      setError(parsed.reason)
+      return
+    }
+    if (parsed.bundle.kind !== 'current') {
+      setError('这是全部槽位的备份，请用「导入全部手动槽位」。')
+      return
+    }
+    if (loadGame(slot)) {
+      setPending({ kind: 'current', slot, bundle: parsed.bundle })
+      setError('')
+      return
+    }
+    applyCurrent(parsed.bundle, slot)
+  }
+
+  const applyAll = (bundle: SaveBundle) => {
+    const plan = importAllSlots(bundle)
+    refreshSaves()
+    setText('')
+    setPending(null)
+    setStatus(
+      `已导入 ${plan.written.length} 个槽位${
+        plan.removed.length ? `，并删除 ${plan.removed.length} 个本机多余槽位` : ''
+      }。`,
+    )
+    setError('')
+  }
+
+  const startAll = () => {
+    const parsed = parseBundleText(text)
+    if (!parsed.ok) {
+      setError(parsed.reason)
+      return
+    }
+    if (parsed.bundle.kind !== 'all') {
+      setError('这是单个进度的存档，请先选择槽位再导入。')
+      return
+    }
+    const plan = planAllImport(parsed.bundle)
+    setPending({ kind: 'all', bundle: parsed.bundle, ...plan })
+    setError('')
+  }
+
+  const fileBlock = (
+    <div className="io-actions">
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".json,.txt,application/json,text/plain"
+        onChange={readFile}
+        style={{ display: 'none' }}
+      />
+      <button className="mini-btn" onClick={() => fileRef.current?.click()}>
+        选择文件
+      </button>
+    </div>
+  )
+
+  const textBlock = (
+    <textarea
+      className="io-text"
+      value={text}
+      placeholder="粘贴存档文本（ARCANUM1: 开头）或完整的 JSON"
+      onChange={(e) => {
+        setText(e.target.value)
+        setPending(null)
+        setError('')
+      }}
+    />
+  )
+
+  return (
+    <>
+      <div className="io-section">
+        <div className="io-title">导入到槽位</div>
+        <select
+          className="io-select"
+          value={slot}
+          onChange={(e) => {
+            setSlot(Number(e.target.value))
+            setPending(null)
+          }}
+        >
+          {Array.from({ length: SLOT_COUNT }, (_, i) => i + 1).map((n) => (
+            <option key={n} value={n}>
+              槽位 {n}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="io-section">
+        <div className="io-title">存档来源</div>
+        {android ? (
+          <>
+            {textBlock}
+            {fileBlock}
+          </>
+        ) : (
+          <>
+            {fileBlock}
+            {textBlock}
+          </>
+        )}
+      </div>
+
+      <div className="io-actions">
+        <button className="primary-btn" onClick={startCurrent}>
+          导入当前进度到槽位 {slot}
+        </button>
+        <button className="mini-btn" onClick={startAll}>
+          导入全部手动槽位
+        </button>
+      </div>
+
+      {pending?.kind === 'current' && (
+        <div className="save-confirm danger">
+          <div className="save-confirm-text">
+            槽位 {pending.slot} 已有存档，导入后会覆盖，无法恢复。
+          </div>
+          <div className="save-confirm-actions">
+            <button className="mini-btn danger" onClick={() => applyCurrent(pending.bundle, pending.slot)}>
+              确认导入
+            </button>
+            <button className="mini-btn" onClick={() => setPending(null)}>
+              取消
+            </button>
+          </div>
+        </div>
+      )}
+
+      {pending?.kind === 'all' && (
+        <div className="save-confirm danger">
+          <div className="save-confirm-text">
+            将导入 {pending.written.length} 个槽位
+            {pending.written.length ? `（槽位 ${pending.written.join('、')}）` : ''}
+            {pending.removed.length
+              ? `，并删除本机 ${pending.removed.length} 个不在备份中的槽位（槽位 ${pending.removed.join('、')}）。`
+              : '，本机其余槽位保留。'}
+          </div>
+          <div className="save-confirm-actions">
+            <button className="mini-btn danger" onClick={() => applyAll(pending.bundle)}>
+              确认导入
+            </button>
+            <button className="mini-btn" onClick={() => setPending(null)}>
+              取消
+            </button>
+          </div>
+        </div>
+      )}
+
+      <p className="hint">自动存档不会被导入或覆盖。导入只影响 1–10 手动槽位。</p>
+      {mode === 'title' && <p className="hint">导入完成后，在列表里手动读取即可。</p>}
+      {android && <p className="hint">安卓上文件导入可能不可用，建议使用文本。</p>}
+      {status && <p className="hint">{status}</p>}
+      {error && <p className="hint error-text">{error}</p>}
+    </>
   )
 }
 

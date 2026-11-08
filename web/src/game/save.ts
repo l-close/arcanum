@@ -1,16 +1,37 @@
+import LZString from 'lz-string'
 import type { GameData, Player, SaveData } from './types'
+import { APP_VERSION } from '../version'
 
 export const SLOT_COUNT = 10
+export const SAVE_APP_ID = 'arcanum'
+export const SAVE_TEXT_PREFIX = 'ARCANUM1:'
 
-function key(slot: number | 'auto'): string {
+export type SaveSlot = number | 'auto'
+
+export type SaveBundle = {
+  app: 'arcanum'
+  version: string
+  kind: 'current' | 'all'
+  exportedAt: string
+  player?: Player
+  data?: GameData
+  saves?: Record<string, SaveData>
+}
+
+function key(slot: SaveSlot): string {
   return `arcanum_save_${slot}`
 }
 
-export function saveGame(slot: number | 'auto', player: Player, data: GameData): boolean {
+export function saveGame(
+  slot: SaveSlot,
+  player: Player,
+  data: GameData,
+  ts: number = Date.now(),
+): boolean {
   try {
     const payload: SaveData = {
-      ts: Date.now(),
-      player,
+      ts,
+      player: structuredClone(player),
       data: structuredClone(data),
     }
     localStorage.setItem(key(slot), JSON.stringify(payload))
@@ -20,7 +41,7 @@ export function saveGame(slot: number | 'auto', player: Player, data: GameData):
   }
 }
 
-export function loadGame(slot: number | 'auto'): SaveData | null {
+export function loadGame(slot: SaveSlot): SaveData | null {
   try {
     const raw = localStorage.getItem(key(slot))
     if (!raw) return null
@@ -32,7 +53,7 @@ export function loadGame(slot: number | 'auto'): SaveData | null {
   }
 }
 
-export function deleteSave(slot: number | 'auto'): void {
+export function deleteSave(slot: SaveSlot): void {
   try {
     localStorage.removeItem(key(slot))
   } catch {
@@ -59,4 +80,128 @@ export function formatSaveTime(ts: number): string {
   const d = new Date(ts)
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+export function isAndroidRuntime(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /Android/i.test(navigator.userAgent)
+}
+
+export function buildCurrentBundle(player: Player, data: GameData): SaveBundle {
+  return {
+    app: 'arcanum',
+    version: APP_VERSION,
+    kind: 'current',
+    exportedAt: new Date().toISOString(),
+    player: structuredClone(player),
+    data: structuredClone(data),
+  }
+}
+
+export function buildAllBundle(): SaveBundle {
+  const saves: Record<string, SaveData> = {}
+  for (let i = 1; i <= SLOT_COUNT; i += 1) {
+    const s = loadGame(i)
+    if (s) saves[String(i)] = s
+  }
+  return {
+    app: 'arcanum',
+    version: APP_VERSION,
+    kind: 'all',
+    exportedAt: new Date().toISOString(),
+    saves,
+  }
+}
+
+export function encodeBundle(bundle: SaveBundle): string {
+  return SAVE_TEXT_PREFIX + LZString.compressToBase64(JSON.stringify(bundle))
+}
+
+export type BundleParseResult =
+  | { ok: true; bundle: SaveBundle }
+  | { ok: false; reason: string }
+
+export function parseBundleText(text: string): BundleParseResult {
+  const trimmed = text.trim()
+  if (!trimmed) return { ok: false, reason: '还没有存档内容。' }
+  let raw: unknown
+  try {
+    const body = trimmed.startsWith(SAVE_TEXT_PREFIX)
+      ? LZString.decompressFromBase64(trimmed.slice(SAVE_TEXT_PREFIX.length))
+      : trimmed
+    if (!body) return { ok: false, reason: '存档文本不完整，无法解压。' }
+    raw = JSON.parse(body)
+  } catch {
+    return { ok: false, reason: '这段文本不是有效的存档。' }
+  }
+  const bundle = raw as SaveBundle
+  if (!bundle || bundle.app !== SAVE_APP_ID) {
+    return { ok: false, reason: '这不是 arcanum 的存档。' }
+  }
+  if (bundle.version !== APP_VERSION) {
+    return {
+      ok: false,
+      reason: `存档版本 ${bundle.version || '未知'}，当前版本 ${APP_VERSION}，无法导入。`,
+    }
+  }
+  if (bundle.kind !== 'current' && bundle.kind !== 'all') {
+    return { ok: false, reason: '存档类型无法识别。' }
+  }
+  if (bundle.kind === 'current' && (!bundle.player || !bundle.data)) {
+    return { ok: false, reason: '存档内容不完整。' }
+  }
+  if (bundle.kind === 'all' && (!bundle.saves || typeof bundle.saves !== 'object')) {
+    return { ok: false, reason: '存档内容不完整。' }
+  }
+  return { ok: true, bundle }
+}
+
+export function importCurrentToSlot(bundle: SaveBundle, slot: number): boolean {
+  if (!bundle.player || !bundle.data) return false
+  return saveGame(slot, bundle.player, bundle.data)
+}
+
+export type ImportPlan = { written: number[]; removed: number[] }
+
+export function planAllImport(bundle: SaveBundle): ImportPlan {
+  const written: number[] = []
+  const removed: number[] = []
+  for (let i = 1; i <= SLOT_COUNT; i += 1) {
+    if (bundle.saves?.[String(i)]) written.push(i)
+    else if (loadGame(i)) removed.push(i)
+  }
+  return { written, removed }
+}
+
+export function importAllSlots(bundle: SaveBundle): ImportPlan {
+  const plan = planAllImport(bundle)
+  for (let i = 1; i <= SLOT_COUNT; i += 1) {
+    const s = bundle.saves?.[String(i)]
+    if (s?.player && s?.data) saveGame(i, s.player, s.data, s.ts)
+    else deleteSave(i)
+  }
+  return plan
+}
+
+export function downloadText(filename: string, text: string, mime = 'application/json'): boolean {
+  try {
+    const blob = new Blob([text], { type: `${mime};charset=utf-8` })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function stampForFile(): string {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`
 }
