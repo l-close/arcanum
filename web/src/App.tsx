@@ -394,7 +394,6 @@ function GameScreen() {
                     {locationDesc(loc, data.minutes, data.day)}
                     {weatherText && <span className="weather-line">{weatherText}</span>}
                   </div>
-                  <CityMap location={data.location} />
                   {npcsHere.length > 0 && (
                     <div className="loc-npcs">现在在这里：{npcsHere.map((n) => n.short).join('、')}</div>
                   )}
@@ -415,6 +414,7 @@ function GameScreen() {
                       <MoveList restrictedTarget={inTransition ? storyRoute[0] ?? null : null} />
                     </>
                   )}
+                  <CityMap location={data.location} />
                 </>
               )}
             </>
