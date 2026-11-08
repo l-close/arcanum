@@ -115,10 +115,10 @@ export default function App() {
 function TitleScreen() {
   const setScreen = useGame((s) => s.setScreen)
   const continueGame = useGame((s) => s.continueGame)
-  const loadSlot = useGame((s) => s.loadSlot)
+  const savesRev = useGame((s) => s.savesRev)
   const [msg, setMsg] = useState('')
   const [showSaves, setShowSaves] = useState(false)
-  const saves = useMemo(() => listSaves(), [])
+  const saves = useMemo(() => listSaves(), [savesRev])
   const hasAuto = saves.some((s) => s?.slot === 'auto')
   const hasAny = saves.some((s) => s !== null)
 
@@ -151,26 +151,7 @@ function TitleScreen() {
               <span>读取存档</span>
               <button className="close-btn" onClick={() => setShowSaves(false)}>×</button>
             </div>
-            <div className="save-list">
-              {Array.from({ length: SLOT_COUNT }, (_, i) => i + 1).map((slot) => {
-                const s = saves[slot - 1]
-                if (!s) return null
-                return (
-                  <div className="save-row" key={slot}>
-                    <span className="save-slot">槽位 {slot}</span>
-                    <span className="save-info">{s.name} · {formatSaveTime(s.ts)}</span>
-                    <button className="mini-btn" onClick={() => loadSlot(slot)}>读取</button>
-                  </div>
-                )
-              })}
-              {saves[SLOT_COUNT] && (
-                <div className="save-row auto">
-                  <span className="save-slot">自动</span>
-                  <span className="save-info">{formatSaveTime(saves[SLOT_COUNT]!.ts)}</span>
-                  <button className="mini-btn" onClick={() => loadSlot('auto')}>读取</button>
-                </div>
-              )}
-            </div>
+            <SaveSlots mode="title" />
           </div>
         </div>
       )}
@@ -1483,8 +1464,7 @@ type PendingSaveAction = {
   slot: number | 'auto'
 } | null
 
-function SavesModal() {
-  const setModal = useGame((s) => s.setModal)
+function SaveSlots({ mode }: { mode: 'title' | 'game' }) {
   const battle = useGame((s) => s.battle)
   const saveSlot = useGame((s) => s.saveSlot)
   const loadSlot = useGame((s) => s.loadSlot)
@@ -1492,6 +1472,7 @@ function SavesModal() {
   const savesRev = useGame((s) => s.savesRev)
   const saves = useMemo(() => listSaves(), [savesRev])
   const [pending, setPending] = useState<PendingSaveAction>(null)
+  const isTitle = mode === 'title'
 
   const slotLabel = (slot: number | 'auto') => (slot === 'auto' ? '自动存档' : `槽位 ${slot}`)
 
@@ -1541,9 +1522,20 @@ function SavesModal() {
     )
   }
 
+  const doSave = (slot: number, existing: boolean) => {
+    if (isTitle) return
+    if (existing) setPending({ action: 'overwrite', slot })
+    else saveSlot(slot)
+  }
+
+  const doLoad = (slot: number | 'auto') => {
+    if (isTitle) loadSlot(slot)
+    else setPending({ action: 'load', slot })
+  }
+
   return (
-    <ModalShell title="存档" onClose={() => setModal(null)}>
-      {battle && <p className="hint">战斗中无法存档或读档。</p>}
+    <>
+      {battle && !isTitle && <p className="hint">战斗中无法存档或读档。</p>}
       <div className="save-list">
         {Array.from({ length: SLOT_COUNT }, (_, i) => i + 1).map((slot) => {
           const s = saves[slot - 1]
@@ -1554,18 +1546,15 @@ function SavesModal() {
                 <span className="save-info">{s ? `${s.name} · ${formatSaveTime(s.ts)}` : '空'}</span>
                 <button
                   className="mini-btn"
-                  onClick={() => {
-                    if (s) setPending({ action: 'overwrite', slot })
-                    else saveSlot(slot)
-                  }}
-                  disabled={!!battle}
+                  onClick={() => doSave(slot, !!s)}
+                  disabled={isTitle || !!battle}
                 >
                   保存
                 </button>
                 <button
                   className="mini-btn"
-                  onClick={() => setPending({ action: 'load', slot })}
-                  disabled={!s || !!battle}
+                  onClick={() => doLoad(slot)}
+                  disabled={!s || (!isTitle && !!battle)}
                 >
                   读取
                 </button>
@@ -1589,8 +1578,8 @@ function SavesModal() {
             </span>
             <button
               className="mini-btn"
-              onClick={() => setPending({ action: 'load', slot: 'auto' })}
-              disabled={!saves[SLOT_COUNT] || !!battle}
+              onClick={() => doLoad('auto')}
+              disabled={!saves[SLOT_COUNT] || (!isTitle && !!battle)}
             >
               读取
             </button>
@@ -1605,6 +1594,15 @@ function SavesModal() {
           {confirmBlock('auto', saves[SLOT_COUNT])}
         </div>
       </div>
+    </>
+  )
+}
+
+function SavesModal() {
+  const setModal = useGame((s) => s.setModal)
+  return (
+    <ModalShell title="存档" onClose={() => setModal(null)}>
+      <SaveSlots mode="game" />
     </ModalShell>
   )
 }
