@@ -387,6 +387,7 @@ export type Location = {
 }
 
 export const ENTER_MINUTES = 2
+export const ROOM_MINUTES = 1
 
 export const LOCATIONS: Location[] = [
   {
@@ -394,25 +395,25 @@ export const LOCATIONS: Location[] = [
     name: '中央广场',
     kind: 'area',
     childLabel: '广场',
-    desc: '广场中央有一座旧喷泉，四周是店铺和往来的行人。往东是学院街，往西是孤儿院街。',
+    desc: '广场中央有一座旧喷泉，四周是店铺和往来的行人。往东是学院区，往西是孤儿院。',
   },
   {
     id: 'academyStreet',
-    name: '学院街',
+    name: '学院区',
     kind: 'area',
-    desc: '一条缓缓向上的坡道，尽头是长明学院的门楼。路上多是抱着书的学生。',
+    desc: '缓坡向上，尽头是长明学院的门楼。这一带多是抱着书的学生。',
   },
   {
     id: 'orphanStreet',
-    name: '孤儿院街',
+    name: '孤儿院',
     kind: 'area',
-    desc: '一条窄小安静的街，墙根长着草，尽头是孤儿院的院门。',
+    desc: '一片安静的地方，墙根长着草，尽头是孤儿院的院门。',
   },
   {
     id: 'churchStreet',
-    name: '教堂街',
+    name: '教堂',
     kind: 'area',
-    desc: '钟声从街尽头传过来。教堂的尖顶立在屋顶之间，石阶被扫得很干净。',
+    desc: '钟声从教堂的尖顶传下来，门前石阶被扫得很干净。',
   },
   {
     id: 'academy',
@@ -452,11 +453,11 @@ export const LOCATIONS: Location[] = [
   },
   {
     id: 'orphanage',
-    name: '孤儿院',
+    name: '孤儿院正厅',
     parent: 'orphanStreet',
     kind: 'venue',
     childLabel: '房间',
-    desc: '一栋旧但收拾得很干净的房子，门口有一小片菜地。',
+    desc: '一栋旧但收拾得很干净的房子。正厅里摆着几张矮凳，墙上挂着孩子们的字。',
   },
   {
     id: 'dorm',
@@ -488,10 +489,10 @@ export const LOCATIONS: Location[] = [
   },
   {
     id: 'commercial',
-    name: '商业街',
+    name: '商业区',
     kind: 'area',
     childLabel: '店铺',
-    desc: '街道两侧开着店铺，招牌在风里轻轻晃。人来人往，比学院那边热闹。',
+    desc: '两侧开着店铺，招牌在风里轻轻晃。人来人往，比学院那边热闹。',
   },
   {
     id: 'shop',
@@ -516,11 +517,11 @@ export const LOCATIONS: Location[] = [
   },
   {
     id: 'church',
-    name: '教堂',
+    name: '教堂内堂',
     parent: 'churchStreet',
     kind: 'venue',
     childLabel: '教堂设施',
-    desc: '钟声从高处落下来。石阶被扫得很干净，门口站着一尊女性形象的神像。',
+    desc: '门内的光线暗下来，空气里有蜡烛和旧木头的气味。',
   },
   {
     id: 'chapel',
@@ -615,9 +616,9 @@ export function timePeriod(minutes: number): 0 | 1 | 2 {
 
 const DESC_BY_TIME: Record<string, [string, string, string]> = {
   town: [
-    '石板路被晨雾打湿，店铺刚开门。往东是长明学院的坡道，往西是孤儿院所在的小街。',
-    '石板路被日头晒得发白，挑担的人从街口穿过。往东是学院的坡道，往西是孤儿院所在的小街。',
-    '街灯一盏盏亮着，石板路上只剩零星脚步。东边的学院沉在暗处，西边的小街早没了人声。',
+    '石板路被晨雾打湿，店铺刚开门。往东是长明学院的坡道，往西是孤儿院。',
+    '石板路被日头晒得发白，挑担的人从街口穿过。往东是学院区的坡道，往西是孤儿院。',
+    '街灯一盏盏亮着，石板路上只剩零星脚步。东边的学院沉在暗处，西边的孤儿院早没了人声。',
   ],
   academy: [
     '石墙修得整齐，藤蔓上还挂着露水。门内是一片铺着石板的庭院。',
@@ -780,24 +781,24 @@ const SEASON_DESC: Record<string, SeasonDesc> = {
   },
   orphanStreet: {
     spring: [
-      '小街很窄，墙根冒出新草。孤儿院的屋顶在前头。',
+      '这一带很窄，墙根冒出新草。孤儿院的屋顶在前头。',
       '有人把洗好的衣服晾在窗外，水滴在石板上。',
-      '小街只剩几盏灯，孤儿院的窗还亮着。',
+      '这一带只剩几盏灯，孤儿院的窗还亮着。',
     ],
     summer: [
-      '小街很安静，墙上的藤蔓被晒得发亮。',
+      '这一带很安静，墙上的藤蔓被晒得发亮。',
       '孩子们在街口跑来跑去，笑声传得很远。',
-      '小街闷热，有人坐在门口乘凉。',
+      '这一带闷热，有人坐在门口乘凉。',
     ],
     autumn: [
       '落叶堆在墙根，风一吹就散开。',
-      '小街上有股柴火味，谁家在准备晚饭。',
-      '风穿过小街，把晾衣绳吹得轻轻响。',
+      '这一带上有股柴火味，谁家在准备晚饭。',
+      '风穿过这一带，把晾衣绳吹得轻轻响。',
     ],
     winter: [
-      '小街的雪没扫干净，脚印一直通到孤儿院门口。',
+      '这一带的雪没扫干净，脚印一直通到孤儿院门口。',
       '屋檐下挂着冰棱，孩子们缩着脖子跑过。',
-      '小街很黑，只有孤儿院门口的灯亮着。',
+      '这一带很黑，只有孤儿院门口的灯亮着。',
     ],
   },
   churchStreet: {
@@ -1210,28 +1211,28 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
   },
   orphanStreet: {
     spring: {
-      sunny: '阳光落在小街的墙上，新草从石缝里钻出来。',
-      cloudy: '云影扫过小街，晾着的衣服轻轻晃。',
-      overcast: '天色发灰，小街上的门都关着。',
-      rain: '细雨落在小街上，墙根积起小水洼。',
+      sunny: '阳光落在这一带的墙上，新草从石缝里钻出来。',
+      cloudy: '云影扫过这一带，晾着的衣服轻轻晃。',
+      overcast: '天色发灰，这一带上的门都关着。',
+      rain: '细雨落在这一带上，墙根积起小水洼。',
     },
     summer: {
-      sunny: '小街被晒得发白，孩子们躲在屋檐下。',
-      cloudy: '云把太阳挡住，小街还是闷得很。',
+      sunny: '这一带被晒得发白，孩子们躲在屋檐下。',
+      cloudy: '云把太阳挡住，这一带还是闷得很。',
       overcast: '天色暗下来，远处的雷声滚过。',
-      rain: '雨点砸在小街上，孩子们笑着往屋里跑。',
+      rain: '雨点砸在这一带上，孩子们笑着往屋里跑。',
     },
     autumn: {
-      sunny: '阳光照在落叶上，小街一片暖黄。',
+      sunny: '阳光照在落叶上，这一带一片暖黄。',
       cloudy: '风把落叶吹到墙根，堆成一小堆。',
-      overcast: '小街阴沉沉的，谁家的烟囱冒着烟。',
-      rain: '冷雨打湿了小街，柴火味更重了。',
+      overcast: '这一带阴沉沉的，谁家的烟囱冒着烟。',
+      rain: '冷雨打湿了这一带，柴火味更重了。',
     },
     winter: {
-      sunny: '雪光映着小街，屋檐下挂着一排冰棱。',
-      cloudy: '云压得很低，小街的雪没有化。',
-      overcast: '天光很淡，小街上的脚印很少。',
-      snow: '雪落在小街上，孤儿院的灯显得很暖。',
+      sunny: '雪光映着这一带，屋檐下挂着一排冰棱。',
+      cloudy: '云压得很低，这一带的雪没有化。',
+      overcast: '天光很淡，这一带上的脚印很少。',
+      snow: '雪落在这一带上，孤儿院的灯显得很暖。',
     },
   },
   churchStreet: {
@@ -1243,15 +1244,15 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     },
     summer: {
       sunny: '钟楼被晒得发白，石阶烫脚。',
-      cloudy: '云挡住太阳，教堂街安静下来。',
+      cloudy: '云挡住太阳，教堂外安静下来。',
       overcast: '天色闷沉，钟声传得很远。',
-      rain: '骤雨落在教堂街上，石阶很快湿透。',
+      rain: '骤雨落在教堂外上，石阶很快湿透。',
     },
     autumn: {
       sunny: '阳光穿过落叶，教堂的窗映出暖光。',
       cloudy: '风把落叶扫到石阶下，钟声照常响。',
       overcast: '天阴得早，教堂的窗更亮了。',
-      rain: '冷雨打在教堂街上，石阶一片湿滑。',
+      rain: '冷雨打在教堂外上，石阶一片湿滑。',
     },
     winter: {
       sunny: '雪落在教堂的尖顶上，钟楼在阳光里发亮。',
@@ -1989,13 +1990,13 @@ export function exitsOf(id: string): Exit[] {
     const back = loc.parent ? [{ to: loc.parent, minutes: ENTER_MINUTES }] : []
     const children = LOCATIONS.filter((l) => l.parent === id).map((l) => ({
       to: l.id,
-      minutes: ENTER_MINUTES,
+      minutes: ROOM_MINUTES,
     }))
     return [...back, ...children]
   }
   if (loc.kind === 'room') {
     if (LEGACY_EXITS[id]) return LEGACY_EXITS[id]
-    return loc.parent ? [{ to: loc.parent, minutes: ENTER_MINUTES }] : []
+    return loc.parent ? [{ to: loc.parent, minutes: ROOM_MINUTES }] : []
   }
   return LEGACY_EXITS[id] ?? []
 }

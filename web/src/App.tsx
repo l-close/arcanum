@@ -1391,13 +1391,13 @@ function MoveList({ restrictedTarget }: { restrictedTarget?: string | null }) {
     <div className="move-list">
       {children.length > 0 && (
         <div className="district">
-          <div className="district-name">{loc.childLabel ?? '此处'}</div>
+          <div className="district-name">可访问地点</div>
           {children.map((e) => item(e.loc, e.minutes))}
         </div>
       )}
       {adjacent.length > 0 && (
         <div className="district">
-          <div className="district-name">相邻街区</div>
+          <div className="district-name">其他区域</div>
           {adjacent.map((e) => item(e.loc, e.minutes))}
         </div>
       )}
