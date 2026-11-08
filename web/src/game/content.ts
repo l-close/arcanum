@@ -1439,6 +1439,28 @@ export const SOCIAL_DAILY_GAIN = 1
 export const SLEEP_LOCATIONS: string[] = ['dorm', 'westInn']
 export const TELEPORT_YEAR = 2
 
+export const MEDITATION_MINUTES = 60
+export const MEDITATION_WILL_GAIN = 2
+export const MEDITATION_LOCATIONS: string[] = ['dorm', 'chapel']
+
+const MEDITATION_SCENES: Record<string, [string, string, string]> = {
+  dorm: [
+    '晨光从窗帘缝里漏进来。你坐在床边，听着院子里渐渐有了声响。',
+    '寝室里没有人，走廊偶尔传来脚步。你靠着床沿，把呼吸放慢。',
+    '屋里只亮着一盏小灯。你盘腿坐在床上，让一天的杂音慢慢沉下去。',
+  ],
+  chapel: [
+    '祷告厅里还留着昨夜的凉意。你坐在最后一排，听晨光一点点落进来。',
+    '彩窗把光切成几块，落在地面上。你闭上眼，让呼吸跟着光斑移动。',
+    '烛火轻轻晃着，厅里只剩下你和影子。你坐了很久，什么也没有想。',
+  ],
+}
+
+export function meditationScene(location: string, minutes: number): string {
+  const table = MEDITATION_SCENES[location]
+  return table ? table[timePeriod(minutes)] : '你安静地坐了一会儿。'
+}
+
 export const ACADEMY_MEAL_FEE = 2
 export const SUMMER_RITE_DAY = 104
 export const WINTER_RITE_DAY = 216
@@ -2091,6 +2113,10 @@ export type CourseDef = {
   location: 'lecture' | 'yard'
   start: number
   end: number
+  /** 体术类课程按星期在格斗与剑术之间轮换 */
+  rotate?: boolean
+  /** 单双周轮换预留，暂未启用 */
+  weekParity?: 'odd' | 'even'
 }
 
 export const COURSES: CourseDef[] = [
@@ -2123,37 +2149,47 @@ export const COURSES: CourseDef[] = [
     location: 'yard',
     start: 15 * 60 + 30,
     end: 17 * 60 + 30,
+    rotate: true,
   },
-  // 第二学年占位课程，名称与技能待定稿
   {
-    id: 'y2_course_a',
+    id: 'y2_history',
     year: 2,
-    name: '二年级课程一',
+    name: '王国史',
     skill: 'knowledge',
     kind: 'literature',
     location: 'lecture',
-    start: 9 * 60,
-    end: 11 * 60,
+    start: 8 * 60,
+    end: 9 * 60 + 30,
   },
   {
-    id: 'y2_course_b',
+    id: 'y2_advanced_nature',
     year: 2,
-    name: '二年级课程二',
+    name: '法术进阶',
     skill: 'nature',
     kind: 'nature',
     location: 'lecture',
-    start: 13 * 60,
-    end: 15 * 60,
+    start: 10 * 60,
+    end: 11 * 60 + 30,
   },
   {
-    id: 'y2_course_c',
+    id: 'y2_sword',
     year: 2,
-    name: '二年级课程三',
-    skill: 'brawl',
+    name: '高阶剑术',
+    skill: 'sword',
     kind: 'physical',
     location: 'yard',
-    start: 15 * 60 + 30,
-    end: 17 * 60 + 30,
+    start: 13 * 60,
+    end: 14 * 60 + 30,
+  },
+  {
+    id: 'y2_course_4',
+    year: 2,
+    name: '课程4',
+    skill: 'knowledge',
+    kind: 'literature',
+    location: 'lecture',
+    start: 15 * 60,
+    end: 16 * 60 + 30,
   },
 ]
 
@@ -2168,8 +2204,8 @@ export const EXAM_OFFSETS = [27, 55, 83, 139, 167, 195]
 
 const YEAR_THRESHOLDS: Record<number, number[]> = {
   1: [20, 60, 100, 120, 160, 200],
-  // 第二学年考试线待平衡
-  2: [20, 60, 100, 120, 160, 200],
+  // 第二学年每门课每天 3 段，考试线按 0.7 缩放
+  2: [15, 40, 70, 85, 110, 140],
 }
 
 const YEAR_LABEL: Record<number, string> = {
@@ -2246,6 +2282,7 @@ export function nextExamThreshold(day: number, minutes: number): number | null {
 
 export type ClassSegment = {
   subject: string
+  label: string
   skill: SkillKey
   extraSkill?: SkillKey
   courseId: string
@@ -2269,15 +2306,17 @@ export function classSegmentAt(location: string, minutes: number, day: number): 
   let skill = course.skill
   let extraSkill: SkillKey | undefined
   if (course.kind === 'physical') {
-    skill = wd === 0 || wd === 2 || wd === 4 ? 'brawl' : 'sword'
+    if (course.rotate) skill = wd === 0 || wd === 2 || wd === 4 ? 'brawl' : 'sword'
     extraSkill = 'physique'
   }
+  const label = course.rotate ? `${course.name} · ${SKILL_LABEL[skill]}` : course.name
 
   const index = Math.floor((minutes - course.start) / 30)
   const segmentStart = course.start + index * 30
   const segmentEnd = Math.min(segmentStart + 30, course.end)
   return {
     subject: course.name,
+    label,
     skill,
     extraSkill,
     courseId: course.id,
@@ -2287,6 +2326,19 @@ export function classSegmentAt(location: string, minutes: number, day: number): 
     segmentEnd,
     index,
   }
+}
+
+/** 自习与练习对应的当前学年课程；没有对应课程时返回 null */
+export function masteryCourseForSkill(skill: SkillKey, day: number): string | null {
+  const courses = coursesForYear(currentYear(day))
+  if (skill === 'brawl' || skill === 'sword') {
+    const physical = courses.find(
+      (c) => c.kind === 'physical' && (c.rotate || c.skill === skill),
+    )
+    return physical?.id ?? null
+  }
+  const match = courses.find((c) => c.kind !== 'physical' && c.skill === skill)
+  return match?.id ?? null
 }
 
 export function classWindowAt(

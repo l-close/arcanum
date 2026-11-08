@@ -915,6 +915,7 @@ function Actions({
   const workTavern = useGame((s) => s.workTavern)
   const listenTavern = useGame((s) => s.listenTavern)
   const pray = useGame((s) => s.pray)
+  const meditate = useGame((s) => s.meditate)
   const helpBackyard = useGame((s) => s.helpBackyard)
   const teleport = useGame((s) => s.teleport)
   const helpOrphanKids = useGame((s) => s.helpOrphanKids)
@@ -946,7 +947,7 @@ function Actions({
     <>
       <ActionBtn
         onClick={attendClass}
-        label={`${physicalClass ? '训练' : '听课'} · ${segment.subject}`}
+        label={`${physicalClass ? '训练' : '听课'} · ${segment.label}`}
         cost={
           remain >= 15
             ? `${remain} 分钟 · ${physicalClass ? '体力 -3' : `精神 -${spiritCost(2, data.mood)}`}`
@@ -1048,6 +1049,7 @@ function Actions({
         </>
       )}
       {(loc === 'dorm' || loc === 'westInn') && <ActionBtn onClick={() => setModal('sleep')} label="睡觉" cost="1 小时起" />}
+      {loc === 'dorm' && <ActionBtn onClick={meditate} label="冥想" cost="1 小时" />}
       {loc === 'shop' && (
         <>
           <ActionBtn onClick={() => setModal('shop')} label="购买" cost="—" />
@@ -1100,6 +1102,7 @@ function Actions({
           )
         })()}
       {loc === 'chapel' && <ActionBtn onClick={pray} label="祷告" cost="0.5 小时" />}
+      {loc === 'chapel' && <ActionBtn onClick={meditate} label="冥想" cost="1 小时" />}
       {loc === 'relief' &&
         (() => {
           if (!isTimeWindow(data.minutes, RELIEF_OPEN_START, RELIEF_OPEN_END)) {
@@ -1485,7 +1488,7 @@ function StudyModal() {
     <ModalShell title="自习" onClose={() => close(null)}>
       <p className="muted">选择一项内容，花 0.5 小时。</p>
       <div className="btn-grid">
-        <button className="choice-btn" onClick={() => study('knowledge')}>古典文学</button>
+        <button className="choice-btn" onClick={() => study('knowledge')}>学识</button>
         <button className="choice-btn" onClick={() => study('nature')}>自然系</button>
       </div>
     </ModalShell>

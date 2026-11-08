@@ -56,6 +56,10 @@ import {
   TELEPORT_YEAR,
   EXAM_OFFSETS,
   MAX_YEAR,
+  MEDITATION_MINUTES,
+  MEDITATION_WILL_GAIN,
+  MEDITATION_LOCATIONS,
+  meditationScene,
   SKILL_LABEL,
   SOCIAL_MINUTES,
   SPELLS,
@@ -90,6 +94,7 @@ import {
   isGateOpen,
   isVacation,
   lecturePreviewPlan,
+  masteryCourseForSkill,
   maxHp,
   maxSpirit,
   maxStamina,
@@ -204,7 +209,9 @@ export function normalizeData(raw: GameData): GameData {
       day: raw.social?.day ?? 0,
       counts: raw.social?.counts ?? {},
     },
-    courseMastery: raw.courseMastery ?? {},
+    courseMastery: Object.fromEntries(
+      Object.entries(raw.courseMastery ?? {}).filter(([id]) => courseById(id)),
+    ),
     classBonus: raw.classBonus ?? null,
     inventory: { basic_wand: 1, ...(raw.inventory ?? {}) },
     equipment: (() => {
@@ -265,6 +272,10 @@ function maybeLearnSpells(d: GameData): string | null {
   }
   pushLog(d, text)
   return text
+}
+
+function formatGain(value: number): string {
+  return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100)
 }
 
 function addExp(d: GameData, key: SkillKey, amount: number): void {
@@ -333,7 +344,7 @@ function settleWeek(d: GameData): void {
   }
   const week = Math.floor(d.day / 7)
   const trained = d.training?.week === week ? d.training.skills : []
-  const decayable: SkillKey[] = ['physique', 'knowledge', 'brawl', 'sword', 'nature']
+  const decayable: SkillKey[] = ['physique', 'knowledge', 'will', 'brawl', 'sword', 'nature']
   const decayed: SkillKey[] = []
   for (const key of decayable) {
     if (trained.includes(key)) continue
@@ -558,6 +569,7 @@ type Store = {
   equipItem: (id: string) => void
   unequipSlot: (slot: EquipmentSlot) => void
   pray: () => void
+  meditate: () => void
   tidyDonations: () => void
   careForPatients: () => void
   treatAtRelief: () => void
@@ -1308,12 +1320,13 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       const remaining = segment.segmentEnd - data.minutes
+      const classEnded = segment.segmentEnd >= segment.end
       if (remaining < 15) {
         mutate((d) => {
           advanceTime(d, remaining)
           return '只剩几分钟，你没有听进去。'
         })
-        if (segment.index === 3) {
+        if (classEnded) {
           maybeEvent({ type: 'after', action: 'class', subject: segment.subject })
         }
         return
@@ -1340,6 +1353,9 @@ export const useGame = create<Store>((set, get) => {
           ? 1
           : 0.5
       const physiqueGain = physical ? (remaining >= 30 ? 1 : 0.5) : 0
+      const gains = [`${SKILL_LABEL[segment.skill]}经验 +${formatGain(skillGain)}`]
+      if (physical) gains.push(`体质经验 +${formatGain(physiqueGain)}`)
+      const gainText = gains.join('，')
       mutate((d) => {
         advanceTime(d, remaining)
         if (physical) {
@@ -1350,10 +1366,11 @@ export const useGame = create<Store>((set, get) => {
         addExp(d, segment.skill, skillGain)
         if (physical) addExp(d, 'physique', physiqueGain)
         d.courseMastery[segment.courseId] = (d.courseMastery[segment.courseId] ?? 0) + masteryGain
-        pushLog(d, `你${physical ? '练' : '听'}了 ${remaining} 分钟${segment.subject}。`)
-        return `你${physical ? '练' : '听'}了 ${remaining} 分钟${segment.subject}。`
+        const text = `你${physical ? '练' : '听'}了 ${remaining} 分钟${segment.label}。${gainText}。`
+        pushLog(d, text)
+        return text
       })
-      if (segment.index === 3) {
+      if (classEnded) {
         maybeEvent({ type: 'after', action: 'class', subject: segment.subject })
       }
     },
@@ -1366,12 +1383,13 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       const remaining = segment.segmentEnd - data.minutes
+      const classEnded = segment.segmentEnd >= segment.end
       mutate((d) => {
         advanceTime(d, remaining)
         if (remaining >= 15) d.mood = clamp(d.mood + 1, 0, 100)
         return remaining >= 15 ? '你趴在桌上摸了一会儿鱼。' : '你坐着等下课。'
       })
-      if (segment.index === 3) {
+      if (classEnded) {
         maybeEvent({ type: 'after', action: 'class', subject: segment.subject })
       }
     },
@@ -1384,11 +1402,11 @@ export const useGame = create<Store>((set, get) => {
       }
       const allowed: SkillKey[] = ['knowledge', 'nature']
       if (!allowed.includes(key)) {
-        set({ message: '现在只能自习古典文学或自然系。', modal: null })
+        set({ message: '现在只能自习学识或自然系。', modal: null })
         return
       }
       const duration = 30
-      const courseId = key === 'knowledge' ? 'y1_literature' : 'y1_nature'
+      const courseId = masteryCourseForSkill(key, data.day)
       const cost = spiritCost(3, data.mood)
       if (data.spirit < cost) {
         mutate((d) => {
@@ -1402,7 +1420,7 @@ export const useGame = create<Store>((set, get) => {
         advanceTime(d, duration)
         d.spirit = clamp(d.spirit - cost, 0, maxSpirit(d.skills.will.tier))
         addExp(d, key, 2)
-        d.courseMastery[courseId] = (d.courseMastery[courseId] ?? 0) + 0.25
+        if (courseId) d.courseMastery[courseId] = (d.courseMastery[courseId] ?? 0) + 0.25
         pushLog(d, '你在藏书阁自习了一会儿。')
         return '你自习了半小时。经验 +2。'
       })
@@ -1450,11 +1468,12 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       const formal = data.location === 'yard'
+      const courseId = formal ? masteryCourseForSkill(key, data.day) : null
       mutate((d) => {
         advanceTime(d, 30)
         addExp(d, key, 2)
-        if (formal) {
-          d.courseMastery.y1_physical = (d.courseMastery.y1_physical ?? 0) + 0.25
+        if (courseId) {
+          d.courseMastery[courseId] = (d.courseMastery[courseId] ?? 0) + 0.25
         }
         d.stamina = clamp(d.stamina - 4, 0, maxStamina(d.skills.physique.tier))
         const place = formal ? '演武场' : '后院'
@@ -1928,6 +1947,23 @@ export const useGame = create<Store>((set, get) => {
         return `你祷告了一会儿。精神 +${effects.spirit}，魔力 +${effects.mana}。`
       })
       maybeEvent({ type: 'after', action: 'pray' })
+    },
+
+    meditate: () => {
+      const { data } = get()
+      if (!MEDITATION_LOCATIONS.includes(data.location)) {
+        set({ message: '这里不适合冥想。', modal: null })
+        return
+      }
+      const scene = meditationScene(data.location, data.minutes)
+      mutate((d) => {
+        advanceTime(d, MEDITATION_MINUTES)
+        addExp(d, 'will', MEDITATION_WILL_GAIN)
+        const text = `${scene} 意志经验 +${MEDITATION_WILL_GAIN}。`
+        pushLog(d, text)
+        return text
+      })
+      set({ modal: null })
     },
 
     tidyDonations: () => {
