@@ -99,7 +99,7 @@ import {
   weatherScene,
   WEATHER_LABEL,
 } from './game/content'
-import { formatSaveTime, listSaves, loadGame, SLOT_COUNT } from './game/save'
+import { formatSaveTime, listSaves, loadGame, SLOT_COUNT, getLastExport, markExported } from './game/save'
 import {
   buildAllBundle,
   buildCurrentBundle,
@@ -1619,6 +1619,11 @@ function SaveSlots({ mode, onTransfer }: { mode: 'title' | 'game'; onTransfer?: 
     else setModal(kind)
   }
 
+  const lastExport = getLastExport()
+  const daysSinceExport =
+    lastExport === null ? null : Math.floor((Date.now() - lastExport) / 86400000)
+  const exportStale = lastExport === null || (daysSinceExport ?? 0) >= 7
+
   const slotLabel = (slot: number | 'auto') => (slot === 'auto' ? '自动存档' : `槽位 ${slot}`)
 
   const confirmPending = () => {
@@ -1681,6 +1686,23 @@ function SaveSlots({ mode, onTransfer }: { mode: 'title' | 'game'; onTransfer?: 
   return (
     <>
       {battle && !isTitle && <p className="hint">战斗中无法存档或读档。</p>}
+      <div className="save-export-status">
+        <span>
+          {lastExport === null ? '尚未导出过存档。' : `上次导出：${formatSaveTime(lastExport)}`}
+        </span>
+        {exportStale && (
+          <button className="mini-btn" onClick={() => openTransfer('export')}>
+            去导出
+          </button>
+        )}
+      </div>
+      {exportStale && (
+        <p className="hint save-export-warn">
+          {lastExport === null
+            ? '建议导出一次。浏览器数据被清除时，存档无法恢复。'
+            : `已经 ${daysSinceExport} 天没有导出存档了。`}
+        </p>
+      )}
       <div className="save-list">
         {Array.from({ length: SLOT_COUNT }, (_, i) => i + 1).map((slot) => {
           const s = saves[slot - 1]
@@ -1810,6 +1832,7 @@ function ExportPanel({ mode }: { mode: 'title' | 'game' }) {
   const saveFile = (bundle: SaveBundle, name: string) => {
     const filename = `arcanum-${name}-${stampForFile()}.json`
     if (downloadText(filename, JSON.stringify(bundle, null, 2))) {
+      markExported()
       setStatus(`已导出文件：${filename}`)
       setError('')
     } else {
@@ -1819,12 +1842,14 @@ function ExportPanel({ mode }: { mode: 'title' | 'game' }) {
 
   const makeCurrentText = () => {
     setText(encodeBundle(buildCurrentBundle(player, data)))
+    markExported()
     setStatus('已生成当前进度的存档文本。')
     setError('')
   }
 
   const makeAllText = () => {
     setText(encodeBundle(buildAllBundle()))
+    markExported()
     setStatus('已生成全部手动槽位的存档文本。')
     setError('')
   }
@@ -1833,6 +1858,7 @@ function ExportPanel({ mode }: { mode: 'title' | 'game' }) {
     if (!text) return
     try {
       await navigator.clipboard.writeText(text)
+      markExported()
       setStatus('已复制到剪贴板。')
       setError('')
       return
@@ -1845,6 +1871,7 @@ function ExportPanel({ mode }: { mode: 'title' | 'game' }) {
       node.select()
       try {
         if (document.execCommand('copy')) {
+          markExported()
           setStatus('已复制到剪贴板。')
           setError('')
           return

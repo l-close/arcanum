@@ -82,6 +82,27 @@ export function formatSaveTime(ts: number): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
+const LAST_EXPORT_KEY = 'arcanum_last_export'
+
+export function getLastExport(): number | null {
+  try {
+    const raw = localStorage.getItem(LAST_EXPORT_KEY)
+    if (!raw) return null
+    const ts = Number(raw)
+    return Number.isFinite(ts) && ts > 0 ? ts : null
+  } catch {
+    return null
+  }
+}
+
+export function markExported(): void {
+  try {
+    localStorage.setItem(LAST_EXPORT_KEY, String(Date.now()))
+  } catch {
+    // ignore
+  }
+}
+
 export function isAndroidRuntime(): boolean {
   if (typeof navigator === 'undefined') return false
   return /Android/i.test(navigator.userAgent)
