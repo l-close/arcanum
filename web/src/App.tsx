@@ -59,6 +59,7 @@ import {
   examThresholdForDay,
   exitsOf,
   formatDate,
+  formatMonthDay,
   formatMoney,
   formatPercent,
   formatTime,
@@ -224,7 +225,7 @@ function TitleScreen() {
       </div>
       {auto && (
         <div className="title-save-hint">
-          上次存档：{formatDate(auto.data.day)} · {semesterLabel(auto.data.day)} · {formatTime(auto.data.minutes)}
+          上次存档：{formatMonthDay(auto.data.day)} · {semesterLabel(auto.data.day)} · {formatTime(auto.data.minutes)}
         </div>
       )}
       {msg && <div className="title-msg">{msg}</div>}

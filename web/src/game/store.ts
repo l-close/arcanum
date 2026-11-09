@@ -176,7 +176,7 @@ export function freshData(): GameData {
     events: { day: 0, count: 0, today: [], lastSeen: {}, lastAt: -9999, seen: [] },
     pendingReport: null,
     notice: '',
-    log: ['一月一日，周一。入学第一天。'],
+    log: ['第一年 一月一日，周一。入学第一天。'],
     prologueSeen: false,
     storyStep: 0,
     storyDone: false,

@@ -344,8 +344,17 @@ export function weekday(day: number): number {
 }
 
 export function formatDate(day: number): string {
-  const month = Math.floor(day / 28) + 1
-  const d = (day % 28) + 1
+  return `${calendarYearLabel(currentYear(day))} · ${formatMonthDay(day)}`
+}
+
+export function calendarYearLabel(year: number): string {
+  return `第${chineseNumber(year)}年`
+}
+
+export function formatMonthDay(day: number): string {
+  const dayInYear = ((day % YEAR_DAYS) + YEAR_DAYS) % YEAR_DAYS
+  const month = Math.floor(dayInYear / 28) + 1
+  const d = (dayInYear % 28) + 1
   return `${chineseNumber(month)}月${chineseNumber(d)}日 · ${WEEKDAYS[weekday(day)]}`
 }
 
