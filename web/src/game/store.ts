@@ -3,6 +3,8 @@ import type {
   BattleState,
   BattleSubmenu,
   EquipmentSlot,
+  ExamPackage,
+  ExamResult,
   GameData,
   Gender,
   Player,
@@ -56,7 +58,6 @@ import {
   SLEEP_MIN_RECOVERY_MINUTES,
   SLEEP_LOCATIONS,
   TELEPORT_YEAR,
-  EXAM_OFFSETS,
   MAX_YEAR,
   MEDITATION_MINUTES,
   MEDITATION_WILL_GAIN,
@@ -88,6 +89,12 @@ import {
   coursesForYear,
   currentMeal,
   currentYear,
+  examDaysForYear,
+  examPackageTime,
+  examCoursesForYear,
+  isExamDay,
+  semesterEndDay,
+  semesterPackageTime,
   examThresholdForDay,
   formatDate,
   formatMoney,
@@ -178,13 +185,106 @@ export function freshData(): GameData {
     meals: { day: 0, breakfast: false, lunch: false, dinner: false },
     relief: { day: 0, cared: false, treated: false, volunteered: false },
     events: { day: 0, count: 0, today: [], lastSeen: {}, lastAt: -9999, seen: [] },
-    pendingReport: null,
+    examPackages: [],
+    examStartDay: 0,
     notice: '',
     log: ['第一年 一月一日，周一。入学第一天。'],
     prologueSeen: false,
     storyStep: 0,
     storyDone: false,
   }
+}
+
+function makeMonthlyPackage(examDay: number): ExamPackage {
+  return {
+    id: `monthly_${examDay}`,
+    kind: 'monthly',
+    day: examDay,
+    availableAt: examPackageTime(examDay),
+    results: {},
+    received: false,
+    opened: false,
+  }
+}
+
+function makeSemesterPackage(
+  year: number,
+  semester: 1 | 2,
+  availableAt: number,
+): ExamPackage {
+  return {
+    id: `semester_${year}_${semester}`,
+    kind: 'semester',
+    day: semesterEndDay(year, semester),
+    availableAt,
+    results: {},
+    year,
+    semester,
+    received: false,
+    opened: false,
+  }
+}
+
+function ensureSemesterPackage(d: GameData, report: { year: number; semester: 1 | 2 }): void {
+  const id = `semester_${report.year}_${report.semester}`
+  if (d.examPackages.some((p) => p.id === id)) return
+  const endDay = semesterEndDay(report.year, report.semester)
+  d.examPackages.push(
+    makeSemesterPackage(report.year, report.semester, semesterPackageTime(endDay)),
+  )
+}
+
+function packageNow(d: GameData): number {
+  return d.day * 1440 + d.minutes
+}
+
+function ensureMonthlyPackage(
+  d: GameData,
+  examDay: number,
+): { pkg: ExamPackage; created: boolean } {
+  const id = `monthly_${examDay}`
+  const existing = d.examPackages.find((p) => p.id === id)
+  if (existing) return { pkg: existing, created: false }
+  const pkg = makeMonthlyPackage(examDay)
+  d.examPackages.push(pkg)
+  return { pkg, created: true }
+}
+
+function fillMissingExamResults(pkg: ExamPackage): boolean {
+  if (pkg.kind !== 'monthly') return false
+  let changed = false
+  for (const course of examCoursesForYear(currentYear(pkg.day))) {
+    if (pkg.results[course.id] === undefined) {
+      pkg.results[course.id] = 'absent'
+      changed = true
+    }
+  }
+  return changed
+}
+
+function ensureMonthlyPackages(d: GameData): boolean {
+  const now = packageNow(d)
+  let changed = false
+  for (const examDay of examDaysForYear(1)) {
+    if (examDay < d.examStartDay) continue
+    if (examPackageTime(examDay) > now) continue
+    const { pkg, created } = ensureMonthlyPackage(d, examDay)
+    if (created) changed = true
+    if (fillMissingExamResults(pkg)) changed = true
+  }
+  return changed
+}
+
+function parseLegacyReport(raw: unknown): { year: number; semester: 1 | 2 } | null {
+  if (!raw) return null
+  if (typeof raw === 'number') {
+    return { year: 1, semester: raw === 2 ? 2 : 1 }
+  }
+  if (typeof raw === 'object' && 'year' in raw && 'semester' in raw) {
+    const r = raw as { year: number; semester: number }
+    return { year: r.year, semester: r.semester === 2 ? 2 : 1 }
+  }
+  return null
 }
 
 export function normalizeData(raw: GameData): GameData {
@@ -251,17 +351,28 @@ export function normalizeData(raw: GameData): GameData {
       lastAt: raw.events?.lastAt ?? -9999,
       seen: raw.events?.seen ?? [],
     },
-    pendingReport: (() => {
-      const report = raw.pendingReport as unknown
-      if (!report) return null
-      if (typeof report === 'number') {
-        return { year: 1, semester: report === 2 ? 2 : 1 }
+    examPackages: (() => {
+      const packages: ExamPackage[] = (raw.examPackages ?? []).map((p) => ({
+        ...p,
+        results: p.results ?? {},
+        received: !!p.received,
+        opened: !!p.opened,
+      }))
+      const legacy = (raw as GameData & { pendingReport?: unknown }).pendingReport
+      const report = parseLegacyReport(legacy)
+      if (
+        report &&
+        !packages.some(
+          (p) => p.kind === 'semester' && p.year === report.year && p.semester === report.semester,
+        )
+      ) {
+        packages.push(
+          makeSemesterPackage(report.year, report.semester, raw.day * 1440 + raw.minutes),
+        )
       }
-      if (typeof report === 'object' && 'year' in report && 'semester' in report) {
-        return report as { year: number; semester: 1 | 2 }
-      }
-      return null
+      return packages
     })(),
+    examStartDay: raw.examStartDay ?? raw.day,
     notice: raw.notice ?? '',
     storyStep: raw.storyStep ?? -1,
     storyDone: raw.storyDone ?? true,
@@ -397,7 +508,8 @@ function advanceTime(d: GameData, minutes: number): boolean {
   }
 
   for (let y = 1; y <= MAX_YEAR; y++) {
-    for (const offset of EXAM_OFFSETS) {
+    if (y === 1) continue
+    for (const offset of examDaysForYear(y)) {
       const day = (y - 1) * YEAR_DAYS + offset
       const b = day * 1440 + 22 * 60
       if (b > beforeTotal && b <= afterTotal) runExam(d, day)
@@ -501,7 +613,7 @@ function applyStoryEffects(d: GameData, e?: StoryEffects): void {
   if (e.location) d.location = e.location
 }
 
-type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | null
+type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | null
 
 type TitlePanel = 'saves' | 'export' | 'import' | null
 
@@ -521,6 +633,8 @@ type Store = {
   pendingEvent: string | null
   eventResult: string | null
   battle: BattleState | null
+  activePackageId: string | null
+  examCourseId: string | null
 
   setScreen: (s: Screen) => void
   startNewGame: (name: string, gender: Gender) => void
@@ -537,7 +651,13 @@ type Store = {
 
   eventChoose: (index: number) => void
   eventContinue: () => void
-  closeReport: () => void
+
+  takeExam: (courseId: string, prep: boolean, early: boolean) => void
+  startExam: (courseId: string) => void
+  checkExamPackages: () => void
+  receiveExamPackage: (id: string) => void
+  startOpenExamPackage: (id: string) => void
+  closeExamPackage: () => void
 
   startBattle: (enemyId: string) => void
   battleTick: () => void
@@ -619,7 +739,7 @@ export const useGame = create<Store>((set, get) => {
       const key = `report_s${report.year}_${report.semester}`
       if (!next.flags[key]) {
         next.flags[key] = true
-        next.pendingReport = report
+        ensureSemesterPackage(next, report)
       }
     }
     set({ data: next, message: learned ? (msg ? `${msg} ${learned}` : learned) : msg })
@@ -759,6 +879,8 @@ export const useGame = create<Store>((set, get) => {
     pendingEvent: null,
     eventResult: null,
     battle: null,
+    activePackageId: null,
+    examCourseId: null,
 
     setScreen: (screen) => set({ screen }),
     startNewGame: (name, gender) => {
@@ -777,6 +899,8 @@ export const useGame = create<Store>((set, get) => {
         pendingEvent: null,
         eventResult: null,
         battle: null,
+        activePackageId: null,
+        examCourseId: null,
         sidebarOpen: typeof window !== 'undefined' ? window.innerWidth > 860 : true,
       })
       saveGame('auto', { name: name.trim() || '无名', gender }, data)
@@ -798,6 +922,8 @@ export const useGame = create<Store>((set, get) => {
         pendingEvent: null,
         eventResult: null,
         battle: null,
+        activePackageId: null,
+        examCourseId: null,
       })
       return true
     },
@@ -908,10 +1034,124 @@ export const useGame = create<Store>((set, get) => {
       set({ pendingEvent: null, eventResult: null, message: '' })
     },
 
-    closeReport: () => {
+    startExam: (courseId) => {
+      const { data } = get()
+      if (!isExamDay(data.day) || currentYear(data.day) !== 1) return
+      const course = examCoursesForYear(1).find((c) => c.id === courseId)
+      if (!course) return
+      if (data.location !== course.location) {
+        set({ message: '你不在考场。' })
+        return
+      }
+      if (data.minutes < course.start || data.minutes >= course.start + 30) {
+        set({ message: '现在不能入场。' })
+        return
+      }
+      const pkg = data.examPackages.find(
+        (p) => p.kind === 'monthly' && p.day === data.day,
+      )
+      if (pkg?.results[courseId] !== undefined) {
+        set({ message: '这门考试已经结束了。' })
+        return
+      }
+      set({ examCourseId: courseId, modal: 'exam' })
+    },
+
+    takeExam: (courseId, prep, early) => {
+      const { data } = get()
+      if (!isExamDay(data.day) || currentYear(data.day) !== 1) return
+      const course = examCoursesForYear(1).find((c) => c.id === courseId)
+      if (!course) return
+      if (data.location !== course.location) {
+        set({ message: '你不在考场。' })
+        return
+      }
+      if (data.minutes < course.start || data.minutes >= course.start + 30) {
+        set({ message: '现在不能入场。' })
+        return
+      }
+      const existing = data.examPackages.find(
+        (p) => p.kind === 'monthly' && p.day === data.day,
+      )
+      if (existing?.results[courseId] !== undefined) {
+        set({ message: '这门考试已经结束了。' })
+        return
+      }
+      if (prep && course.kind === 'physical') {
+        if (data.stamina < 2) {
+          set({ message: '体力不足，无法热身。' })
+          return
+        }
+      } else if (prep && data.spirit < 1) {
+        set({ message: '精神不足，无法翻笔记。' })
+        return
+      }
+      const examDay = data.day
+      mutate((d) => {
+        if (prep) {
+          advanceTime(d, 30)
+          if (course.kind === 'physical') {
+            d.stamina = clamp(d.stamina - 2, 0, maxStamina(d.skills.physique.tier))
+          } else {
+            d.spirit = clamp(d.spirit - 1, 0, maxSpirit(d.skills.will.tier))
+          }
+        }
+        advanceTime(d, early ? 60 : 120)
+        const threshold = examThresholdForDay(examDay)
+        const mastery = d.courseMastery[courseId] ?? 0
+        const bonus = (prep ? 0.5 : 0) - (early ? 1 : 0)
+        const result: ExamResult = mastery + bonus >= threshold ? 'pass' : 'fail'
+        const { pkg } = ensureMonthlyPackage(d, examDay)
+        pkg.results[courseId] = result
+        pushLog(d, `你参加了${course.name}考试。`)
+        return `你考完了${course.name}。成绩会在周日寄到孤儿院。`
+      })
+      set({ modal: null, examCourseId: null })
+    },
+
+    checkExamPackages: () => {
+      const { data, screen, modal, pendingEvent, battle } = get()
+      if (screen !== 'game' || modal !== null || pendingEvent || battle) return
+      if (data.location !== 'orphanage') return
+      const next = structuredClone(data)
+      const changed = ensureMonthlyPackages(next)
+      const now = packageNow(next)
+      const pkg = next.examPackages
+        .filter((p) => !p.received && p.availableAt <= now)
+        .sort((a, b) => a.day - b.day)[0]
+      if (!pkg) {
+        if (changed) set({ data: next })
+        return
+      }
+      set({ data: next, activePackageId: pkg.id, modal: 'examHandoff' })
+    },
+
+    receiveExamPackage: (id) => {
       const next = structuredClone(get().data)
-      next.pendingReport = null
-      set({ data: next })
+      const pkg = next.examPackages.find((p) => p.id === id)
+      if (!pkg || pkg.received) return
+      pkg.received = true
+      set({ data: next, modal: null, activePackageId: null, message: '你收下了包裹。' })
+    },
+
+    startOpenExamPackage: (id) => {
+      const next = structuredClone(get().data)
+      const pkg = next.examPackages.find((p) => p.id === id)
+      if (!pkg || !pkg.received || pkg.opened) return
+      pkg.opened = true
+      if (pkg.kind === 'monthly') {
+        for (const result of Object.values(pkg.results)) {
+          next.mood = clamp(next.mood + (result === 'pass' ? 1 : -2), 0, 100)
+        }
+        pushLog(next, '你拆开了成绩单。')
+      } else {
+        pushLog(next, '你拆开了学期成绩单。')
+      }
+      set({ data: next, modal: 'examOpen', activePackageId: id })
+    },
+
+    closeExamPackage: () => {
+      set({ modal: null, activePackageId: null })
     },
 
     startBattle: (enemyId) => {
@@ -1203,7 +1443,7 @@ export const useGame = create<Store>((set, get) => {
         const key = `report_s${report.year}_${report.semester}`
         if (!next.flags[key]) {
           next.flags[key] = true
-          next.pendingReport = report
+          ensureSemesterPackage(next, report)
         }
       }
       const text =
@@ -2444,6 +2684,8 @@ export const useGame = create<Store>((set, get) => {
         pendingEvent: null,
         eventResult: null,
         battle: null,
+        activePackageId: null,
+        examCourseId: null,
       })
     },
     removeSlot: (slot) => {
@@ -2518,6 +2760,8 @@ export const useGame = create<Store>((set, get) => {
         pendingEvent: null,
         eventResult: null,
         battle: null,
+        activePackageId: null,
+        examCourseId: null,
       })
     },
   }

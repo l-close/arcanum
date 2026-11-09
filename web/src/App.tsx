@@ -58,6 +58,10 @@ import {
   ageOf,
   daysUntil,
   examThresholdForDay,
+  examCoursesForYear,
+  isExamDay,
+  semesterEndDay,
+  semesterLastExamDay,
   exitsOf,
   formatDate,
   formatMonthDay,
@@ -117,7 +121,7 @@ import {
 import type { SaveBundle } from './game/save'
 import { EVENTS, choiceBlockedReason, eventById, eventEffectSummary } from './game/events'
 import { STORY } from './game/story'
-import type { Gender, SkillKey } from './game/types'
+import type { ExamPackage, Gender, SkillKey } from './game/types'
 import type { Location } from './game/content'
 import { ItemIcon } from './ui/icons'
 import { APP_VERSION } from './version'
@@ -302,11 +306,16 @@ function GameScreen() {
   const battle = useGame((s) => s.battle)
   const clearNotice = useGame((s) => s.clearNotice)
   const clearMessage = useGame((s) => s.clearMessage)
+  const checkExamPackages = useGame((s) => s.checkExamPackages)
   const [npcId, setNpcId] = useState<string | null>(null)
 
   useEffect(() => {
     setNpcId(null)
   }, [data.location])
+
+  useEffect(() => {
+    checkExamPackages()
+  }, [data.location, data.day, data.minutes, modal, pendingEvent, battle, checkExamPackages])
 
   const loc = getLocation(data.location)
   const weather = weatherOf(data.day)
@@ -445,6 +454,9 @@ function GameScreen() {
       {modal === 'plazaNotices' && <PlazaNoticesModal />}
       {modal === 'bookshelf' && <BookshelfModal />}
       {modal === 'reading' && <ReadingModal />}
+      {modal === 'exam' && <ExamModal />}
+      {modal === 'examHandoff' && <ExamHandoffModal />}
+      {modal === 'examOpen' && <ExamOpenModal />}
       {modal === 'shop' && <ShopModal />}
       {modal === 'drinks' && <DrinkModal />}
       {modal === 'save' && <SavesModal />}
@@ -452,7 +464,6 @@ function GameScreen() {
       {modal === 'import' && <ImportModal />}
       {modal === 'log' && <LogModal />}
       {modal === 'debug' && <DebugModal />}
-      {data.pendingReport !== null && <ReportCardModal />}
     </div>
   )
 }
@@ -951,6 +962,8 @@ function Actions({
   const readPlazaNotices = useGame((s) => s.readPlazaNotices)
   const feedPigeons = useGame((s) => s.feedPigeons)
   const searchLibrary = useGame((s) => s.searchLibrary)
+  const startExam = useGame((s) => s.startExam)
+  const startOpenExamPackage = useGame((s) => s.startOpenExamPackage)
   const helpBackyard = useGame((s) => s.helpBackyard)
   const teleport = useGame((s) => s.teleport)
   const helpOrphanKids = useGame((s) => s.helpOrphanKids)
@@ -968,6 +981,51 @@ function Actions({
   const storyWait = useGame((s) => s.storyWait)
   const wait = useGame((s) => s.wait)
   const loc = data.location
+  const examDay = isExamDay(data.day)
+  const examCourses = examDay ? examCoursesForYear(currentYear(data.day)) : []
+  const examResultFor = (courseId: string) =>
+    data.examPackages.find((p) => p.kind === 'monthly' && p.day === data.day)?.results[
+      courseId
+    ]
+  const examActions = (
+    <>
+      <div className="hint">今天是月考日，课程暂停。</div>
+      {examCourses
+        .filter((course) => course.location === loc)
+        .map((course) => {
+          const result = examResultFor(course.id)
+          if (result) {
+            return (
+              <div className="hint" key={course.id}>
+                {course.name} 已考完。
+              </div>
+            )
+          }
+          if (data.minutes < course.start) {
+            return (
+              <div className="hint" key={course.id}>
+                {course.name} 考试 {formatTime(course.start)} 开始。
+              </div>
+            )
+          }
+          if (data.minutes >= course.start + 30) {
+            return (
+              <div className="hint" key={course.id}>
+                {course.name} 入场时间已过，按缺考处理。
+              </div>
+            )
+          }
+          return (
+            <ActionBtn
+              key={course.id}
+              onClick={() => startExam(course.id)}
+              label={`参加考试 · ${course.name}`}
+              cost="2 小时 · 开考后 30 分钟内入场"
+            />
+          )
+        })}
+    </>
+  )
   const lecturePlan = loc === 'lecture' ? lecturePreviewPlan(data.day, data.minutes) : null
   const remain = segment ? segment.segmentEnd - data.minutes : 0
   const nextClass = nextClassStart(loc, data.day, data.minutes)
@@ -1012,8 +1070,13 @@ function Actions({
   return (
     <div className="actions">
       <div className="section-title">行动</div>
+      {examDay && loc !== 'lecture' && loc !== 'yard' && (
+        <div className="hint">今天是月考日。考试在讲堂与演武场进行。</div>
+      )}
       {loc === 'lecture' && (
-        segment ? (
+        examDay ? (
+          examActions
+        ) : segment ? (
           classActions
         ) : lecturePlan?.ok ? (
           <ActionBtn
@@ -1064,7 +1127,9 @@ function Actions({
           )
         })()}
       {loc === 'yard' && (
-        segment ? (
+        examDay ? (
+          examActions
+        ) : segment ? (
           classActions
         ) : (
           <>
@@ -1098,6 +1163,17 @@ function Actions({
       {loc === 'westGate' && <ActionBtn onClick={() => setModal('shop')} label="小摊" cost="—" />}
       {loc === 'dorm' && <ActionBtn onClick={meditate} label="冥想" cost="1 小时" />}
       {loc === 'dorm' && <ActionBtn onClick={() => setModal('bookshelf')} label="书柜" cost="—" />}
+      {loc === 'dorm' &&
+        (() => {
+          const pkg = data.examPackages.find((p) => p.received && !p.opened)
+          return pkg ? (
+            <ActionBtn
+              onClick={() => startOpenExamPackage(pkg.id)}
+              label="拆开包裹"
+              cost="—"
+            />
+          ) : null
+        })()}
       {loc === 'shop' && (
         <>
           <ActionBtn onClick={() => setModal('shop')} label="购买" cost="—" />
@@ -2761,24 +2837,167 @@ function DrinkModal() {
   )
 }
 
-function ReportCardModal() {
+function ExamModal() {
   const data = useGame((s) => s.data)
-  const reportCard = data.pendingReport
-  const close = useGame((s) => s.closeReport)
-  if (reportCard === null) return null
-  const thresholdDay = (reportCard.year - 1) * 224 + (reportCard.semester === 1 ? 83 : 195)
-  const threshold = examThresholdForDay(thresholdDay)
-  const courses = coursesForYear(reportCard.year)
+  const setModal = useGame((s) => s.setModal)
+  const examCourseId = useGame((s) => s.examCourseId)
+  const takeExam = useGame((s) => s.takeExam)
+  const [step, setStep] = useState<'pre' | 'during'>('pre')
+  const [prep, setPrep] = useState(false)
+  const course = examCourseId
+    ? examCoursesForYear(1).find((c) => c.id === examCourseId)
+    : undefined
+  if (!course) return null
+  const physical = course.kind === 'physical'
+  const intro =
+    course.id === 'y1_literature'
+      ? '长桌上摆着试卷，窗外的光落在纸边。'
+      : course.id === 'y1_nature'
+        ? '讲堂里比平时安静。阿尔文站在窗边，看着你们低头答题。'
+        : '演武场清空了，格里高利把木桩摆成一排。'
+  const canPrep = physical ? data.stamina >= 2 : data.spirit >= 1
+
+  return (
+    <ModalShell title={`${course.name} · 考试`} onClose={() => setModal(null)}>
+      {step === 'pre' ? (
+        <>
+          <p className="package-text">{intro}</p>
+          <div className="choice-list">
+            <button
+              className="choice-btn"
+              disabled={!canPrep}
+              onClick={() => {
+                setPrep(true)
+                setStep('during')
+              }}
+            >
+              {physical ? '热身' : '翻一遍笔记'}
+              <small>
+                {physical
+                  ? '多花 30 分钟 · 体力 -2 · 本门判定 +0.5'
+                  : '多花 30 分钟 · 精神 -1 · 本门判定 +0.5'}
+              </small>
+            </button>
+            <button
+              className="choice-btn"
+              onClick={() => {
+                setPrep(false)
+                setStep('during')
+              }}
+            >
+              {physical ? '直接上场' : '直接进考场'}
+              <small>不额外消耗 · 正常判定</small>
+            </button>
+          </div>
+          {!canPrep && (
+            <p className="hint">
+              {physical ? '体力不足，无法热身。' : '精神不足，无法翻笔记。'}
+            </p>
+          )}
+        </>
+      ) : (
+        <>
+          <p className="package-text">{physical ? '考核开始。' : '考试开始。'}</p>
+          <div className="choice-list">
+            <button
+              className="choice-btn"
+              onClick={() => takeExam(course.id, prep, false)}
+            >
+              {physical ? '正常完成' : '正常作答'}
+              <small>2 小时 · 正常判定</small>
+            </button>
+            <button
+              className="choice-btn"
+              onClick={() => takeExam(course.id, prep, true)}
+            >
+              {physical ? '提前收手' : '提前交卷'}
+              <small>1 小时 · 本门判定 -1</small>
+            </button>
+          </div>
+        </>
+      )}
+    </ModalShell>
+  )
+}
+
+function ExamHandoffModal() {
+  const data = useGame((s) => s.data)
+  const activePackageId = useGame((s) => s.activePackageId)
+  const receiveExamPackage = useGame((s) => s.receiveExamPackage)
+  const pkg = data.examPackages.find((p) => p.id === activePackageId)
+  if (!pkg) return null
+  return (
+    <ModalShell title="诺拉" onClose={() => receiveExamPackage(pkg.id)}>
+      <p className="package-text">
+        诺拉叫住你，把一个用牛皮纸包着的小包裹递过来。
+      </p>
+      <p className="package-text">“学院寄来的，写着你的名字。”</p>
+      <p className="package-text">
+        细绳捆得很整齐，封口压着学院的蜡印。
+      </p>
+      <button className="primary-btn" onClick={() => receiveExamPackage(pkg.id)}>
+        收下
+      </button>
+    </ModalShell>
+  )
+}
+
+function ExamOpenModal() {
+  const data = useGame((s) => s.data)
+  const activePackageId = useGame((s) => s.activePackageId)
+  const closeExamPackage = useGame((s) => s.closeExamPackage)
+  const pkg = data.examPackages.find((p) => p.id === activePackageId)
+  if (!pkg) return null
+
+  if (pkg.kind === 'monthly') {
+    const courses = examCoursesForYear(currentYear(pkg.day))
+    const rows = courses.map((course) => ({
+      course,
+      result: pkg.results[course.id] ?? 'absent',
+    }))
+    const allPass = rows.every((r) => r.result === 'pass')
+    return (
+      <ModalShell
+        title={`成绩单 · ${formatMonthDay(pkg.day).split(' · ')[0]}`}
+        onClose={closeExamPackage}
+      >
+        <div className="report-list">
+          {rows.map(({ course, result }) => (
+            <div className="report-row" key={course.id}>
+              <span className="report-name">{course.name}</span>
+              <span
+                className={`report-status ${result === 'pass' ? 'pass' : 'fail'}`}
+              >
+                {result === 'pass' ? '通过' : result === 'absent' ? '缺考' : '不及格'}
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="report-result">
+          {allPass
+            ? '你把成绩单折好，放回纸袋里。'
+            : '你把成绩单折好，坐在床边看了一会儿窗外。'}
+        </p>
+        <button className="primary-btn" onClick={closeExamPackage}>
+          继续
+        </button>
+      </ModalShell>
+    )
+  }
+
+  const year = pkg.year ?? 1
+  const semester = pkg.semester ?? 1
+  const threshold = examThresholdForDay(semesterLastExamDay(year, semester))
+  const courses = coursesForYear(year)
   const rows = courses.map((course) => {
     const value = data.courseMastery[course.id] ?? 0
     return { course, value, pass: value >= threshold }
   })
   const allPass = rows.every((r) => r.pass)
-  const yearLabelText = yearLabel(reportCard.year)
   return (
     <ModalShell
-      title={`${yearLabelText} · ${reportCard.semester === 1 ? '第一学期' : '第二学期'}成绩单`}
-      onClose={close}
+      title={`${yearLabel(year)} · ${semester === 1 ? '第一学期' : '第二学期'}成绩单`}
+      onClose={closeExamPackage}
     >
       <div className="report-list">
         {rows.map(({ course, value, pass }) => (
@@ -2792,7 +3011,9 @@ function ReportCardModal() {
         ))}
       </div>
       <p className="report-result">{allPass ? '全部及格。' : '有课程未及格。'}</p>
-      <button className="primary-btn" onClick={close}>继续</button>
+      <button className="primary-btn" onClick={closeExamPackage}>
+        继续
+      </button>
     </ModalShell>
   )
 }

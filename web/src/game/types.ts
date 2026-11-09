@@ -15,6 +15,20 @@ export type EquipmentSlot = 'mainHand' | 'offHand' | 'armor' | 'accessory'
 
 export type Equipment = Record<EquipmentSlot, string | null>
 
+export type ExamResult = 'pass' | 'fail' | 'absent'
+
+export type ExamPackage = {
+  id: string
+  kind: 'monthly' | 'semester'
+  day: number
+  availableAt: number
+  results: Record<string, ExamResult>
+  year?: number
+  semester?: 1 | 2
+  received: boolean
+  opened: boolean
+}
+
 export type GameData = {
   version: number
   day: number
@@ -56,7 +70,8 @@ export type GameData = {
     lastAt: number
     seen: string[]
   }
-  pendingReport: { year: number; semester: 1 | 2 } | null
+  examPackages: ExamPackage[]
+  examStartDay: number
   notice: string
   log: string[]
   prologueSeen: boolean

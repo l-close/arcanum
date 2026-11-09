@@ -2395,7 +2395,46 @@ export const MAX_YEAR = 2
 
 export type SemesterState = 'semester1' | 'summer' | 'semester2' | 'winter' | 'after'
 
-export const EXAM_OFFSETS = [27, 55, 83, 139, 167, 195]
+export const EXAM_DAYS_YEAR1 = [25, 53, 81, 137, 165, 193]
+export const EXAM_DAYS_YEAR2 = [27, 55, 83, 139, 167, 195]
+
+export function examDaysForYear(year: number): number[] {
+  return year === 1 ? EXAM_DAYS_YEAR1 : EXAM_DAYS_YEAR2
+}
+
+export function isExamDay(day: number): boolean {
+  return currentYear(day) === 1 && EXAM_DAYS_YEAR1.includes(dayInYear(day))
+}
+
+/** 第一学年月考课程：按原本的上课时间开考。 */
+const YEAR1_EXAM_COURSE_IDS = ['y1_literature', 'y1_nature', 'y1_physical']
+
+export function examCoursesForYear(year: number): CourseDef[] {
+  if (year !== 1) return []
+  return coursesForYear(1).filter((c) => YEAR1_EXAM_COURSE_IDS.includes(c.id))
+}
+
+/** 月考包裹在考试后的周日 08:00 到达孤儿院。 */
+export function examPackageTime(examDay: number): number {
+  return (examDay + 2) * 1440 + 8 * 60
+}
+
+/** 学期成绩单在学期结束后的第一个周日 08:00 到达孤儿院。 */
+export function semesterEndDay(year: number, semester: 1 | 2): number {
+  return (year - 1) * YEAR_DAYS + (semester === 1 ? SEMESTER_DAYS : SEMESTER_DAYS * 2 + HOLIDAY_DAYS)
+}
+
+export function semesterPackageTime(endDay: number): number {
+  const wd = weekday(endDay)
+  const add = (6 - wd + 7) % 7 || 7
+  return (endDay + add) * 1440 + 8 * 60
+}
+
+/** 学期最后一次月考所在的一天，用于学期成绩单的掌握度线。 */
+export function semesterLastExamDay(year: number, semester: 1 | 2): number {
+  const days = examDaysForYear(year)
+  return (year - 1) * YEAR_DAYS + days[semester === 1 ? 2 : 5]
+}
 
 const YEAR_THRESHOLDS: Record<number, number[]> = {
   1: [20, 60, 100, 120, 160, 200],
@@ -2450,6 +2489,7 @@ export function semesterLabel(day: number): string {
 }
 
 export function isClassDay(day: number): boolean {
+  if (isExamDay(day)) return false
   const state = semesterState(day)
   return weekday(day) < 5 && (state === 'semester1' || state === 'semester2')
 }
@@ -2464,7 +2504,8 @@ export function courseById(id: string): CourseDef | undefined {
 
 export function examThresholdForDay(day: number): number {
   const year = currentYear(day)
-  const idx = EXAM_OFFSETS.indexOf(dayInYear(day))
+  const days = examDaysForYear(year)
+  const idx = days.indexOf(dayInYear(day))
   const table = YEAR_THRESHOLDS[year] ?? YEAR_THRESHOLDS[1]
   return table[idx < 0 ? table.length - 1 : idx]
 }
@@ -2614,12 +2655,16 @@ export function nextRentTotal(day: number, minutes: number): number {
 }
 
 export function nextExamTotal(day: number, minutes: number): number | null {
+  if (isExamDay(day) && minutes < 20 * 60) {
+    return day * 1440 + 9 * 60
+  }
   const t = absoluteMinutes(day, minutes)
   const year = currentYear(day)
   const candidates: number[] = []
   for (let y = year; y <= Math.min(MAX_YEAR, year + 1); y++) {
-    for (const offset of EXAM_OFFSETS) {
-      candidates.push(((y - 1) * YEAR_DAYS + offset) * 1440 + 22 * 60)
+    const start = y === 1 ? 9 * 60 : 22 * 60
+    for (const offset of examDaysForYear(y)) {
+      candidates.push(((y - 1) * YEAR_DAYS + offset) * 1440 + start)
     }
   }
   return candidates.filter((x) => x > t).sort((a, b) => a - b)[0] ?? null
