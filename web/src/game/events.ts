@@ -686,26 +686,50 @@ export const EVENTS: GameEvent[] = [
     ],
   },
   {
-    id: 'canteen_cleanup',
-    title: '收盘工',
-    trigger: { type: 'after', action: 'eat' },
-    locations: ['canteen', 'orphanCanteen'],
+    id: 'west_arrival',
+    title: '镇口',
+    trigger: { type: 'enter' },
+    locations: ['westGate'],
     days: 'all',
+    once: true,
     text: [
-      '你放下餐具时，厨房的人正忙着收最后一摞盘子。桌面上还堆着不少空碗。',
+      '守卫抬手示意你停下，验过你的学院文书，又对照了一遍名册。',
+      '“支援队的？进去吧。”',
+      '木拒马被挪开一半。',
     ],
     choices: [
       {
-        label: '帮忙收 10 分钟',
-        result: '你帮着把空碗摞好，端到回收处。厨房的人塞给你一枚铜板。',
-        effects: { minutes: 10, stamina: -2, money: 1, mood: 1 },
+        label: '收好文书',
+        result: '你把学院文书收回怀里，从挪开的木拒马旁走进去。',
       },
       {
-        label: '道谢离开',
-        result: '你朝厨房的方向点了点头，拿起自己的东西离开。',
-        effects: { mood: 1 },
+        label: '点头进去',
+        result: '你朝守卫点了点头。他没有再多问，只是把路让开。',
       },
-      { label: '装作没看见', result: '你转身走出食堂。' },
+    ],
+  },
+  {
+    id: 'west_chapel_seal',
+    title: '旧礼拜堂',
+    trigger: { type: 'enter' },
+    locations: ['westChapel'],
+    days: 'all',
+    once: true,
+    text: [
+      '门上的封条已经旧了，边角卷起。',
+      '教会与审判庭的印记并排贴着，谁也没有揭。',
+      '石阶上有一小片新踩出的灰痕，一直延伸到门边。',
+      '你站了一会儿，里面没有声音。',
+    ],
+    choices: [
+      {
+        label: '离开',
+        result: '你转身离开。封条在风里轻轻响了一下。',
+      },
+      {
+        label: '再看一眼',
+        result: '你又看了一眼那道门缝。里面还是没有声音。',
+      },
     ],
   },
 ]

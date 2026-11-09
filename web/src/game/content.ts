@@ -166,6 +166,10 @@ export const SHOP_STOCKS: Record<string, Record<string, number>> = {
     practice_sword: 1,
     iron_sword: 1,
   },
+  westGate: {
+    tonic: 1,
+    healing_potion: 1,
+  },
 }
 
 export function shopStockAt(location: string): Record<string, number> {
@@ -581,23 +585,37 @@ export const LOCATIONS: Location[] = [
   {
     id: 'westTown',
     name: '边区小镇',
-    kind: 'wild',
+    kind: 'area',
     childLabel: '小镇地点',
-    desc: '一座比银月城小得多的镇子，屋顶压得很低，风里带着湿土和柴烟的味道。',
+    desc: '边区小镇比银月城小得多。街上的店铺大多关着门，风里带着湿土和柴烟的味道。',
   },
   {
     id: 'westGate',
     name: '镇口',
     parent: 'westTown',
     kind: 'room',
-    desc: '镇口立着一圈石砌的传送阵，边缘长着青苔。再往外就是通往田野的土路。',
+    desc: '石砌的传送阵嵌在镇口，边缘长着青苔。旁边是骑士团的哨所，木拒马横在路中间。再往外就是通往田野的土路。',
   },
   {
     id: 'westInn',
-    name: '旅店房间',
+    name: '支援队驻地',
     parent: 'westTown',
     kind: 'room',
-    desc: '房间不大，一张床、一张桌子、一扇朝南的窗。楼下偶尔传来碗碟的声响。',
+    desc: '学院支援队在镇边搭了几排木架和粗布棚。棚下是一排通铺，旁边堆着木箱、药箱和记录册。',
+  },
+  {
+    id: 'westChapel',
+    name: '旧礼拜堂',
+    parent: 'westTown',
+    kind: 'room',
+    desc: '礼拜堂的门被木条封住，门上贴着教会与审判庭的封条。石阶上落着灰，门缝里看不到光。',
+  },
+  {
+    id: 'westEdge',
+    name: '镇外路口',
+    parent: 'westTown',
+    kind: 'room',
+    desc: '一排木拒马横在路口，后面插着一块木牌，上面写着“未净化”。再往前，路就隐进灰蒙蒙的田野里。',
   },
 ]
 
@@ -729,6 +747,31 @@ const DESC_BY_TIME: Record<string, [string, string, string]> = {
     '树木很快密了起来，晨光被叶子切成碎片，脚下全是湿的落叶。',
     '树木很快密了起来，脚下的落叶踩上去很软。远处偶尔传来枝叶晃动的声音。',
     '林子里几乎看不见路，枝叶在风里发出细碎的响声。',
+  ],
+  westTown: [
+    '雾还没散，街上只有几个裹着旧衣的人。多数店铺的门板还关着。',
+    '风从空地那边吹过来，卷起一点灰。街上看不到几个开门做生意的人。',
+    '镇上很早就没了人声，只有哨所和驻地的灯还亮着。',
+  ],
+  westGate: [
+    '守卫在换岗，名册摊在桌上。',
+    '偶尔有运货的车进出，木拒马挪开又合上。',
+    '哨所的灯亮着，木拒马没有挪开。',
+  ],
+  westInn: [
+    '有人在棚下生火，锅里冒着热气。',
+    '棚里多半空着，人都出去了。',
+    '通铺上有人翻身，棚外有值守的人。',
+  ],
+  westChapel: [
+    '晨雾里，封条上的印记有些模糊。',
+    '日光照在石阶上，门里仍然没有声音。',
+    '礼拜堂沉在暗处，封条被风吹得轻轻响。',
+  ],
+  westEdge: [
+    '雾贴着地面，看不清更远的地方。',
+    '风从田野那边吹过来，带着土腥味。',
+    '没有人愿意往那边看。',
   ],
 }
 
@@ -1929,6 +1972,7 @@ const AREA_LINKS: Record<string, Exit[]> = {
     { to: 'commercial', minutes: 5 },
     { to: 'outside', minutes: 5 },
   ],
+  westTown: [],
 }
 
 export const CITY_AREA_IDS = [
@@ -1961,18 +2005,6 @@ const LEGACY_EXITS: Record<string, Exit[]> = {
   forest: [
     { to: 'outside', minutes: 5 },
     { to: 'cemetery', minutes: 5 },
-  ],
-  westTown: [
-    { to: 'westGate', minutes: 5 },
-    { to: 'westInn', minutes: 5 },
-  ],
-  westGate: [
-    { to: 'westTown', minutes: 5 },
-    { to: 'westInn', minutes: 5 },
-  ],
-  westInn: [
-    { to: 'westTown', minutes: 5 },
-    { to: 'westGate', minutes: 5 },
   ],
 }
 
@@ -2545,7 +2577,7 @@ const PLAZA_NOTICES_BASE: PlazaNotice[] = [
   {
     id: 'gate_hours',
     title: '城门时刻',
-    text: '自即日起，城门 22:00 关闭，次日 06:00 开启。夜间入城请走侧门，并接受盘问。\n——城门卫队',
+    text: '自即日起，城门 22:00 关闭，次日 06:00 开启。夜间入城请走侧门，并出示文书。\n——城门卫队',
   },
   {
     id: 'night_patrol',

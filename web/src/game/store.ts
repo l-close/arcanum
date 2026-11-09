@@ -1167,6 +1167,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       const cost = edge.minutes
+      let forcedEvent: string | null = null
       mutate((d) => {
         advanceTime(d, cost)
         d.location = id
@@ -1184,9 +1185,17 @@ export const useGame = create<Store>((set, get) => {
           d.flags.relief_intro = true
           text += ' 修女长伊莎贝尔正在和玛尔塔核对名单。她抬头看了你一眼，只说了句：“来帮忙的？听玛尔塔的。”'
         }
+        if (id === 'westChapel' && !d.flags.west_chapel_seen) {
+          d.flags.west_chapel_seen = true
+          forcedEvent = 'west_chapel_seal'
+        }
         return text
       })
-      maybeEvent({ type: 'enter' })
+      if (forcedEvent) {
+        set({ pendingEvent: forcedEvent, eventResult: null, message: '' })
+      } else {
+        maybeEvent({ type: 'enter' })
+      }
     },
 
     walkPlaza: () => {
@@ -1256,11 +1265,20 @@ export const useGame = create<Store>((set, get) => {
           set({ message: '你需要到学院的传送室。' })
           return
         }
+        let forcedEvent: string | null = null
         mutate((d) => {
           d.location = 'westGate'
+          if (!d.flags.west_arrived) {
+            d.flags.west_arrived = true
+            forcedEvent = 'west_arrival'
+          }
           pushLog(d, '你站上传送阵，眼前一白，来到了边区小镇。')
           return '你站上传送阵，眼前一白，来到了边区小镇镇口。'
         })
+        if (forcedEvent) {
+          set({ pendingEvent: forcedEvent, eventResult: null, message: '' })
+          return
+        }
       } else {
         if (data.location !== 'westGate') {
           set({ message: '你需要到镇口的传送阵。' })

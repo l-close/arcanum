@@ -1064,6 +1064,7 @@ function Actions({
         </>
       )}
       {(loc === 'dorm' || loc === 'westInn') && <ActionBtn onClick={() => setModal('sleep')} label="睡觉" cost="1 小时起" />}
+      {loc === 'westGate' && <ActionBtn onClick={() => setModal('shop')} label="小摊" cost="—" />}
       {loc === 'dorm' && <ActionBtn onClick={meditate} label="冥想" cost="1 小时" />}
       {loc === 'shop' && (
         <>
@@ -1483,7 +1484,7 @@ function SleepModal() {
   return (
     <ModalShell title="睡觉" onClose={() => close(null)}>
       <p className="muted">
-        可以在孤儿院寝室或边区小镇旅店房间睡觉。睡 7 小时以上会额外恢复体力与心情；少于{' '}
+        可以在孤儿院寝室或支援队驻地睡觉。睡 7 小时以上会额外恢复体力与心情；少于{' '}
         {SLEEP_MIN_RECOVERY_MINUTES / 60} 小时只会跳过时间。
       </p>
       <div className="btn-grid">
