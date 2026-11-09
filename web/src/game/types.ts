@@ -43,6 +43,7 @@ export type GameData = {
   equipment: Equipment
   shop: { day: number; sold: Record<string, number> }
   prayers: { day: number; count: number }
+  plaza: { day: number; fed: boolean }
   meals: { day: number; breakfast: boolean; lunch: boolean; dinner: boolean }
   relief: { day: number; cared: boolean; treated: boolean; volunteered: boolean }
   events: {

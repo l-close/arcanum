@@ -170,6 +170,7 @@ export function freshData(): GameData {
     equipment: { mainHand: 'basic_wand', offHand: null, armor: null, accessory: null },
     shop: { day: 0, sold: {} },
     prayers: { day: 0, count: 0 },
+    plaza: { day: 0, fed: false },
     meals: { day: 0, breakfast: false, lunch: false, dinner: false },
     relief: { day: 0, cared: false, treated: false, volunteered: false },
     events: { day: 0, count: 0, today: [], lastSeen: {}, lastAt: -9999, seen: [] },
@@ -233,6 +234,7 @@ export function normalizeData(raw: GameData): GameData {
       return { day: shop.day, sold }
     })(),
     prayers: raw.prayers ?? { day: 0, count: 0 },
+    plaza: raw.plaza ?? { day: 0, fed: false },
     meals: raw.meals ?? { day: 0, breakfast: false, lunch: false, dinner: false },
     relief: raw.relief ?? { day: 0, cared: false, treated: false, volunteered: false },
     events: {
@@ -493,7 +495,7 @@ function applyStoryEffects(d: GameData, e?: StoryEffects): void {
   if (e.location) d.location = e.location
 }
 
-type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | null
+type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | null
 
 type TitlePanel = 'saves' | 'export' | 'import' | null
 
@@ -543,6 +545,8 @@ type Store = {
 
   moveTo: (id: string) => void
   walkPlaza: () => void
+  readPlazaNotices: () => void
+  feedPigeons: () => void
   teleport: (to: 'west' | 'town') => void
   eat: () => void
   rest: () => void
@@ -1197,6 +1201,47 @@ export const useGame = create<Store>((set, get) => {
         d.mood = clamp(d.mood + 1, 0, 100)
         pushLog(d, '你在广场上走了一圈。')
         return '你在广场上走了一圈。心情 +1。'
+      })
+    },
+
+    readPlazaNotices: () => {
+      const { data } = get()
+      if (data.location !== 'town') {
+        set({ message: '这里没有告示板。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, 5)
+        return '你看完了告示。'
+      })
+      set({ modal: 'plazaNotices' })
+    },
+
+    feedPigeons: () => {
+      const { data } = get()
+      if (data.location !== 'town') {
+        set({ message: '这里没有鸽子。' })
+        return
+      }
+      if (data.minutes < 6 * 60 || data.minutes >= 18 * 60) {
+        set({ message: '鸽子已经归巢了。' })
+        return
+      }
+      if (data.plaza.day === data.day && data.plaza.fed) {
+        set({ message: '它们已经吃饱了。' })
+        return
+      }
+      if (data.money < 1) {
+        set({ message: '你没有多余的铜币。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, 5)
+        d.money -= 1
+        d.mood = clamp(d.mood + 1, 0, 100)
+        d.plaza = { day: d.day, fed: true }
+        pushLog(d, '你在广场上喂了一会儿鸽子。')
+        return '你喂了一会儿鸽子。心情 +1。'
       })
     },
 

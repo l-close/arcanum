@@ -920,6 +920,12 @@ button:disabled {
 }
 .error-text { color: var(--red); }
 
+.notice-list { display: flex; flex-direction: column; gap: 14px; }
+.notice-item { padding-bottom: 12px; border-bottom: 1px dotted rgba(255, 255, 255, 0.08); }
+.notice-item:last-child { border-bottom: 0; padding-bottom: 0; }
+.notice-title { color: var(--gold); font-size: 14px; letter-spacing: 0.08em; margin-bottom: 5px; }
+.notice-body { color: var(--muted); font-size: 13px; line-height: 1.7; white-space: pre-wrap; }
+
 .mini-btn {
   background: transparent;
   border: 1px solid var(--line);

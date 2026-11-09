@@ -80,6 +80,7 @@ import {
   nextRentTotal,
   npcById,
   npcsAt,
+  plazaNotices,
   reliefHasPatients,
   ritePhaseAt,
   ritePhaseDone,
@@ -439,6 +440,7 @@ function GameScreen() {
       {modal === 'relations' && <RelationsModal />}
       {modal === 'stats' && <StatsModal />}
       {modal === 'eventPicker' && <EventPickerModal />}
+      {modal === 'plazaNotices' && <PlazaNoticesModal />}
       {modal === 'shop' && <ShopModal />}
       {modal === 'drinks' && <DrinkModal />}
       {modal === 'save' && <SavesModal />}
@@ -920,6 +922,8 @@ function Actions({
   const pray = useGame((s) => s.pray)
   const meditate = useGame((s) => s.meditate)
   const walkPlaza = useGame((s) => s.walkPlaza)
+  const readPlazaNotices = useGame((s) => s.readPlazaNotices)
+  const feedPigeons = useGame((s) => s.feedPigeons)
   const helpBackyard = useGame((s) => s.helpBackyard)
   const teleport = useGame((s) => s.teleport)
   const helpOrphanKids = useGame((s) => s.helpOrphanKids)
@@ -1052,7 +1056,13 @@ function Actions({
           <ActionBtn onClick={() => setModal('practice')} label="练习" cost="0.5 小时" />
         </>
       )}
-      {loc === 'town' && <ActionBtn onClick={walkPlaza} label="散步" cost="15 分钟 · 体力 -1" />}
+      {loc === 'town' && (
+        <>
+          <ActionBtn onClick={readPlazaNotices} label="看告示" cost="5 分钟" />
+          <ActionBtn onClick={feedPigeons} label="喂鸽子" cost="5 分钟 · 1 铜" />
+          <ActionBtn onClick={walkPlaza} label="散步" cost="15 分钟 · 体力 -1" />
+        </>
+      )}
       {(loc === 'dorm' || loc === 'westInn') && <ActionBtn onClick={() => setModal('sleep')} label="睡觉" cost="1 小时起" />}
       {loc === 'dorm' && <ActionBtn onClick={meditate} label="冥想" cost="1 小时" />}
       {loc === 'shop' && (
@@ -1738,6 +1748,24 @@ function SaveSlots({ mode, onTransfer }: { mode: 'title' | 'game'; onTransfer?: 
         </div>
       </div>
     </>
+  )
+}
+
+function PlazaNoticesModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  const notices = plazaNotices(data.day, data.flags)
+  return (
+    <ModalShell title="广场告示" onClose={() => setModal(null)}>
+      <div className="notice-list">
+        {notices.map((n) => (
+          <div className="notice-item" key={n.id}>
+            <div className="notice-title">{n.title}</div>
+            <div className="notice-body">{n.text}</div>
+          </div>
+        ))}
+      </div>
+    </ModalShell>
   )
 }
 
