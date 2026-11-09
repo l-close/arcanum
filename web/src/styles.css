@@ -812,6 +812,9 @@ button:disabled {
 .choice-btn small { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
 .choice-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
 .package-text { color: var(--text); font-size: 13px; line-height: 1.8; margin: 0 0 10px; }
+.board-lines { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 10px; }
+.board-line { display: flex; gap: 8px; font-size: 12px; color: var(--text); }
+.board-line .muted { color: var(--muted); margin-left: auto; }
 
 .sleep-time-row {
   display: flex;

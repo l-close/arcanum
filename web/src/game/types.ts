@@ -15,6 +15,19 @@ export type EquipmentSlot = 'mainHand' | 'offHand' | 'armor' | 'accessory'
 
 export type Equipment = Record<EquipmentSlot, string | null>
 
+export type WestProjectKey = 'wall' | 'ditch' | 'lamp'
+
+export type WestState = {
+  stage: 0 | 1
+  construction: number
+  projects: Record<WestProjectKey, number>
+  points: number
+  period: string | null
+  setIndex: number
+  accepted: string[]
+  done: string[]
+}
+
 export type ExamResult = 'pass' | 'fail' | 'absent'
 
 export type ExamPackage = {
@@ -58,6 +71,7 @@ export type GameData = {
   shop: { day: number; sold: Record<string, number> }
   books: Record<string, { progress: number; completed: boolean }>
   bookshelf: string[]
+  west: WestState
   prayers: { day: number; count: number }
   plaza: { day: number; fed: boolean }
   meals: { day: number; breakfast: boolean; lunch: boolean; dinner: boolean }

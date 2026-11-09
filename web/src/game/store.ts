@@ -11,6 +11,7 @@ import type {
   Screen,
   Skill,
   SkillKey,
+  WestState,
 } from './types'
 import {
   BELL_TOWER_MINUTES,
@@ -23,6 +24,20 @@ import {
   ITEMS,
   BOOKS,
   SEARCHABLE_BOOKS,
+  WEST_COMMISSIONS,
+  WEST_GENERICS,
+  WEST_GENERIC_MINUTES,
+  WEST_GENERIC_STAMINA,
+  WEST_GENERIC_CONSTRUCTION,
+  WEST_GENERIC_POINTS,
+  WEST_CONSTRUCTION_MAX,
+  WEST_PROJECT_MAX,
+  WEST_REPAIR_TEXTS,
+  WEST_COMMISSION_TEXTS,
+  westRumor,
+  supportPeriodAt,
+  shopPriceAt,
+  sellPriceAt,
   RELIEF_CARE_MINUTES,
   RELIEF_CARE_MOOD,
   RELIEF_CARE_STAMINA,
@@ -180,6 +195,16 @@ export function freshData(): GameData {
     shop: { day: 0, sold: {} },
     books: {},
     bookshelf: ['picture_book'],
+    west: {
+      stage: 0,
+      construction: 0,
+      projects: { wall: 0, ditch: 0, lamp: 0 },
+      points: 0,
+      period: null,
+      setIndex: 0,
+      accepted: [],
+      done: [],
+    },
     prayers: { day: 0, count: 0 },
     plaza: { day: 0, fed: false },
     meals: { day: 0, breakfast: false, lunch: false, dinner: false },
@@ -339,6 +364,20 @@ export function normalizeData(raw: GameData): GameData {
     })(),
     books: raw.books ?? {},
     bookshelf: raw.bookshelf ?? ['picture_book'],
+    west: {
+      stage: raw.west?.stage === 1 ? 1 : 0,
+      construction: clamp(raw.west?.construction ?? 0, 0, WEST_CONSTRUCTION_MAX),
+      projects: {
+        wall: clamp(raw.west?.projects?.wall ?? 0, 0, WEST_PROJECT_MAX),
+        ditch: clamp(raw.west?.projects?.ditch ?? 0, 0, WEST_PROJECT_MAX),
+        lamp: clamp(raw.west?.projects?.lamp ?? 0, 0, WEST_PROJECT_MAX),
+      },
+      points: Math.max(0, raw.west?.points ?? 0),
+      period: raw.west?.period ?? null,
+      setIndex: Math.max(0, raw.west?.setIndex ?? 0),
+      accepted: raw.west?.accepted ?? [],
+      done: raw.west?.done ?? [],
+    },
     prayers: raw.prayers ?? { day: 0, count: 0 },
     plaza: raw.plaza ?? { day: 0, fed: false },
     meals: raw.meals ?? { day: 0, breakfast: false, lunch: false, dinner: false },
@@ -377,6 +416,7 @@ export function normalizeData(raw: GameData): GameData {
     storyStep: raw.storyStep ?? -1,
     storyDone: raw.storyDone ?? true,
   }
+  resetWestPeriod(data)
   maybeLearnSpells(data)
   return data
 }
@@ -472,6 +512,11 @@ function settleWeek(d: GameData): void {
   }
   if (decayed.length) {
     pushLog(d, `${decayed.map((key) => SKILL_LABEL[key]).join('、')}有些生疏了。`)
+  }
+  if (currentYear(d.day) >= 2 && d.west.stage === 0) {
+    d.west.construction = Math.min(WEST_CONSTRUCTION_MAX, d.west.construction + 5)
+    pushLog(d, '西镇的人也在修补。建设值 +5。')
+    checkWestStage(d)
   }
 }
 
@@ -613,7 +658,7 @@ function applyStoryEffects(d: GameData, e?: StoryEffects): void {
   if (e.location) d.location = e.location
 }
 
-type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | null
+type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | null
 
 type TitlePanel = 'saves' | 'export' | 'import' | null
 
@@ -633,6 +678,7 @@ type Store = {
   pendingEvent: string | null
   eventResult: string | null
   battle: BattleState | null
+  battleBonusCopper: number
   activePackageId: string | null
   examCourseId: string | null
 
@@ -678,6 +724,13 @@ type Store = {
   readBook: (id: string) => void
   searchLibrary: () => void
   teleport: (to: 'west' | 'town') => void
+  acceptWestCommission: (id: string) => void
+  doWestCommission: (id: string) => void
+  doWestGeneric: (id: string) => void
+  listenWestRumors: () => void
+  westLookout: () => void
+  westPatrol: () => void
+  startWildBattle: (enemyId: string, bonusCopper: number) => void
   eat: () => void
   rest: () => void
   sleep: (hours: number) => void
@@ -728,11 +781,72 @@ type Store = {
   resetGame: () => void
 }
 
+function resetWestPeriod(d: GameData): void {
+  const period = supportPeriodAt(d.day)
+  const key = period?.key ?? null
+  if (d.west.period !== key) {
+    d.west.period = key
+    d.west.setIndex = 0
+    d.west.accepted = []
+    d.west.done = []
+  }
+}
+
+function westRepairIds(d: GameData): string[] {
+  if (d.west.stage >= 1) return ['maintenance']
+  return (['wall', 'ditch', 'lamp'] as const).filter(
+    (key) => (d.west.projects[key] ?? 0) < WEST_PROJECT_MAX,
+  )
+}
+
+function westSetComplete(d: GameData): boolean {
+  const repairDone = ['wall', 'ditch', 'lamp', 'maintenance'].some((id) =>
+    d.west.done.includes(id),
+  )
+  const repairAvailable = westRepairIds(d).length > 0
+  return (repairDone || !repairAvailable) && d.west.done.includes('patrol') && d.west.done.includes('care')
+}
+
+function refreshWestSet(d: GameData): void {
+  const period = supportPeriodAt(d.day)
+  if (!period) return
+  if (!westSetComplete(d)) return
+  if (d.west.setIndex + 1 >= period.maxSets) {
+    d.west.setIndex = period.maxSets
+    return
+  }
+  d.west.setIndex += 1
+  d.west.accepted = []
+  d.west.done = []
+  const text = `第 ${d.west.setIndex + 1} 组委托已刷新。`
+  d.notice = d.notice ? `${d.notice} ${text}` : text
+  pushLog(d, text)
+}
+
+function checkWestStage(d: GameData): void {
+  if (d.west.stage >= 1) {
+    d.west.construction = Math.min(WEST_CONSTRUCTION_MAX, d.west.construction)
+    return
+  }
+  if (d.west.construction < WEST_CONSTRUCTION_MAX) return
+  if (!(['wall', 'ditch', 'lamp'] as const).every((key) => (d.west.projects[key] ?? 0) >= WEST_PROJECT_MAX)) {
+    return
+  }
+  d.west.stage = 1
+  d.west.construction = WEST_CONSTRUCTION_MAX
+  d.flags.west_stage1 = true
+  const text = '西镇的重建暂时告一段落。阶段 1：勉强维持。'
+  d.notice = d.notice ? `${d.notice} ${text}` : text
+  pushLog(d, text)
+}
+
 export const useGame = create<Store>((set, get) => {
   const mutate = (fn: (d: GameData) => string) => {
     const { data, player } = get()
     const next = structuredClone(data)
     const msg = fn(next)
+    resetWestPeriod(next)
+    checkWestStage(next)
     const learned = maybeLearnSpells(next)
     const report = semesterEndFor(data.day, next.day)
     if (report) {
@@ -881,6 +995,7 @@ export const useGame = create<Store>((set, get) => {
     battle: null,
     activePackageId: null,
     examCourseId: null,
+    battleBonusCopper: 0,
 
     setScreen: (screen) => set({ screen }),
     startNewGame: (name, gender) => {
@@ -901,6 +1016,7 @@ export const useGame = create<Store>((set, get) => {
         battle: null,
         activePackageId: null,
         examCourseId: null,
+        battleBonusCopper: 0,
         sidebarOpen: typeof window !== 'undefined' ? window.innerWidth > 860 : true,
       })
       saveGame('auto', { name: name.trim() || '无名', gender }, data)
@@ -924,6 +1040,7 @@ export const useGame = create<Store>((set, get) => {
         battle: null,
         activePackageId: null,
         examCourseId: null,
+        battleBonusCopper: 0,
       })
       return true
     },
@@ -1407,12 +1524,13 @@ export const useGame = create<Store>((set, get) => {
     battleYield: () => {
       const { battle } = get()
       if (!battle || (battle.phase !== 'player' && battle.phase !== 'submenu')) return
+      const enemy = ENEMIES[battle.enemyId]
       const b: BattleState = { ...battle, log: [...battle.log] }
       b.phase = 'defeat'
       b.submenu = null
-      b.result = battle.kind === 'wild' ? '你转身退开，史莱姆没有追上来。' : '你抬手认输，练习到此为止。'
+      b.result = battle.kind === 'wild' ? `你转身退开，${enemy?.name ?? '它'}没有追上来。` : '你抬手认输，练习到此为止。'
       battleLog(b, battle.kind === 'wild' ? '你退出了战斗。' : '你抬手认输。')
-      set({ battle: b })
+      set({ battle: b, battleBonusCopper: 0 })
     },
 
     battleClose: () => {
@@ -1427,6 +1545,12 @@ export const useGame = create<Store>((set, get) => {
       const enemy = ENEMIES[battle.enemyId]
       let dropText = ''
       if (battle.phase === 'victory' && enemy) {
+        const bonus = get().battleBonusCopper
+        if (bonus > 0) {
+          next.money += bonus
+          dropText += ` 额外获得 ${bonus} 铜。`
+          pushLog(next, `战斗额外奖励：${bonus} 铜。`)
+        }
         const gains = battle.usedSkills.map((key) => {
           addExp(next, key, enemy.expValue)
           return `${SKILL_LABEL[key]}经验 +${enemy.expValue}`
@@ -1451,7 +1575,7 @@ export const useGame = create<Store>((set, get) => {
           ? `战斗结束，用时约 ${minutes} 分钟。`
           : `你结束了练习，用时约 ${minutes} 分钟。`) + dropText
       pushLog(next, text)
-      set({ battle: null, data: next, message: text, modal: null })
+      set({ battle: null, data: next, message: text, modal: null, battleBonusCopper: 0 })
       saveGame('auto', player, next)
     },
 
@@ -1694,6 +1818,243 @@ export const useGame = create<Store>((set, get) => {
         const text = '你在书架间翻了很久，指尖沾了灰，还是没有找到想要的那本。'
         pushLog(d, text)
         return text
+      })
+    },
+
+    acceptWestCommission: (id) => {
+      const { data } = get()
+      const period = supportPeriodAt(data.day)
+      if (!period) {
+        set({ message: '现在没有支援委托。' })
+        return
+      }
+      const def = WEST_COMMISSIONS[id]
+      if (!def) return
+      const next = structuredClone(data)
+      resetWestPeriod(next)
+      if (next.west.setIndex >= period.maxSets) {
+        set({ message: '本月委托已经全部完成。' })
+        return
+      }
+      if (next.west.accepted.includes(id) || next.west.done.includes(id)) {
+        set({ message: '这个委托已经接过了。' })
+        return
+      }
+      const repairKeys = ['wall', 'ditch', 'lamp']
+      if (def.kind === 'repair') {
+        if (next.west.stage !== 0) {
+          set({ message: '现在没有需要修复的主项目。' })
+          return
+        }
+        if (!def.project || (next.west.projects[def.project] ?? 0) >= WEST_PROJECT_MAX) {
+          set({ message: '这个项目已经修好了。' })
+          return
+        }
+        if (
+          next.west.accepted.some((x) => repairKeys.includes(x)) ||
+          next.west.done.some((x) => repairKeys.includes(x))
+        ) {
+          set({ message: '这一组已经接了一个修复委托。' })
+          return
+        }
+      }
+      if (def.kind === 'maintenance' && next.west.stage < 1) {
+        set({ message: '现在还没有日常维护。' })
+        return
+      }
+      if (def.kind === 'patrol' && next.west.done.includes('patrol')) {
+        set({ message: '这一组的巡田已经完成了。' })
+        return
+      }
+      if (def.kind === 'care' && next.west.done.includes('care')) {
+        set({ message: '这一组的驻地换药已经完成了。' })
+        return
+      }
+      next.west.accepted.push(id)
+      set({ data: next, message: `已接取：${def.name}` })
+    },
+
+    doWestCommission: (id) => {
+      const { data } = get()
+      const def = WEST_COMMISSIONS[id]
+      if (!def) return
+      if (!supportPeriodAt(data.day)) {
+        set({ message: '现在不是建设周。' })
+        return
+      }
+      if (!data.west.accepted.includes(id) || data.west.done.includes(id)) {
+        set({ message: '你还没有接取这个委托。' })
+        return
+      }
+      if (data.location !== def.location) {
+        set({ message: `你需要去${getLocation(def.location).name}。` })
+        return
+      }
+      if (data.stamina < def.stamina) {
+        set({ message: '你太累了，先休息一下。' })
+        return
+      }
+      const beforeProject = def.project ? data.west.projects[def.project] ?? 0 : 0
+      mutate((d) => {
+        advanceTime(d, def.minutes)
+        d.stamina = clamp(d.stamina - def.stamina, 0, maxStamina(d.skills.physique.tier))
+        d.money += def.money
+        d.west.points += def.points
+        if (def.construction > 0 && d.west.stage === 0) {
+          d.west.construction = Math.min(
+            WEST_CONSTRUCTION_MAX,
+            d.west.construction + def.construction,
+          )
+        }
+        let text = ''
+        if (def.kind === 'repair' && def.project) {
+          d.west.projects[def.project] = Math.min(
+            WEST_PROJECT_MAX,
+            (d.west.projects[def.project] ?? 0) + 1,
+          )
+          const lines = WEST_REPAIR_TEXTS[def.project]
+          text = lines[Math.min(beforeProject, lines.length - 1)]
+        } else {
+          text = WEST_COMMISSION_TEXTS[def.id] ?? def.desc
+        }
+        d.west.done.push(id)
+        refreshWestSet(d)
+        checkWestStage(d)
+        pushLog(d, text)
+        return `${text} 你得到了 ${def.money} 铜，支援点 +${def.points}。`
+      })
+      if (def.battleChance && def.battleEnemy && Math.random() < def.battleChance) {
+        get().startWildBattle(def.battleEnemy, def.battleBonus ?? 0)
+      }
+    },
+
+    doWestGeneric: (id) => {
+      const { data } = get()
+      const def = WEST_GENERICS.find((g) => g.id === id)
+      if (!def) return
+      if (!supportPeriodAt(data.day)) {
+        set({ message: '现在不是建设周。' })
+        return
+      }
+      if (data.location !== def.location) {
+        set({ message: '你不在这里。' })
+        return
+      }
+      if (data.stamina < WEST_GENERIC_STAMINA) {
+        set({ message: '你太累了，先休息一下。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, WEST_GENERIC_MINUTES)
+        d.stamina = clamp(
+          d.stamina - WEST_GENERIC_STAMINA,
+          0,
+          maxStamina(d.skills.physique.tier),
+        )
+        d.west.points += WEST_GENERIC_POINTS
+        const before = d.west.construction
+        if (d.west.stage === 0) {
+          d.west.construction = Math.min(
+            WEST_CONSTRUCTION_MAX,
+            d.west.construction + WEST_GENERIC_CONSTRUCTION,
+          )
+        }
+        const gain = d.west.construction - before
+        checkWestStage(d)
+        pushLog(d, def.text)
+        const reward = gain > 0
+          ? ` 建设值 +${gain}，支援点 +${WEST_GENERIC_POINTS}。`
+          : ` 支援点 +${WEST_GENERIC_POINTS}。`
+        return `${def.text}${reward}`
+      })
+    },
+
+    listenWestRumors: () => {
+      const { data } = get()
+      if (data.location !== 'westMarket') {
+        set({ message: '这里没有镇民可问。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, 15)
+        const line = westRumor(d.west.stage)
+        pushLog(d, line)
+        return line
+      })
+    },
+
+    westLookout: () => {
+      const { data } = get()
+      if (data.location !== 'westTower') {
+        set({ message: '你不在这里。' })
+        return
+      }
+      if (data.west.stage < 1) {
+        set({ message: '哨塔还没修好。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, 5)
+        const text =
+          '你走上哨塔。田野一直铺到灰蒙蒙的远处，木牌上的“未净化”在风里发白。'
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    westPatrol: () => {
+      const { data } = get()
+      if (data.location !== 'westTower') {
+        set({ message: '你不在这里。' })
+        return
+      }
+      if (data.west.stage < 1) {
+        set({ message: '哨塔还没修好。' })
+        return
+      }
+      if (data.stamina < 10) {
+        set({ message: '你太累了，先休息一下。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, 120)
+        d.stamina = clamp(d.stamina - 10, 0, maxStamina(d.skills.physique.tier))
+        d.money += 8
+        d.west.points += 1
+        const text = '你在哨塔附近巡逻了一圈。'
+        pushLog(d, text)
+        return `${text} 你得到了 8 铜，支援点 +1。`
+      })
+      if (Math.random() < 0.35) {
+        get().startWildBattle('corrupted_dog', 3)
+      }
+    },
+
+    startWildBattle: (enemyId, bonusCopper) => {
+      const { data, battle } = get()
+      if (battle) return
+      const enemy = ENEMIES[enemyId]
+      if (!enemy) return
+      set({
+        battle: {
+          kind: 'wild',
+          enemyId,
+          enemyHp: enemy.hp,
+          playerHp: Math.max(1, data.hp),
+          playerGauge: 0,
+          enemyGauge: 0,
+          elapsedTicks: 0,
+          casting: null,
+          actions: 0,
+          log: [enemy.intro, '行动条开始充能。'],
+          phase: 'filling',
+          submenu: null,
+          result: '',
+          usedSkills: [],
+        },
+        battleBonusCopper: bonusCopper,
+        modal: null,
+        message: '',
       })
     },
 
@@ -2361,13 +2722,14 @@ export const useGame = create<Store>((set, get) => {
         set({ message: '今天的货已经卖完了。' })
         return
       }
-      if (data.money < def.price) {
+      const price = shopPriceAt(data.location, id, data.west.stage)
+      if (data.money < price) {
         set({ message: data.money < 0 ? '你还欠着钱。' : '钱不够。' })
         return
       }
       mutate((d) => {
         if (d.shop.day !== d.day) d.shop = { day: d.day, sold: {} }
-        d.money -= def.price
+        d.money -= price
         d.inventory[id] = (d.inventory[id] ?? 0) + 1
         d.shop.sold[soldKey] = (d.shop.sold[soldKey] ?? 0) + 1
         pushLog(d, `你买了${def.name}。`)
@@ -2377,7 +2739,7 @@ export const useGame = create<Store>((set, get) => {
 
     sellItem: (id, all) => {
       const { data } = get()
-      if (data.location !== 'shop') {
+      if (data.location !== 'shop' && data.location !== 'westMarket') {
         set({ message: '这里不收东西。' })
         return
       }
@@ -2385,10 +2747,11 @@ export const useGame = create<Store>((set, get) => {
       const have = data.inventory[id] ?? 0
       if (!def || def.type !== 'material' || have <= 0) return
       const count = all ? have : 1
+      const price = sellPriceAt(data.location, id)
       mutate((d) => {
         d.inventory[id] = Math.max(0, (d.inventory[id] ?? 0) - count)
-        d.money += def.price * count
-        const text = `你卖出${def.name} ×${count}，得到 ${def.price * count} 枚铜币。`
+        d.money += price * count
+        const text = `你卖出${def.name} ×${count}，得到 ${price * count} 枚铜币。`
         pushLog(d, text)
         return text
       })
@@ -2686,6 +3049,7 @@ export const useGame = create<Store>((set, get) => {
         battle: null,
         activePackageId: null,
         examCourseId: null,
+        battleBonusCopper: 0,
       })
     },
     removeSlot: (slot) => {
@@ -2762,6 +3126,7 @@ export const useGame = create<Store>((set, get) => {
         battle: null,
         activePackageId: null,
         examCourseId: null,
+        battleBonusCopper: 0,
       })
     },
   }

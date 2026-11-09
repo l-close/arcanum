@@ -20,6 +20,19 @@ import {
   LOCATIONS,
   NPCS,
   QUALITY,
+  WEST_COMMISSIONS,
+  WEST_GENERICS,
+  WEST_CONSTRUCTION_MAX,
+  WEST_PROJECT_MAX,
+  WEST_GENERIC_MINUTES,
+  WEST_GENERIC_STAMINA,
+  WEST_GENERIC_CONSTRUCTION,
+  WEST_GENERIC_POINTS,
+  supportPeriodAt,
+  nextSupportPeriod,
+  isConstructionWeek,
+  shopPriceAt,
+  sellPriceAt,
   RELIEF_CARE_MINUTES,
   RELIEF_CARE_STAMINA,
   RELIEF_OPEN_END,
@@ -329,6 +342,7 @@ function GameScreen() {
   const examTotal = nextExamTotal(data.day, data.minutes)
   const examDays = examTotal === null ? null : daysUntil(examTotal, data.day, data.minutes)
   const semState = semesterState(data.day)
+  const supportPeriod = supportPeriodAt(data.day)
   const inScene = data.storyStep >= 0 && data.storyStep < STORY.length && storyTarget === null
   const inTransition = storyTarget !== null
   const nextLeg = storyRoute[0] ? getLocation(storyRoute[0]) : null
@@ -379,6 +393,9 @@ function GameScreen() {
                       ? '本学年已结束'
                       : `距离下一次考试：${examDays === null ? '本学期已结束' : examDays === 0 ? '今天' : `${examDays} 天`}`}
                 </span>
+                {supportPeriod && (
+                  <span>{supportPeriod.kind === 'holiday' ? '本月' : '本周'}：边区支援</span>
+                )}
               </div>
               <div className="loc-line">
                 <span className="loc-name">{loc.name}</span>
@@ -403,7 +420,7 @@ function GameScreen() {
               ) : (
                 <>
                   <div className="narration">
-                    {locationDesc(loc, data.minutes, data.day)}
+                    {locationDesc(loc, data.minutes, data.day, data.west)}
                     {weatherText && <span className="weather-line">{weatherText}</span>}
                   </div>
                   {npcsHere.length > 0 && (
@@ -457,6 +474,9 @@ function GameScreen() {
       {modal === 'exam' && <ExamModal />}
       {modal === 'examHandoff' && <ExamHandoffModal />}
       {modal === 'examOpen' && <ExamOpenModal />}
+      {modal === 'westBoard' && <WestBoardModal />}
+      {modal === 'westRecord' && <WestRecordModal />}
+      {modal === 'academyBoard' && <AcademyBoardModal />}
       {modal === 'shop' && <ShopModal />}
       {modal === 'drinks' && <DrinkModal />}
       {modal === 'save' && <SavesModal />}
@@ -479,6 +499,7 @@ function BattleView() {
   const battle = useGame((s) => s.battle)
   const data = useGame((s) => s.data)
   const modal = useGame((s) => s.modal)
+  const locName = getLocation(data.location).name
   const playerName = useGame((s) => s.player.name)
   const tick = useGame((s) => s.battleTick)
   const openSubmenu = useGame((s) => s.battleOpenSubmenu)
@@ -555,7 +576,7 @@ function BattleView() {
   return (
     <div className="battle-screen">
       <div className="battle-head">
-        <span className="battle-title">{battle.kind === 'wild' ? '森林 · 遭遇' : '演武场 · 切磋'}</span>
+        <span className="battle-title">{battle.kind === 'wild' ? `${locName} · 遭遇` : '演武场 · 切磋'}</span>
         <span className="battle-round">战斗时间 {formatBattleTime(battle.elapsedTicks)} · {phaseLabel}</span>
       </div>
 
@@ -964,6 +985,12 @@ function Actions({
   const searchLibrary = useGame((s) => s.searchLibrary)
   const startExam = useGame((s) => s.startExam)
   const startOpenExamPackage = useGame((s) => s.startOpenExamPackage)
+  const acceptWestCommission = useGame((s) => s.acceptWestCommission)
+  const doWestCommission = useGame((s) => s.doWestCommission)
+  const doWestGeneric = useGame((s) => s.doWestGeneric)
+  const listenWestRumors = useGame((s) => s.listenWestRumors)
+  const westLookout = useGame((s) => s.westLookout)
+  const westPatrol = useGame((s) => s.westPatrol)
   const helpBackyard = useGame((s) => s.helpBackyard)
   const teleport = useGame((s) => s.teleport)
   const helpOrphanKids = useGame((s) => s.helpOrphanKids)
@@ -1027,6 +1054,37 @@ function Actions({
     </>
   )
   const lecturePlan = loc === 'lecture' ? lecturePreviewPlan(data.day, data.minutes) : null
+  const westPeriod = supportPeriodAt(data.day)
+  const canDoWest = (id: string) =>
+    data.west.accepted.includes(id) && !data.west.done.includes(id)
+  const westCommissionBtn = (id: string) => {
+    if (!canDoWest(id)) return null
+    const def = WEST_COMMISSIONS[id]
+    if (!def) return null
+    return (
+      <ActionBtn
+        key={id}
+        onClick={() => doWestCommission(id)}
+        label={def.name}
+        cost={`${def.minutes} 分钟 · 体力 -${def.stamina}`}
+      />
+    )
+  }
+  const westGenericBtns = (location: string) => {
+    if (!westPeriod) return null
+    return WEST_GENERICS.filter((g) => g.location === location).map((g) => (
+      <ActionBtn
+        key={g.id}
+        onClick={() => doWestGeneric(g.id)}
+        label={g.name}
+        cost={
+          data.west.stage === 0
+            ? `${WEST_GENERIC_MINUTES} 分钟 · 体力 -${WEST_GENERIC_STAMINA} · 建设值 +${WEST_GENERIC_CONSTRUCTION} · 支援点 +${WEST_GENERIC_POINTS}`
+            : `${WEST_GENERIC_MINUTES} 分钟 · 体力 -${WEST_GENERIC_STAMINA} · 支援点 +${WEST_GENERIC_POINTS}`
+        }
+      />
+    ))
+  }
   const remain = segment ? segment.segmentEnd - data.minutes : 0
   const nextClass = nextClassStart(loc, data.day, data.minutes)
   const waitToClass = nextClass === null ? null : nextClass - data.minutes
@@ -1161,6 +1219,37 @@ function Actions({
       )}
       {(loc === 'dorm' || loc === 'westInn') && <ActionBtn onClick={() => setModal('sleep')} label="睡觉" cost="1 小时起" />}
       {loc === 'westGate' && <ActionBtn onClick={() => setModal('shop')} label="小摊" cost="—" />}
+      {loc === 'westGate' && (
+        <ActionBtn onClick={() => setModal('westBoard')} label="查看委托板" cost="—" />
+      )}
+      {loc === 'westGate' && westCommissionBtn('wall')}
+      {loc === 'westGate' && westCommissionBtn('ditch')}
+      {loc === 'westGate' && westCommissionBtn('maintenance')}
+      {loc === 'westGate' && westGenericBtns('westGate')}
+      {loc === 'westInn' && (
+        <ActionBtn onClick={() => setModal('westRecord')} label="工程记录" cost="—" />
+      )}
+      {loc === 'westInn' && westCommissionBtn('care')}
+      {loc === 'westInn' && westGenericBtns('westInn')}
+      {loc === 'westMarket' && (
+        <ActionBtn onClick={() => setModal('shop')} label="补给摊" cost="—" />
+      )}
+      {loc === 'westMarket' && (
+        <ActionBtn onClick={listenWestRumors} label="听镇民说话" cost="15 分钟" />
+      )}
+      {loc === 'westMarket' && westCommissionBtn('lamp')}
+      {loc === 'westMarket' && westGenericBtns('westMarket')}
+      {loc === 'westEdge' && westCommissionBtn('patrol')}
+      {loc === 'westTower' && data.west.stage < 1 && westGenericBtns('westTower')}
+      {loc === 'westTower' && data.west.stage >= 1 && (
+        <>
+          <ActionBtn onClick={westLookout} label="远望" cost="5 分钟" />
+          <ActionBtn onClick={westPatrol} label="巡逻" cost="2 小时 · 体力 -10" />
+        </>
+      )}
+      {loc === 'academy' && (
+        <ActionBtn onClick={() => setModal('academyBoard')} label="查看告示板" cost="—" />
+      )}
       {loc === 'dorm' && <ActionBtn onClick={meditate} label="冥想" cost="1 小时" />}
       {loc === 'dorm' && <ActionBtn onClick={() => setModal('bookshelf')} label="书柜" cost="—" />}
       {loc === 'dorm' &&
@@ -2760,15 +2849,16 @@ function ShopModal() {
           if (!def) return null
           const sold = soldToday[`${data.location}:${id}`] ?? 0
           const left = Math.max(0, stockCount - sold)
+          const price = shopPriceAt(data.location, id, data.west.stage)
           return (
             <div className="shop-row" key={id}>
               <div className="row-head">
                 <span className="item-name">{def.name}</span>
-                <span className="shop-price">{def.price} 铜</span>
+                <span className="shop-price">{price} 铜</span>
                 <span className="shop-stock">剩 {left}</span>
                 <button
                   className="mini-btn"
-                  disabled={left <= 0 || data.money < def.price}
+                  disabled={left <= 0 || data.money < price}
                   onClick={() => buyItem(id)}
                 >
                   购买
@@ -2779,20 +2869,21 @@ function ShopModal() {
           )
         })}
       </div>
-      {data.location === 'shop' && materials.length > 0 && (
+      {(data.location === 'shop' || data.location === 'westMarket') && materials.length > 0 && (
         <div className="shop-sell">
           <div className="section-title">收购</div>
           {materials.map(([id, qty]) => {
             const def = ITEMS[id]
+            const price = sellPriceAt(data.location, id)
             return (
               <div className="shop-row" key={id}>
                 <div className="row-head">
                   <span className="item-name">{def.name} ×{qty}</span>
-                  <span className="shop-price">{def.price} 铜 / 个</span>
+                  <span className="shop-price">{price} 铜 / 个</span>
                   <button className="mini-btn" onClick={() => sellItem(id, false)}>卖 1 个</button>
                   <button className="mini-btn" onClick={() => sellItem(id, true)}>全部卖出</button>
                 </div>
-                <div className="item-desc">全部卖出可得 {def.price * qty} 铜</div>
+                <div className="item-desc">全部卖出可得 {price * qty} 铜</div>
               </div>
             )
           })}
@@ -2833,6 +2924,187 @@ function DrinkModal() {
           )
         })}
       </div>
+    </ModalShell>
+  )
+}
+
+function WestBoardModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  const acceptWestCommission = useGame((s) => s.acceptWestCommission)
+  const period = supportPeriodAt(data.day)
+  const next = nextSupportPeriod(data.day)
+  const repairKeys = ['wall', 'ditch', 'lamp'] as const
+  const repairAccepted = data.west.accepted.find(
+    (id) => id === 'maintenance' || repairKeys.includes(id as (typeof repairKeys)[number]),
+  )
+  const repairDone = data.west.done.find(
+    (id) => id === 'maintenance' || repairKeys.includes(id as (typeof repairKeys)[number]),
+  )
+  const availableProjects = repairKeys.filter(
+    (key) => (data.west.projects[key] ?? 0) < WEST_PROJECT_MAX,
+  )
+
+  const commissionRow = (id: string) => {
+    const def = WEST_COMMISSIONS[id]
+    if (!def) return null
+    const costText = `${def.minutes} 分钟 · 体力 -${def.stamina} · ${
+      data.west.stage === 0 ? `+${def.construction} 建设值 · ` : ''
+    }+${def.points} 支援点`
+    if (data.west.done.includes(id)) {
+      return <div className="hint" key={id}>已完成：{def.name}</div>
+    }
+    if (data.west.accepted.includes(id)) {
+      return <div className="hint" key={id}>已接取：{def.name}</div>
+    }
+    return (
+      <button className="choice-btn" key={id} onClick={() => acceptWestCommission(id)}>
+        {def.name}
+        <small>{costText}</small>
+      </button>
+    )
+  }
+
+  return (
+    <ModalShell title="委托板" onClose={() => setModal(null)}>
+      {!period ? (
+        <>
+          <p className="package-text">公告板上没有新的委托。</p>
+          {next && <p className="hint">下次支援：{next.label}</p>}
+        </>
+      ) : (
+        <>
+          <p className="package-text">
+            {period.label} · 第 {Math.min(data.west.setIndex + 1, period.maxSets)} / {period.maxSets} 组
+          </p>
+          {data.west.setIndex >= period.maxSets ? (
+            <p className="hint">本月委托已经全部完成。</p>
+          ) : (
+            <>
+              <div className="section-title">修复工程</div>
+              {data.west.stage >= 1 ? (
+                repairDone ? (
+                  <div className="hint">已完成：日常维护</div>
+                ) : repairAccepted ? (
+                  <div className="hint">已接取：日常维护</div>
+                ) : (
+                  <button
+                    className="choice-btn"
+                    onClick={() => acceptWestCommission('maintenance')}
+                  >
+                    日常维护
+                    <small>
+                      {WEST_COMMISSIONS.maintenance.minutes} 分钟 · 体力 -
+                      {WEST_COMMISSIONS.maintenance.stamina} · +
+                      {WEST_COMMISSIONS.maintenance.points} 支援点
+                    </small>
+                  </button>
+                )
+              ) : repairDone ? (
+                <div className="hint">已完成：{WEST_COMMISSIONS[repairDone]?.name ?? '修复工程'}</div>
+              ) : repairAccepted ? (
+                <div className="hint">已接取：{WEST_COMMISSIONS[repairAccepted]?.name ?? '修复工程'}</div>
+              ) : availableProjects.length === 0 ? (
+                <div className="hint">主项目已经全部完成。</div>
+              ) : (
+                <div className="choice-list">
+                  {availableProjects.map((key) => commissionRow(key))}
+                </div>
+              )}
+              <div className="section-title">其他委托</div>
+              <div className="choice-list">
+                {commissionRow('patrol')}
+                {commissionRow('care')}
+              </div>
+              <p className="hint">镇里的零碎活可以直接做。</p>
+            </>
+          )}
+        </>
+      )}
+    </ModalShell>
+  )
+}
+
+function WestRecordModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  return (
+    <ModalShell title="工程记录" onClose={() => setModal(null)}>
+      <p className="package-text">
+        阶段：{data.west.stage >= 1 ? '勉强维持' : '破败'}
+      </p>
+      <p className="package-text">
+        建设值：{Math.floor(data.west.construction)} / {WEST_CONSTRUCTION_MAX}
+      </p>
+      <p className="package-text">支援点：{data.west.points}</p>
+      {data.west.stage >= 1 ? (
+        <p className="hint">镇子暂时不再继续坏下去。后续工程待第三学年。</p>
+      ) : (
+        <p className="hint">项目进度看地点描述。</p>
+      )}
+    </ModalShell>
+  )
+}
+
+function AcademyBoardModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  const year = currentYear(data.day)
+  const examDay = isExamDay(data.day)
+  const construction = isConstructionWeek(data.day)
+  const holiday = semesterState(data.day) === 'summer' || semesterState(data.day) === 'winter'
+  const period = supportPeriodAt(data.day)
+  const next = nextSupportPeriod(data.day)
+  const examTotal = nextExamTotal(data.day, data.minutes)
+  const examDays = examTotal === null ? null : daysUntil(examTotal, data.day, data.minutes)
+  const courses = coursesForYear(year)
+
+  return (
+    <ModalShell title="学院告示板" onClose={() => setModal(null)}>
+      <div className="section-title">今日课程</div>
+      {examDay ? (
+        <p className="hint">今日月考，课程暂停。</p>
+      ) : holiday ? (
+        <p className="hint">假期无课。</p>
+      ) : construction ? (
+        <p className="hint">本周建设周，停课。</p>
+      ) : (
+        <div className="board-lines">
+          {courses.map((course) => (
+            <div className="board-line" key={course.id}>
+              <span>
+                {formatTime(course.start)}–{formatTime(course.end)}
+              </span>
+              <span>{course.name}</span>
+              <span className="muted">{getLocation(course.location).name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {year >= 2 && (
+        <>
+          <div className="section-title">本周支援</div>
+          {period ? (
+            <>
+              <p className="package-text">{period.label}</p>
+              <p className="hint">镇口委托板已更新。</p>
+            </>
+          ) : (
+            <>
+              <p className="hint">本周无支援安排。</p>
+              {next && <p className="hint">下次支援：{next.label}</p>}
+            </>
+          )}
+        </>
+      )}
+
+      <div className="section-title">学期与考核</div>
+      <p className="package-text">{semesterLabel(data.day)}</p>
+      <p className="hint">
+        距离下一次考试：
+        {examDays === null ? '本学期已结束' : examDays === 0 ? '今天' : `${examDays} 天`}
+      </p>
     </ModalShell>
   )
 }

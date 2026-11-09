@@ -732,6 +732,29 @@ export const EVENTS: GameEvent[] = [
       },
     ],
   },
+  {
+    id: 'west_alvin_encounter',
+    title: '封条外',
+    trigger: { type: 'enter' },
+    locations: ['westChapel'],
+    days: 'all',
+    once: true,
+    text: [
+      '阿尔文站在封条外，手里拿着一叠纸。',
+      '他听见脚步，把纸收进外套里。',
+      '“这边的事，别跟别人说。”',
+    ],
+    choices: [
+      {
+        label: '点头',
+        result: '你点了点头。阿尔文没有再解释，转身走进镇外方向。',
+      },
+      {
+        label: '问他在做什么',
+        result: '“课上没讲完的东西。”他说完这句，就不再看你。',
+      },
+    ],
+  },
 ]
 
 export function eventMatches(event: GameEvent, data: GameData, trigger: EventTrigger): boolean {

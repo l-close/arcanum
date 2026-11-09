@@ -1,4 +1,4 @@
-import type { EquipmentSlot, SkillKey } from './types'
+import type { EquipmentSlot, SkillKey, WestProjectKey } from './types'
 
 export const TIER_REQ = [200, 1000, 3000, 7500, 20000]
 
@@ -144,6 +144,16 @@ export const ITEMS: Record<string, ItemDef> = {
     desc: '恢复 20 点生命。',
     effect: { hp: 20 },
   },
+  dry_ration: {
+    id: 'dry_ration',
+    name: '干粮',
+    type: 'consumable',
+    quality: 'common',
+    price: 2,
+    medium: false,
+    desc: '硬得能敲响的干粮。恢复 8 点体力。',
+    effect: { stamina: 8 },
+  },
   slime_gel: {
     id: 'slime_gel',
     name: '史莱姆凝胶',
@@ -231,6 +241,239 @@ export const SHOP_STOCKS: Record<string, Record<string, number>> = {
     tonic: 1,
     healing_potion: 1,
   },
+  westMarket: {
+    healing_potion: 2,
+    tonic: 2,
+    dry_ration: 4,
+  },
+}
+
+/** 西镇集市价格：阶段 0 更贵，阶段 1 回落。 */
+export function shopPriceAt(location: string, id: string, westStage = 0): number {
+  const base = ITEMS[id]?.price ?? 0
+  if (location !== 'westMarket') return base
+  if (id === 'healing_potion') return westStage >= 1 ? 15 : 18
+  if (id === 'tonic') return westStage >= 1 ? 10 : 12
+  return base
+}
+
+export function sellPriceAt(location: string, id: string): number {
+  const base = ITEMS[id]?.price ?? 0
+  if (location === 'westMarket') return Math.floor(base * 0.7)
+  return base
+}
+
+export type WestCommissionKind = 'repair' | 'patrol' | 'care' | 'maintenance'
+
+export type WestCommissionDef = {
+  id: string
+  name: string
+  kind: WestCommissionKind
+  project?: WestProjectKey
+  location: string
+  minutes: number
+  stamina: number
+  money: number
+  construction: number
+  points: number
+  battleChance?: number
+  battleEnemy?: string
+  battleBonus?: number
+  desc: string
+}
+
+export const WEST_COMMISSIONS: Record<string, WestCommissionDef> = {
+  wall: {
+    id: 'wall',
+    name: '修复西墙',
+    kind: 'repair',
+    project: 'wall',
+    location: 'westGate',
+    minutes: 120,
+    stamina: 8,
+    money: 10,
+    construction: 30,
+    points: 2,
+    desc: '昨夜的风把西墙吹塌了一角。搬石头、和灰浆，把缺口垒回去。',
+  },
+  ditch: {
+    id: 'ditch',
+    name: '修复水渠',
+    kind: 'repair',
+    project: 'ditch',
+    location: 'westGate',
+    minutes: 120,
+    stamina: 9,
+    money: 9,
+    construction: 30,
+    points: 2,
+    desc: '水渠里积着黑泥和烂叶，得一段一段清开。',
+  },
+  lamp: {
+    id: 'lamp',
+    name: '修复街灯',
+    kind: 'repair',
+    project: 'lamp',
+    location: 'westMarket',
+    minutes: 120,
+    stamina: 7,
+    money: 10,
+    construction: 30,
+    points: 2,
+    desc: '集市口的街灯只剩一盏还亮着。换灯芯，擦灯罩。',
+  },
+  patrol: {
+    id: 'patrol',
+    name: '巡田',
+    kind: 'patrol',
+    location: 'westEdge',
+    minutes: 180,
+    stamina: 10,
+    money: 12,
+    construction: 10,
+    points: 1,
+    battleChance: 0.2,
+    battleEnemy: 'corrupted_dog',
+    battleBonus: 2,
+    desc: '沿着界桩走一圈，看看田里和路边有没有异常。',
+  },
+  care: {
+    id: 'care',
+    name: '驻地换药',
+    kind: 'care',
+    location: 'westInn',
+    minutes: 120,
+    stamina: 4,
+    money: 8,
+    construction: 10,
+    points: 1,
+    desc: '巡逻队带回两个轻伤员。烧水、换绷带、登记药品。',
+  },
+  maintenance: {
+    id: 'maintenance',
+    name: '日常维护',
+    kind: 'maintenance',
+    location: 'westGate',
+    minutes: 120,
+    stamina: 8,
+    money: 10,
+    construction: 0,
+    points: 2,
+    desc: '主项目已经修完，剩下的是日常维护：门槛、棚顶、路沿。',
+  },
+}
+
+export type WestGenericDef = {
+  id: string
+  name: string
+  location: string
+  text: string
+}
+
+export const WEST_GENERIC_MINUTES = 90
+export const WEST_GENERIC_STAMINA = 6
+export const WEST_GENERIC_CONSTRUCTION = 2
+export const WEST_GENERIC_POINTS = 1
+export const WEST_CONSTRUCTION_MAX = 800
+export const WEST_PROJECT_MAX = 4
+
+export const WEST_REPAIR_TEXTS: Record<WestProjectKey, string[]> = {
+  wall: [
+    '西墙的缺口边缘还在掉土。你先把松动的石块清下来，堆在一边。',
+    '你和好灰浆，把第一层石头垒回去。格里高利在旁边看了一眼，没说话。',
+    '墙补到一半。风从缺口灌进来，灰浆干得很慢。',
+    '最后一块石头嵌好。西墙的缺口终于合上了，灰浆颜色比旁边的石头新。',
+  ],
+  ditch: [
+    '水渠里积着黑泥和烂叶。你先把表面的杂物捞出来。',
+    '泥比看起来深。你换了一把短锹，一锹一锹往外清。',
+    '沟底露出旧石壁，上面有一道裂缝。你记下位置，继续清。',
+    '水渠通了。水沿着沟流走，路面的积水退下去一层。',
+  ],
+  lamp: [
+    '集市口的街灯只剩一盏还亮着。你搬来梯子，先检查灯罩。',
+    '灯罩里积了灰和虫尸。你把它拆下来，用布擦干净。',
+    '灯芯受潮了。你换了一根新的，试了几次才点着。',
+    '最后一盏灯亮起来。集市口比之前亮多了，收摊的人不再摸黑走路。',
+  ],
+}
+
+export const WEST_COMMISSION_TEXTS: Record<string, string> = {
+  patrol: '你沿着界桩走了一圈。田里没有新踩出的路，只有风吹过麦茬。',
+  care: '你烧水、换绷带，把最后一卷绷带用完。伤员咬着牙没出声，只在最后问了一句什么时候能回队里。',
+  maintenance: '你跟着支援队修补镇里的零碎地方：门槛、棚顶、路沿。',
+}
+
+export const WEST_GENERICS: WestGenericDef[] = [
+  {
+    id: 'gate_barricade',
+    name: '加固拒马',
+    location: 'westGate',
+    text: '你把松动的木桩重新钉紧，又在底部垫了几块石头。\n风从拒马的缝隙里穿过去，声音比刚才小了一点。',
+  },
+  {
+    id: 'gate_stone',
+    name: '搬石料',
+    location: 'westGate',
+    text: '你把塌下来的碎石搬到墙根，按大小堆成两堆。\n手掌磨得发红，袖口里全是灰。',
+  },
+  {
+    id: 'inn_roof',
+    name: '补棚顶',
+    location: 'westInn',
+    text: '粗布棚顶被风撕开一道口子。你用旧布和麻绳把它重新缝上。\n棚下终于不再落灰，药箱上能少盖一层布。',
+  },
+  {
+    id: 'inn_wood',
+    name: '劈柴',
+    location: 'westInn',
+    text: '你把湿柴劈开，码在棚下。\n柴火还不太干，但至少今晚能烧得旺一点。',
+  },
+  {
+    id: 'market_paper',
+    name: '补窗纸',
+    location: 'westMarket',
+    text: '窗纸被风吹破。你裁了一块新的，用浆糊贴好。\n屋里暗了一点，但风不再从缝里灌进来。',
+  },
+  {
+    id: 'market_stall',
+    name: '修摊位',
+    location: 'westMarket',
+    text: '摊位的木板翘了起来。你找了两块旧木料，把台面重新钉平。\n摊主试了试，把一筐土豆放上去，没有再晃。',
+  },
+  {
+    id: 'tower_ladder',
+    name: '修木梯',
+    location: 'westTower',
+    text: '哨塔的木梯有一级裂了。你换了块木板，踩上去不再响。\n上面的人往下看了一眼，朝你点了点头。',
+  },
+  {
+    id: 'tower_mat',
+    name: '扎草帘',
+    location: 'westTower',
+    text: '你用干草编了几张挡风的帘子，挂在哨塔入口。\n风被挡在外面，里面的人终于能把手从袖子里伸出来。',
+  },
+]
+
+export const WEST_RUMORS_STAGE0 = [
+  '今年的风比往年早。',
+  '集市口那盏灯修好了？晚上走路总算不用摸黑。',
+  '北边那块田今年没种，土太硬。',
+  '前几天夜里，镇外好像有动静。守卫说是风。',
+  '支援队又要往西边送东西了，听说路不太好走。',
+  '旧礼拜堂那边，最近总有人半夜路过。',
+]
+
+export const WEST_RUMORS_STAGE1 = [
+  '现在至少能买到热的东西了。',
+  '等路再修好一点，商队应该会回来。',
+  '墙补好之后，风没那么灌了。',
+  '夜里的灯亮了，孩子也敢在门口多站一会儿。',
+]
+
+export function westRumor(stage: number): string {
+  const pool = stage >= 1 ? WEST_RUMORS_STAGE1 : WEST_RUMORS_STAGE0
+  return pool[Math.floor(Math.random() * pool.length)]
 }
 
 export function shopStockAt(location: string): Record<string, number> {
@@ -384,6 +627,24 @@ export const ENEMIES: Record<string, EnemyDef> = {
       '史莱姆的身体晃了晃，溅出几滴黏液。',
     ],
     defeatLine: '史莱姆塌成一摊，慢慢渗进落叶底下。',
+  },
+  corrupted_dog: {
+    id: 'corrupted_dog',
+    name: '被侵蚀的野狗',
+    desc: '它的身体像被什么东西从里面撑开，肋骨顶破了皮，脊背弯成一个不自然的角度。',
+    hp: 65,
+    attack: 10,
+    defense: 1,
+    speed: 2.8,
+    expValue: 1.5,
+    intro:
+      '路边的草里传来低低的喘息。\n它的身体像被什么东西从里面撑开，肋骨顶破了皮，脊背弯成一个不自然的角度。\n半边脸塌下去，露出的牙床比正常的狗长了一截。\n它还在喘气，喉咙里发出不像狗的声音。\n你只能从脖子上的旧项圈，勉强认出这原本是条狗。',
+    attackLines: [
+      '它用变形的肩骨撞过来。',
+      '它咬住你的袖子，牙齿刮过皮肉。',
+      '它喉咙里发出湿漉漉的声音，又扑了一次。',
+    ],
+    defeatLine: '它倒在地上，身体还在抽动。你退开两步，等它彻底不动。',
   },
 }
 
@@ -690,6 +951,20 @@ export const LOCATIONS: Location[] = [
     kind: 'room',
     desc: '一排木拒马横在路口，后面插着一块木牌，上面写着“未净化”。再往前，路就隐进灰蒙蒙的田野里。',
   },
+  {
+    id: 'westMarket',
+    name: '边镇集市',
+    parent: 'westTown',
+    kind: 'room',
+    desc: '集市口的木棚歪着，几个摊位空了很久。地上有烂菜叶和被风吹来的灰。',
+  },
+  {
+    id: 'westTower',
+    name: '旧哨塔',
+    parent: 'westTown',
+    kind: 'room',
+    desc: '哨塔的木梯断了一级，塔顶的棚布被风吹开。上面很久没人上去了。',
+  },
 ]
 
 export function getLocation(id: string): Location {
@@ -846,6 +1121,80 @@ const DESC_BY_TIME: Record<string, [string, string, string]> = {
     '风从田野那边吹过来，带着土腥味。',
     '没有人愿意往那边看。',
   ],
+  westMarket: [
+    '集市口的木棚歪着，几个摊位空了很久。地上有烂菜叶和被风吹来的灰。',
+    '集市口的木棚歪着，几个摊位空了很久。地上有烂菜叶和被风吹来的灰。',
+    '集市口的木棚歪着，几个摊位空了很久。地上有烂菜叶和被风吹来的灰。',
+  ],
+  westTower: [
+    '哨塔的木梯断了一级，塔顶的棚布被风吹开。上面很久没人上去了。',
+    '哨塔的木梯断了一级，塔顶的棚布被风吹开。上面很久没人上去了。',
+    '哨塔的木梯断了一级，塔顶的棚布被风吹开。上面很久没人上去了。',
+  ],
+}
+
+const WEST_STAGE1_DESC: Record<string, [string, string, string]> = {
+  westTown: [
+    '雾还是没散，但街上有几家店铺卸下了门板。有人挑着水从街口走过。',
+    '风从空地那边吹过来，卷起一点灰。集市方向有人在说话，不像之前那么空。',
+    '镇上亮着几盏灯，哨所和驻地之外，集市口也有一点光。',
+  ],
+  westGate: [
+    '守卫在换岗，西墙的缺口已经补好。墙根下堆着新搬来的石料。',
+    '木拒马挪开又合上，运货的车比之前多了一点。',
+    '哨所的灯亮着，街灯也亮了一盏。木拒马没有挪开。',
+  ],
+  westInn: [
+    '有人在棚下生火，锅里冒着热气。药箱重新装满了，靠墙码着。',
+    '棚里空着，人都出去了。通铺上的被褥叠得比之前整齐。',
+    '通铺上有人翻身，棚外有值守的人。药箱边多了一盏小灯。',
+  ],
+  westChapel: [
+    '晨雾里，封条上的印记有些模糊。石阶被扫干净了，边上放着一小束枯花。',
+    '日光照在石阶上，门里仍然没有声音。台阶上没有人。',
+    '礼拜堂沉在暗处，封条被风吹得轻轻响。门口的灰没有积起来。',
+  ],
+  westEdge: [
+    '雾贴着地面，拒马修好了，木牌上的字还是看不清。',
+    '风从田野那边吹过来，带着土腥味。路边的草被踩出一条窄路。',
+    '没有人愿意往那边看。拒马旁边多了一盏灯。',
+  ],
+  westMarket: [
+    '两三个摊位重新开张，卖热食的锅刚架上。',
+    '集市里有了说话声。旧货、土豆和几捆干柴摆在摊上。',
+    '摊位陆续收了，只剩一盏灯亮着。有人还在收拾。',
+  ],
+  westTower: [
+    '木梯修好了，踩上去不再响。塔顶有人影，正往田野那边看。',
+    '哨塔的门开着，里面收拾过。风从塔顶穿过去，带着远处的土味。',
+    '哨塔上亮着一盏灯。值守的人裹着旧衣，靠在栏杆边。',
+  ],
+}
+
+export type WestDescState = {
+  stage: number
+  projects: Record<string, number>
+}
+
+function wallLine(p: number): string {
+  if (p >= 4) return '西墙补好了，灰浆颜色比旁边的石头新。'
+  if (p >= 3) return '西墙补了一半，灰浆还没干。'
+  if (p >= 1) return '西墙的缺口边缘垒起了新石头。'
+  return '西墙的缺口还在掉土。'
+}
+
+function ditchLine(p: number): string {
+  if (p >= 4) return '水渠通了，路面的积水退下去一层。'
+  if (p >= 3) return '水渠里的水开始动了。'
+  if (p >= 1) return '水渠里的淤泥清开了一段。'
+  return '水渠里的水几乎不流。'
+}
+
+function lampLine(p: number): string {
+  if (p >= 4) return '集市口的灯全亮了。'
+  if (p >= 3) return '集市口的灯亮了两盏。'
+  if (p >= 1) return '集市口有一盏灯重新亮了起来。'
+  return '集市口的街灯只剩一盏还亮着。'
 }
 
 type SeasonDesc = Record<Season, [string, string, string]>
@@ -1183,11 +1532,28 @@ const SEASON_DESC: Record<string, SeasonDesc> = {
   },
 }
 
-export function locationDesc(loc: Location, minutes: number, day: number): string {
+export function locationDesc(
+  loc: Location,
+  minutes: number,
+  day: number,
+  west?: WestDescState,
+): string {
+  if (west && west.stage >= 1) {
+    const stage1 = WEST_STAGE1_DESC[loc.id]
+    if (stage1) return stage1[timePeriod(minutes)]
+  }
   const seasonal = SEASON_DESC[loc.id]
   if (seasonal) return seasonal[seasonOf(day)][timePeriod(minutes)]
   const table = DESC_BY_TIME[loc.id]
-  return table ? table[timePeriod(minutes)] : loc.desc
+  let text = table ? table[timePeriod(minutes)] : loc.desc
+  if (west && west.stage === 0) {
+    if (loc.id === 'westGate') {
+      text = `${text} ${wallLine(west.projects.wall ?? 0)} ${ditchLine(west.projects.ditch ?? 0)}`
+    } else if (loc.id === 'westMarket') {
+      text = `${text} ${lampLine(west.projects.lamp ?? 0)}`
+    }
+  }
+  return text
 }
 
 const OUTDOOR = new Set([
@@ -2438,8 +2804,8 @@ export function semesterLastExamDay(year: number, semester: 1 | 2): number {
 
 const YEAR_THRESHOLDS: Record<number, number[]> = {
   1: [20, 60, 100, 120, 160, 200],
-  // 第二学年每门课每天 3 段，考试线按 0.7 缩放
-  2: [15, 40, 70, 85, 110, 140],
+  // 第二学年每月少一周课，考试线下调
+  2: [15, 40, 65, 85, 110, 130],
 }
 
 const YEAR_LABEL: Record<number, string> = {
@@ -2488,8 +2854,69 @@ export function semesterLabel(day: number): string {
   return year === 1 ? term : `${yearLabel(year)} · ${term}`
 }
 
+export type SupportPeriod = {
+  key: string
+  kind: 'school' | 'holiday'
+  maxSets: number
+  startDay: number
+  endDay: number
+  month: number
+  label: string
+}
+
+// NOTE: 如果支援窗口从「学期月 1 周 / 假期月整月」改成其他频率，
+// 需要重算建设值、支援点与阶段 1 的时间。
+export function supportPeriodAt(day: number): SupportPeriod | null {
+  if (currentYear(day) < 2) return null
+  const diy = dayInYear(day)
+  const month = Math.floor(diy / 28)
+  const week = Math.floor((diy % 28) / 7)
+  const monthStart = (currentYear(day) - 1) * YEAR_DAYS + month * 28
+  const holiday = month === 3 || month === 7
+  if (holiday) {
+    return {
+      key: `${currentYear(day)}_${month}`,
+      kind: 'holiday',
+      maxSets: 4,
+      startDay: monthStart,
+      endDay: monthStart + 27,
+      month,
+      label: `${chineseNumber(month + 1)}月 · 假期建设`,
+    }
+  }
+  if (week === 2) {
+    return {
+      key: `${currentYear(day)}_${month}`,
+      kind: 'school',
+      maxSets: 1,
+      startDay: monthStart + 14,
+      endDay: monthStart + 20,
+      month,
+      label: `${chineseNumber(month + 1)}月 · 建设周`,
+    }
+  }
+  return null
+}
+
+export function nextSupportPeriod(day: number): SupportPeriod | null {
+  for (let i = 0; i <= 56; i += 1) {
+    const period = supportPeriodAt(day + i)
+    if (period) return period
+  }
+  return null
+}
+
+export function isConstructionWeek(day: number): boolean {
+  if (currentYear(day) < 2) return false
+  const diy = dayInYear(day)
+  const month = Math.floor(diy / 28)
+  const week = Math.floor((diy % 28) / 7)
+  if (month === 3 || month === 7) return true
+  return week === 2
+}
+
 export function isClassDay(day: number): boolean {
-  if (isExamDay(day)) return false
+  if (isExamDay(day) || isConstructionWeek(day)) return false
   const state = semesterState(day)
   return weekday(day) < 5 && (state === 'semester1' || state === 'semester2')
 }

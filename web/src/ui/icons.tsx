@@ -126,6 +126,17 @@ export function BookIcon({ size = 32 }: IconProps) {
   )
 }
 
+export function DryRationIcon({ size = 32 }: IconProps) {
+  return (
+    <svg {...base(size)} aria-hidden="true">
+      <rect x="3" y="5" width="10" height="6" fill="#b08a58" />
+      <rect x="4" y="6" width="8" height="1" fill="#d8b47a" />
+      <rect x="5" y="8" width="2" height="1" fill="#8a6a40" />
+      <rect x="8" y="9" width="3" height="1" fill="#8a6a40" />
+    </svg>
+  )
+}
+
 export function ItemIcon({ id, size = 32 }: { id: string; size?: number }) {
   switch (id) {
     case 'basic_wand':
@@ -141,6 +152,8 @@ export function ItemIcon({ id, size = 32 }: { id: string; size?: number }) {
       return <TonicIcon size={size} />
     case 'healing_potion':
       return <HealingPotionIcon size={size} />
+    case 'dry_ration':
+      return <DryRationIcon size={size} />
     case 'slime_gel':
       return <SlimeGelIcon size={size} />
     case 'picture_book':
