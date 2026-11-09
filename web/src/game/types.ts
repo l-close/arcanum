@@ -70,9 +70,15 @@ export type SaveData = {
   data: GameData
 }
 
-export type BattlePhase = 'filling' | 'player' | 'submenu' | 'victory' | 'defeat'
+export type BattlePhase = 'filling' | 'casting' | 'player' | 'submenu' | 'victory' | 'defeat'
 
 export type BattleSubmenu = 'attack' | 'spell' | 'item' | null
+
+export type BattleCasting = {
+  spellId: string
+  progress: number
+  manaDrained: number
+}
 
 export type BattleState = {
   kind: 'spar' | 'wild'
@@ -81,7 +87,8 @@ export type BattleState = {
   playerHp: number
   playerGauge: number
   enemyGauge: number
-  round: number
+  elapsedTicks: number
+  casting: BattleCasting | null
   actions: number
   log: string[]
   phase: BattlePhase

@@ -454,6 +454,13 @@ function GameScreen() {
   )
 }
 
+function formatBattleTime(ticks: number): string {
+  const totalSeconds = Math.floor(ticks / 10)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
+
 function BattleView() {
   const battle = useGame((s) => s.battle)
   const data = useGame((s) => s.data)
@@ -470,7 +477,7 @@ function BattleView() {
   const logRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!battle || battle.phase !== 'filling' || modal !== null) return
+    if (!battle || (battle.phase !== 'filling' && battle.phase !== 'casting') || modal !== null) return
     const id = window.setInterval(() => {
       if (!document.hidden) tick()
     }, 100)
@@ -512,22 +519,24 @@ function BattleView() {
         : `${fireball.mana} 魔力`
   const phaseLabel =
     battle.phase === 'player'
-      ? '你的回合'
+      ? '可以行动'
       : battle.phase === 'submenu'
         ? '选择行动'
-        : battle.phase === 'victory'
-          ? '胜利'
-          : battle.phase === 'defeat'
-            ? battle.kind === 'wild'
-              ? '战斗结束'
-              : '练习结束'
-            : '行动条充能中'
+        : battle.phase === 'casting'
+          ? '吟唱中'
+          : battle.phase === 'victory'
+            ? '胜利'
+            : battle.phase === 'defeat'
+              ? battle.kind === 'wild'
+                ? '战斗结束'
+                : '练习结束'
+              : '行动条充能中'
 
   return (
     <div className="battle-screen">
       <div className="battle-head">
         <span className="battle-title">{battle.kind === 'wild' ? '森林 · 遭遇' : '演武场 · 切磋'}</span>
-        <span className="battle-round">第 {battle.round} 回合 · {phaseLabel}</span>
+        <span className="battle-round">战斗时间 {formatBattleTime(battle.elapsedTicks)} · {phaseLabel}</span>
       </div>
 
       <div className="battle-combatant enemy">
@@ -568,11 +577,17 @@ function BattleView() {
           kind="gauge"
           ready={battle.phase === 'player' || battle.phase === 'submenu'}
         />
+        {battle.casting && (
+          <BattleBar label="吟唱" value={battle.casting.progress} max={100} kind="gauge" ready={false} />
+        )}
         <div className="battle-status">状态　—</div>
       </div>
 
       {battle.phase === 'filling' && (
         <div className="battle-hint">行动条充能中……充满后可以选择行动。</div>
+      )}
+      {battle.phase === 'casting' && (
+        <div className="battle-hint">你正在吟唱。敌方行动条仍在充能。</div>
       )}
 
       {battle.phase === 'player' && (
@@ -637,7 +652,8 @@ function BattleView() {
           >
             <span>{fireball.name}</span>
             <small>
-              {fireball.element} · {fireball.mana} 魔力 · {rangeText(fireballRange)}
+              {fireball.element} · {fireball.mana} 魔力 · 吟唱 {fireball.castTicks / 10} 秒 ·{' '}
+              {rangeText(fireballRange)}
             </small>
           </button>
           <button className="battle-back" onClick={back}>返回</button>

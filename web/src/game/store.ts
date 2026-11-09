@@ -920,7 +920,8 @@ export const useGame = create<Store>((set, get) => {
           playerHp: Math.max(1, data.hp),
           playerGauge: 0,
           enemyGauge: 0,
-          round: 1,
+          elapsedTicks: 0,
+          casting: null,
           actions: 0,
           log: [enemy.intro, '行动条开始充能。'],
           phase: 'filling',
@@ -935,24 +936,83 @@ export const useGame = create<Store>((set, get) => {
 
     battleTick: () => {
       const { battle, data } = get()
-      if (!battle || battle.phase !== 'filling') return
+      if (!battle) return
+      if (battle.phase !== 'filling' && battle.phase !== 'casting') return
       const enemy = ENEMIES[battle.enemyId]
       if (!enemy) return
 
-      const b: BattleState = { ...battle, log: [...battle.log] }
-      b.playerGauge = Math.min(100, b.playerGauge + 4)
+      const b: BattleState = {
+        ...battle,
+        log: [...battle.log],
+        casting: battle.casting ? { ...battle.casting } : null,
+      }
+      b.elapsedTicks += 1
+      let nextData = data
+
+      if (b.phase === 'filling') b.playerGauge = Math.min(100, b.playerGauge + 4)
       if (enemy.speed > 0) b.enemyGauge = Math.min(100, b.enemyGauge + enemy.speed)
 
-      if (b.playerGauge >= 100) {
+      let castReady = false
+      if (b.casting) {
+        const spell = SPELLS[b.casting.spellId]
+        if (!spell) {
+          b.casting = null
+          b.phase = 'filling'
+        } else {
+          const step = 100 / Math.max(1, spell.castTicks)
+          b.casting.progress = Math.min(100, b.casting.progress + step)
+          const targetDrained =
+            b.casting.progress >= 100
+              ? spell.mana
+              : Math.floor((spell.mana * b.casting.progress) / 100)
+          const delta = Math.max(0, targetDrained - b.casting.manaDrained)
+          if (delta > 0) {
+            nextData = structuredClone(data)
+            nextData.mana = clamp(nextData.mana - delta, 0, 100)
+            b.casting.manaDrained += delta
+          }
+          if (b.casting.progress >= 100) castReady = true
+        }
+      }
+
+      if (b.phase === 'filling' && b.playerGauge >= 100) {
         b.phase = 'player'
-        set({ battle: b })
+        set({ battle: b, data: nextData })
         return
+      }
+
+      if (castReady && b.casting) {
+        const spell = SPELLS[b.casting.spellId]
+        if (spell) {
+          if (b.casting.manaDrained < spell.mana) {
+            if (nextData === data) nextData = structuredClone(data)
+            nextData.mana = clamp(nextData.mana - (spell.mana - b.casting.manaDrained), 0, 100)
+            b.casting.manaDrained = spell.mana
+          }
+          const [min, max] = spellDamageRange(spell, nextData.skills.nature.tier, enemy.defense)
+          const dmg = randInt(min, max)
+          b.enemyHp = Math.max(0, b.enemyHp - dmg)
+          if (!b.usedSkills.includes('nature')) b.usedSkills = [...b.usedSkills, 'nature']
+          b.actions += 1
+          b.playerGauge = 0
+          b.casting = null
+          battleLog(b, `你念出咒语，${spell.name}在${enemy.name}身上炸开。 -${dmg}`)
+          if (b.enemyHp <= 0) {
+            b.phase = 'victory'
+            b.submenu = null
+            b.result = `${enemy.defeatLine}${b.kind === 'wild' ? '' : ' 你结束了练习。'}`
+            battleLog(b, enemy.defeatLine)
+            set({ battle: b, data: nextData })
+            return
+          }
+          b.phase = 'filling'
+        }
       }
 
       if (enemy.speed > 0 && b.enemyGauge >= 100) {
         b.enemyGauge = 0
         b.actions += 1
-        const reduction = Math.floor(data.skills.physique.tier / 2)
+        const reduction = Math.floor(nextData.skills.physique.tier / 2)
         const dmg = Math.max(1, enemy.attack + randInt(0, 2) - reduction)
         b.playerHp = Math.max(0, b.playerHp - dmg)
         const line = enemy.attackLines.length
@@ -962,6 +1022,7 @@ export const useGame = create<Store>((set, get) => {
         if (b.playerHp <= 0) {
           b.phase = 'defeat'
           b.submenu = null
+          b.casting = null
           b.result =
             b.kind === 'wild'
               ? '你被击倒在地，眼前一阵发黑。'
@@ -970,7 +1031,7 @@ export const useGame = create<Store>((set, get) => {
         }
       }
 
-      set({ battle: b })
+      set({ battle: b, data: nextData })
     },
 
     battleOpenSubmenu: (menu) => {
@@ -1005,7 +1066,6 @@ export const useGame = create<Store>((set, get) => {
       b.enemyHp = Math.max(0, b.enemyHp - dmg)
       if (!b.usedSkills.includes(kind)) b.usedSkills = [...b.usedSkills, kind]
       b.actions += 1
-      b.round += 1
       b.playerGauge = 0
       b.submenu = null
       const verb = kind === 'sword' ? '你挥剑斩向' : weapon?.weapon === 'staff' ? '你挥杖敲向' : '你挥拳打向'
@@ -1041,28 +1101,16 @@ export const useGame = create<Store>((set, get) => {
       const enemy = ENEMIES[battle.enemyId]
       if (!enemy) return
 
-      const [min, max] = spellDamageRange(spell, data.skills.nature.tier, enemy.defense)
-      const dmg = randInt(min, max)
-      const next = structuredClone(data)
-      next.mana = clamp(next.mana - spell.mana, 0, 100)
-
-      const b: BattleState = { ...battle, log: [...battle.log] }
-      b.enemyHp = Math.max(0, b.enemyHp - dmg)
-      if (!b.usedSkills.includes('nature')) b.usedSkills = [...b.usedSkills, 'nature']
-      b.actions += 1
-      b.round += 1
+      const b: BattleState = {
+        ...battle,
+        log: [...battle.log],
+        casting: { spellId, progress: 0, manaDrained: 0 },
+      }
+      b.phase = 'casting'
       b.playerGauge = 0
       b.submenu = null
-      battleLog(b, `你念出咒语，${spell.name}在${enemy.name}身上炸开。 -${dmg}`)
-
-      if (b.enemyHp <= 0) {
-        b.phase = 'victory'
-        b.result = `${enemy.defeatLine}${b.kind === 'wild' ? '' : ' 你结束了练习。'}`
-        battleLog(b, enemy.defeatLine)
-      } else {
-        b.phase = 'filling'
-      }
-      set({ battle: b, data: next })
+      battleLog(b, `你开始吟唱${spell.name}。`)
+      set({ battle: b })
     },
 
     battleUseItem: (id) => {
@@ -1090,7 +1138,6 @@ export const useGame = create<Store>((set, get) => {
       if (healHp) b.playerHp = clamp(b.playerHp + healHp, 0, hpMax)
       if (healMana) next.mana = clamp(next.mana + healMana, 0, 100)
       b.actions += 1
-      b.round += 1
       b.playerGauge = 0
       b.submenu = null
       b.phase = 'filling'
@@ -1739,7 +1786,8 @@ export const useGame = create<Store>((set, get) => {
             playerHp: Math.max(1, state.data.hp),
             playerGauge: 0,
             enemyGauge: 0,
-            round: 1,
+            elapsedTicks: 0,
+            casting: null,
             actions: 0,
             log: [enemy.intro, '行动条开始充能。'],
             phase: 'filling',

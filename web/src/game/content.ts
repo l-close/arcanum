@@ -232,6 +232,7 @@ export type SpellDef = {
   baseDamage: number
   tierScale: number
   variance: number
+  castTicks: number
 }
 
 export const SPELLS: Record<string, SpellDef> = {
@@ -244,6 +245,7 @@ export const SPELLS: Record<string, SpellDef> = {
     baseDamage: 10,
     tierScale: 3,
     variance: 3,
+    castTicks: 10,
   },
 }
 
