@@ -145,6 +145,8 @@ export function ItemIcon({ id, size = 32 }: { id: string; size?: number }) {
       return <SlimeGelIcon size={size} />
     case 'picture_book':
       return <BookIcon size={size} />
+    case 'sword_manual':
+      return <BookIcon size={size} />
     default:
       return (
         <svg {...base(size)} aria-hidden="true">

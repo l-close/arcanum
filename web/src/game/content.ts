@@ -162,6 +162,15 @@ export const ITEMS: Record<string, ItemDef> = {
     medium: false,
     desc: '一本边角磨圆的旧绘本。诺拉说，你小时候翻过很多遍。',
   },
+  sword_manual: {
+    id: 'sword_manual',
+    name: '基础剑术图解',
+    type: 'book',
+    quality: 'uncommon',
+    price: 0,
+    medium: false,
+    desc: '一本被压在旧书堆里的剑术图解。封面磨白，页边留着前一个主人的批注。',
+  },
 }
 
 export type BookReward = {
@@ -169,6 +178,7 @@ export type BookReward = {
   spirit?: number
   exp?: Partial<Record<SkillKey, number>>
   flag?: string
+  text?: string
 }
 
 export type BookDef = {
@@ -178,6 +188,7 @@ export type BookDef = {
   progressPerRead: number
   repeatable: boolean
   spiritCost?: number
+  foundText?: string
   reward: BookReward
 }
 
@@ -190,7 +201,20 @@ export const BOOKS: Record<string, BookDef> = {
     repeatable: true,
     reward: { mood: 8 },
   },
+  sword_manual: {
+    id: 'sword_manual',
+    name: '基础剑术图解',
+    desc: '一本被压在旧书堆里的剑术图解。封面磨白，页边留着前一个主人的批注。',
+    progressPerRead: 20,
+    repeatable: false,
+    spiritCost: 1,
+    foundText:
+      '你在一排旧书的最后，翻到一本被压住的剑术图解。\n封面已经磨白，里面还留着前一个主人的批注。',
+    reward: { flag: 'book_sword_manual', text: '剑术攻击伤害永久 +1' },
+  },
 }
+
+export const SEARCHABLE_BOOKS = ['sword_manual']
 
 export const SHOP_STOCKS: Record<string, Record<string, number>> = {
   shop: {
@@ -255,8 +279,9 @@ export function attackDamageRange(
   tier: number,
   mainHand: string | null,
   defense: number,
+  bonus = 0,
 ): [number, number] {
-  const base = 4 + tier * 2 + weaponPower(kind, mainHand)
+  const base = 4 + tier * 2 + weaponPower(kind, mainHand) + bonus
   return [Math.max(1, base - defense), Math.max(1, base + 2 - defense)]
 }
 

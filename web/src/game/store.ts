@@ -20,6 +20,7 @@ import {
   ENEMIES,
   ITEMS,
   BOOKS,
+  SEARCHABLE_BOOKS,
   RELIEF_CARE_MINUTES,
   RELIEF_CARE_MOOD,
   RELIEF_CARE_STAMINA,
@@ -555,6 +556,7 @@ type Store = {
   storeBook: (id: string) => void
   takeBook: (id: string) => void
   readBook: (id: string) => void
+  searchLibrary: () => void
   teleport: (to: 'west' | 'town') => void
   eat: () => void
   rest: () => void
@@ -1066,7 +1068,13 @@ export const useGame = create<Store>((set, get) => {
         return
       }
 
-      const [min, max] = attackDamageRange(kind, data.skills[kind].tier, mainHand, enemy.defense)
+      const [min, max] = attackDamageRange(
+        kind,
+        data.skills[kind].tier,
+        mainHand,
+        enemy.defense,
+        kind === 'sword' && data.flags.book_sword_manual ? 1 : 0,
+      )
       const dmg = randInt(min, max)
       const next = structuredClone(data)
 
@@ -1362,18 +1370,24 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       const state = data.books[id] ?? { progress: 0, completed: false }
-      if (!book.repeatable && state.completed) {
-        set({ message: '这本书你已经读完了。' })
-        return
-      }
       const cost = book.spiritCost ?? 0
-      if (data.spirit < cost) {
-        set({ message: '精神不足。' })
+      if (cost > 0 && data.spirit <= cost) {
+        mutate((d) => {
+          applyFaint(d, getLocation(d.location).name)
+          return '你没能撑住。'
+        })
+        set({ modal: null })
         return
       }
+      const reread = !book.repeatable && state.completed
       mutate((d) => {
         advanceTime(d, 30)
         if (cost > 0) d.spirit = clamp(d.spirit - cost, 0, maxSpirit(d.skills.will.tier))
+        if (reread) {
+          const text = `你又翻了一遍《${book.name}》。这本书已经不会再带来新的收获。`
+          pushLog(d, text)
+          return text
+        }
         const current = d.books[id] ?? { progress: 0, completed: false }
         let progress = current.progress + book.progressPerRead
         let completed = current.completed
@@ -1394,7 +1408,7 @@ export const useGame = create<Store>((set, get) => {
           if (reward.mood) parts.push(`心情 +${reward.mood}`)
           if (reward.spirit) parts.push(`精神 +${reward.spirit}`)
           if (reward.exp) parts.push('经验提升')
-          if (reward.flag) parts.push('记下了一些东西')
+          if (reward.flag) parts.push(reward.text ?? '记下了一些东西')
           const rewardText = parts.length ? `${parts.join('，')}。` : ''
           if (book.repeatable) {
             progress = 0
@@ -1410,6 +1424,37 @@ export const useGame = create<Store>((set, get) => {
         return text
       })
       set({ modal: null })
+    },
+
+    searchLibrary: () => {
+      const { data } = get()
+      if (data.location !== 'library') {
+        set({ message: '这里不是藏书阁。' })
+        return
+      }
+      const staminaCost = 2
+      if (data.stamina < staminaCost) {
+        set({ message: '你太累了，先在旁边坐一会儿吧。' })
+        return
+      }
+      const missing = SEARCHABLE_BOOKS.filter(
+        (id) => (data.inventory[id] ?? 0) <= 0 && !data.bookshelf.includes(id),
+      )
+      const found = missing.length > 0 && Math.random() < 0.2 ? missing[Math.floor(Math.random() * missing.length)] : null
+      mutate((d) => {
+        advanceTime(d, 30)
+        d.stamina = clamp(d.stamina - staminaCost, 0, maxStamina(d.skills.physique.tier))
+        if (found) {
+          const book = BOOKS[found]
+          d.inventory[found] = (d.inventory[found] ?? 0) + 1
+          const text = book.foundText ?? `你找到了《${book.name}》。`
+          pushLog(d, text)
+          return text
+        }
+        const text = '你在书架间翻了很久，指尖沾了灰，还是没有找到想要的那本。'
+        pushLog(d, text)
+        return text
+      })
     },
 
     teleport: (to) => {
@@ -1581,7 +1626,7 @@ export const useGame = create<Store>((set, get) => {
         set({ message: '你太累了，先休息一下再上课。' })
         return
       }
-      if (!physical && data.spirit < cost) {
+      if (!physical && data.spirit <= cost) {
         mutate((d) => {
           applyFaint(d, getLocation(d.location).name)
           return '你没能撑住。'
@@ -1652,7 +1697,7 @@ export const useGame = create<Store>((set, get) => {
       const duration = 30
       const courseId = masteryCourseForSkill(key, data.day)
       const cost = spiritCost(3, data.mood)
-      if (data.spirit < cost) {
+      if (data.spirit <= cost) {
         mutate((d) => {
           applyFaint(d, getLocation(d.location).name)
           return '你没能撑住。'
@@ -1684,7 +1729,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       const cost = spiritCost(3, data.mood)
-      if (data.spirit < cost) {
+      if (data.spirit <= cost) {
         mutate((d) => {
           applyFaint(d, getLocation(d.location).name)
           return '你没能撑住。'

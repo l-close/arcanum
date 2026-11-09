@@ -506,7 +506,13 @@ function BattleView() {
   const canCast = knownFireball && hasMedium && data.mana >= fireball.mana
   const fireballRange = spellDamageRange(fireball, data.skills.nature.tier, enemy.defense)
   const brawlRange = attackDamageRange('brawl', data.skills.brawl.tier, mainHand, enemy.defense)
-  const swordRange = attackDamageRange('sword', data.skills.sword.tier, mainHand, enemy.defense)
+  const swordRange = attackDamageRange(
+    'sword',
+    data.skills.sword.tier,
+    mainHand,
+    enemy.defense,
+    data.flags.book_sword_manual ? 1 : 0,
+  )
   const battleItems = Object.entries(data.inventory).filter(([id, qty]) => {
     if (qty <= 0) return false
     const def = ITEMS[id]
@@ -944,6 +950,7 @@ function Actions({
   const walkPlaza = useGame((s) => s.walkPlaza)
   const readPlazaNotices = useGame((s) => s.readPlazaNotices)
   const feedPigeons = useGame((s) => s.feedPigeons)
+  const searchLibrary = useGame((s) => s.searchLibrary)
   const helpBackyard = useGame((s) => s.helpBackyard)
   const teleport = useGame((s) => s.teleport)
   const helpOrphanKids = useGame((s) => s.helpOrphanKids)
@@ -1035,6 +1042,9 @@ function Actions({
         />
       )}
       {loc === 'library' && <ActionBtn onClick={() => setModal('reading')} label="阅读" cost="0.5 小时" />}
+      {loc === 'library' && (
+        <ActionBtn onClick={searchLibrary} label="翻阅藏书" cost="0.5 小时 · 体力 -2" />
+      )}
       {(loc === 'canteen' || loc === 'orphanCanteen') &&
         (() => {
           if (!meal) return <div className="hint">现在不是用餐时间。</div>
@@ -1906,14 +1916,15 @@ function ReadingModal() {
                 </div>
                 <div className="reading-meta">
                   <span>30 分钟</span>
+                  <span>{book.spiritCost ? `精神 -${book.spiritCost}` : '不耗精神'}</span>
                   <span>{book.repeatable ? '可重复阅读' : '一次性'}</span>
                 </div>
+                {completed && <div className="hint">已读完，重读没有收益。</div>}
                 <button
                   className="primary-btn"
-                  disabled={completed}
                   onClick={() => readBook(id)}
                 >
-                  {completed ? '已经读完' : '阅读 30 分钟'}
+                  {completed ? '重读 30 分钟' : '阅读 30 分钟'}
                 </button>
               </div>
             )
