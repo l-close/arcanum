@@ -5,6 +5,7 @@ import {
   BELL_TOWER_OPEN_END,
   BELL_TOWER_OPEN_START,
   BELL_TOWER_STAMINA,
+  BOOKS,
   ACADEMY_MEAL_FEE,
   CEMETERY_SWEEP_MINUTES,
   CEMETERY_SWEEP_MOOD,
@@ -442,6 +443,8 @@ function GameScreen() {
       {modal === 'stats' && <StatsModal />}
       {modal === 'eventPicker' && <EventPickerModal />}
       {modal === 'plazaNotices' && <PlazaNoticesModal />}
+      {modal === 'bookshelf' && <BookshelfModal />}
+      {modal === 'reading' && <ReadingModal />}
       {modal === 'shop' && <ShopModal />}
       {modal === 'drinks' && <DrinkModal />}
       {modal === 'save' && <SavesModal />}
@@ -1031,6 +1034,7 @@ function Actions({
           cost={`0.5 小时 · 精神 -${spiritCost(3, data.mood)}`}
         />
       )}
+      {loc === 'library' && <ActionBtn onClick={() => setModal('reading')} label="阅读" cost="0.5 小时" />}
       {(loc === 'canteen' || loc === 'orphanCanteen') &&
         (() => {
           if (!meal) return <div className="hint">现在不是用餐时间。</div>
@@ -1083,6 +1087,7 @@ function Actions({
       {(loc === 'dorm' || loc === 'westInn') && <ActionBtn onClick={() => setModal('sleep')} label="睡觉" cost="1 小时起" />}
       {loc === 'westGate' && <ActionBtn onClick={() => setModal('shop')} label="小摊" cost="—" />}
       {loc === 'dorm' && <ActionBtn onClick={meditate} label="冥想" cost="1 小时" />}
+      {loc === 'dorm' && <ActionBtn onClick={() => setModal('bookshelf')} label="书柜" cost="—" />}
       {loc === 'shop' && (
         <>
           <ActionBtn onClick={() => setModal('shop')} label="购买" cost="—" />
@@ -1809,6 +1814,117 @@ function PlazaNoticesModal() {
   )
 }
 
+function BookshelfModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  const takeBook = useGame((s) => s.takeBook)
+  const storeBook = useGame((s) => s.storeBook)
+  const shelf = Array.from({ length: 10 }, (_, i) => data.bookshelf[i] ?? null)
+  const bagBooks = Object.entries(data.inventory).filter(
+    ([id, qty]) => qty > 0 && !!BOOKS[id],
+  )
+  const progressOf = (id: string) => data.books[id]?.progress ?? 0
+
+  return (
+    <ModalShell title="书柜" wide onClose={() => setModal(null)}>
+      <div className="book-section">
+        <div className="inv-section-title">书柜（{data.bookshelf.length} / 10）</div>
+        <div className="book-grid">
+          {shelf.map((id, i) =>
+            id ? (
+              <button
+                key={id}
+                className="book-slot filled"
+                title={`取出《${BOOKS[id]?.name ?? id}》`}
+                onClick={() => takeBook(id)}
+              >
+                <ItemIcon id={id} size={30} />
+                <span className="book-slot-name">{BOOKS[id]?.name ?? id}</span>
+                <span className="book-slot-progress">{progressOf(id)}%</span>
+              </button>
+            ) : (
+              <div className="book-slot empty" key={`empty-${i}`} />
+            ),
+          )}
+        </div>
+        <div className="hint">点击书柜里的书可以取出到背包。</div>
+      </div>
+
+      <div className="book-section">
+        <div className="inv-section-title">背包里的书</div>
+        {bagBooks.length === 0 ? (
+          <div className="hint">背包里没有书。</div>
+        ) : (
+          <div className="book-bag-list">
+            {bagBooks.map(([id]) => (
+              <button
+                key={id}
+                className="book-row-btn"
+                disabled={data.bookshelf.length >= 10}
+                onClick={() => storeBook(id)}
+              >
+                <ItemIcon id={id} size={26} />
+                <span>{BOOKS[id].name}</span>
+                <span className="book-slot-progress">{progressOf(id)}%</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </ModalShell>
+  )
+}
+
+function ReadingModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  const readBook = useGame((s) => s.readBook)
+  const books = Object.entries(data.inventory).filter(
+    ([id, qty]) => qty > 0 && !!BOOKS[id],
+  )
+
+  return (
+    <ModalShell title="阅读" onClose={() => setModal(null)}>
+      {books.length === 0 ? (
+        <p className="hint">你身上没有书。先回寝室书柜取一本。</p>
+      ) : (
+        <div className="reading-list">
+          {books.map(([id]) => {
+            const book = BOOKS[id]
+            const state = data.books[id]
+            const progress = state?.progress ?? 0
+            const completed = !!state?.completed && !book.repeatable
+            return (
+              <div className="reading-item" key={id}>
+                <div className="reading-head">
+                  <span className="reading-name">{book.name}</span>
+                  <span className="reading-progress">{completed ? '已读完' : `${progress}%`}</span>
+                </div>
+                <div className="reading-desc">{book.desc}</div>
+                <div className="reading-bar">
+                  <div style={{ width: `${completed ? 100 : progress}%` }} />
+                </div>
+                <div className="reading-meta">
+                  <span>30 分钟</span>
+                  <span>{book.repeatable ? '可重复阅读' : '一次性'}</span>
+                </div>
+                <button
+                  className="primary-btn"
+                  disabled={completed}
+                  onClick={() => readBook(id)}
+                >
+                  {completed ? '已经读完' : '阅读 30 分钟'}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+      <p className="hint">阅读会推进这本书的进度，达到 100% 时获得收益。</p>
+    </ModalShell>
+  )
+}
+
 function SavesModal() {
   const setModal = useGame((s) => s.setModal)
   return (
@@ -2396,6 +2512,7 @@ function InventoryModal() {
   const useItem = useGame((s) => s.useItem)
   const equipItem = useGame((s) => s.equipItem)
   const unequipSlot = useGame((s) => s.unequipSlot)
+  const storeBook = useGame((s) => s.storeBook)
   const [selected, setSelected] = useState<string | null>(null)
   const equippedIds = Object.values(data.equipment).filter((x): x is string => !!x)
   const entries = Object.entries(data.inventory).filter(
@@ -2509,6 +2626,20 @@ function InventoryModal() {
               )
             ) : selectedDef.type === 'consumable' ? (
               <button className="primary-btn detail-action" disabled={!!battle} onClick={() => useItem(selectedDef.id)}>使用</button>
+            ) : selectedDef.type === 'book' ? (
+              <>
+                <div className="hint">
+                  阅读进度 {data.books[selectedDef.id]?.progress ?? 0}%。在藏书阁阅读。
+                </div>
+                <button
+                  className="primary-btn detail-action"
+                  disabled={data.location !== 'dorm' || data.bookshelf.length >= 10}
+                  onClick={() => storeBook(selectedDef.id)}
+                >
+                  放入书柜
+                </button>
+                {data.location !== 'dorm' && <div className="hint">书柜在寝室。</div>}
+              </>
             ) : (
               <div className="hint">材料，可在杂货店出售。</div>
             )}

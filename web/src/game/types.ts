@@ -42,6 +42,8 @@ export type GameData = {
   inventory: Record<string, number>
   equipment: Equipment
   shop: { day: number; sold: Record<string, number> }
+  books: Record<string, { progress: number; completed: boolean }>
+  bookshelf: string[]
   prayers: { day: number; count: number }
   plaza: { day: number; fed: boolean }
   meals: { day: number; breakfast: boolean; lunch: boolean; dinner: boolean }

@@ -32,7 +32,7 @@ export const SKILL_ORDER: SkillKey[] = [
   'divine',
 ]
 
-export type ItemType = 'consumable' | 'equipment' | 'material'
+export type ItemType = 'consumable' | 'equipment' | 'material' | 'book'
 
 export type Quality = 'common' | 'rare' | 'uncommon' | 'epic' | 'legendary'
 
@@ -152,6 +152,43 @@ export const ITEMS: Record<string, ItemDef> = {
     price: 3,
     medium: false,
     desc: '半透明的胶质，摸起来凉而弹。杂货店会收。',
+  },
+  picture_book: {
+    id: 'picture_book',
+    name: '绘本',
+    type: 'book',
+    quality: 'common',
+    price: 0,
+    medium: false,
+    desc: '一本边角磨圆的旧绘本。诺拉说，你小时候翻过很多遍。',
+  },
+}
+
+export type BookReward = {
+  mood?: number
+  spirit?: number
+  exp?: Partial<Record<SkillKey, number>>
+  flag?: string
+}
+
+export type BookDef = {
+  id: string
+  name: string
+  desc: string
+  progressPerRead: number
+  repeatable: boolean
+  spiritCost?: number
+  reward: BookReward
+}
+
+export const BOOKS: Record<string, BookDef> = {
+  picture_book: {
+    id: 'picture_book',
+    name: '绘本',
+    desc: '颜色已经有些发暗的旧绘本。翻起来很慢，但会让人安静下来。',
+    progressPerRead: 25,
+    repeatable: true,
+    reward: { mood: 8 },
   },
 }
 
@@ -479,7 +516,7 @@ export const LOCATIONS: Location[] = [
     name: '寝室',
     parent: 'orphanage',
     kind: 'room',
-    desc: '寝室不大：一张床、一张桌子、一扇朝北的窗。',
+    desc: '寝室不大：一张床、一张桌子、一扇朝北的窗，床边多了一个小书柜。',
   },
   {
     id: 'orphanCanteen',
@@ -680,9 +717,9 @@ const DESC_BY_TIME: Record<string, [string, string, string]> = {
     '房子里的灯一盏盏灭了，只剩厨房还亮着一点光。',
   ],
   dorm: [
-    '寝室不大：一张床、一张桌子、一扇朝北的窗。晨光从窗缝里漏进来。',
-    '寝室不大：一张床、一张桌子、一扇朝北的窗。窗外没什么声音。',
-    '寝室里很暗，只有桌上那盏小灯还亮着。床铺整齐，窗外的风轻轻敲着玻璃。',
+    '晨光从窗缝里漏进来，落在床边的小书柜上。',
+    '寝室不大：一张床、一张桌子、一扇朝北的窗。小书柜安静地立在床边。',
+    '屋里很暗，只有桌上的小灯亮着。书柜在床边，隐在阴影里。',
   ],
   orphanCanteen: [
     '长桌上摆着面包和稀粥，孩子们揉着眼睛排队。',

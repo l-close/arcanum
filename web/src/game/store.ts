@@ -19,6 +19,7 @@ import {
   DRINKS,
   ENEMIES,
   ITEMS,
+  BOOKS,
   RELIEF_CARE_MINUTES,
   RELIEF_CARE_MOOD,
   RELIEF_CARE_STAMINA,
@@ -169,6 +170,8 @@ export function freshData(): GameData {
     inventory: { basic_wand: 1 },
     equipment: { mainHand: 'basic_wand', offHand: null, armor: null, accessory: null },
     shop: { day: 0, sold: {} },
+    books: {},
+    bookshelf: ['picture_book'],
     prayers: { day: 0, count: 0 },
     plaza: { day: 0, fed: false },
     meals: { day: 0, breakfast: false, lunch: false, dinner: false },
@@ -233,6 +236,8 @@ export function normalizeData(raw: GameData): GameData {
       }
       return { day: shop.day, sold }
     })(),
+    books: raw.books ?? {},
+    bookshelf: raw.bookshelf ?? ['picture_book'],
     prayers: raw.prayers ?? { day: 0, count: 0 },
     plaza: raw.plaza ?? { day: 0, fed: false },
     meals: raw.meals ?? { day: 0, breakfast: false, lunch: false, dinner: false },
@@ -495,7 +500,7 @@ function applyStoryEffects(d: GameData, e?: StoryEffects): void {
   if (e.location) d.location = e.location
 }
 
-type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | null
+type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | null
 
 type TitlePanel = 'saves' | 'export' | 'import' | null
 
@@ -547,6 +552,9 @@ type Store = {
   walkPlaza: () => void
   readPlazaNotices: () => void
   feedPigeons: () => void
+  storeBook: (id: string) => void
+  takeBook: (id: string) => void
+  readBook: (id: string) => void
   teleport: (to: 'west' | 'town') => void
   eat: () => void
   rest: () => void
@@ -1299,6 +1307,109 @@ export const useGame = create<Store>((set, get) => {
         pushLog(d, '你在广场上喂了一会儿鸽子。')
         return '你喂了一会儿鸽子。心情 +1。'
       })
+    },
+
+    storeBook: (id) => {
+      const { data } = get()
+      if (data.location !== 'dorm') {
+        set({ message: '书柜在寝室。' })
+        return
+      }
+      const book = BOOKS[id]
+      if (!book) return
+      if ((data.inventory[id] ?? 0) <= 0) return
+      if (data.bookshelf.includes(id)) {
+        set({ message: '书柜里已经有这本书了。' })
+        return
+      }
+      if (data.bookshelf.length >= 10) {
+        set({ message: '书柜放不下了。' })
+        return
+      }
+      mutate((d) => {
+        d.inventory[id] = (d.inventory[id] ?? 0) - 1
+        if (d.inventory[id] <= 0) delete d.inventory[id]
+        d.bookshelf = [...d.bookshelf, id]
+        return `你把《${book.name}》放回了书柜。`
+      })
+    },
+
+    takeBook: (id) => {
+      const { data } = get()
+      if (data.location !== 'dorm') {
+        set({ message: '书柜在寝室。' })
+        return
+      }
+      const book = BOOKS[id]
+      if (!book || !data.bookshelf.includes(id)) return
+      mutate((d) => {
+        d.bookshelf = d.bookshelf.filter((x) => x !== id)
+        d.inventory[id] = (d.inventory[id] ?? 0) + 1
+        return `你把《${book.name}》从书柜取了出来。`
+      })
+    },
+
+    readBook: (id) => {
+      const { data } = get()
+      if (data.location !== 'library') {
+        set({ message: '这里不是读书的地方。' })
+        return
+      }
+      const book = BOOKS[id]
+      if (!book) return
+      if ((data.inventory[id] ?? 0) <= 0) {
+        set({ message: '你身上没有这本书。' })
+        return
+      }
+      const state = data.books[id] ?? { progress: 0, completed: false }
+      if (!book.repeatable && state.completed) {
+        set({ message: '这本书你已经读完了。' })
+        return
+      }
+      const cost = book.spiritCost ?? 0
+      if (data.spirit < cost) {
+        set({ message: '精神不足。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, 30)
+        if (cost > 0) d.spirit = clamp(d.spirit - cost, 0, maxSpirit(d.skills.will.tier))
+        const current = d.books[id] ?? { progress: 0, completed: false }
+        let progress = current.progress + book.progressPerRead
+        let completed = current.completed
+        let text = `你在藏书阁读了半小时《${book.name}》。阅读进度 ${Math.min(100, progress)}%。`
+        if (progress >= 100) {
+          const reward = book.reward
+          if (reward.mood) d.mood = clamp(d.mood + reward.mood, 0, 100)
+          if (reward.spirit) {
+            d.spirit = clamp(d.spirit + reward.spirit, 0, maxSpirit(d.skills.will.tier))
+          }
+          if (reward.exp) {
+            for (const [key, value] of Object.entries(reward.exp)) {
+              addExp(d, key as SkillKey, value ?? 0)
+            }
+          }
+          if (reward.flag) d.flags[reward.flag] = true
+          const parts: string[] = []
+          if (reward.mood) parts.push(`心情 +${reward.mood}`)
+          if (reward.spirit) parts.push(`精神 +${reward.spirit}`)
+          if (reward.exp) parts.push('经验提升')
+          if (reward.flag) parts.push('记下了一些东西')
+          const rewardText = parts.length ? `${parts.join('，')}。` : ''
+          if (book.repeatable) {
+            progress = 0
+            text = `你读完了《${book.name}》。${rewardText}`
+          } else {
+            progress = 100
+            completed = true
+            text = `你读完了《${book.name}》。${rewardText}`
+          }
+        }
+        d.books[id] = { progress, completed }
+        pushLog(d, text)
+        return text
+      })
+      set({ modal: null })
     },
 
     teleport: (to) => {
