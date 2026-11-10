@@ -27,6 +27,8 @@ APK 由 GitHub Actions 云构建，不需要本地 Android SDK。默认**不随�
 
 这个 APK 使用 debug 签名，适合自己和朋友安装，不适合上架。
 
+当前 CI 每次构建可能生成不同的临时 debug 签名，跨版本覆盖安装会提示「更新包与已安装应用的签名不一致」，需要先导出存档、卸载旧版、安装新版，再导入存档。固定签名方案已列入「尚未实现」，预计下次更新 APK 时一起处理。
+
 ## 运行
 
 ```powershell
@@ -313,6 +315,7 @@ npm.cmd run preview
 - 送礼系统与更多 NPC 个人线
 - 生日处理
 - 存档跨版本迁移的字段表与版本回滚策略
+- APK 固定签名（方案 B，GitHub Secrets）：生成固定 keystore，配置 ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD；workflow 构建前解码，build.gradle 的 debug 签名读取环境变量；固定签名后的第一版仍需卸载一次，之后可覆盖更新
 - 内容分级系统与「血腥描写」开关
 - 教会结构细化：职位与岗位拆分、基层 NPC、教堂空间归属
 - 特殊现象：血月、狂猎、审判庭夜间巡逻（上线时间未定）

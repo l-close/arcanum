@@ -1379,6 +1379,7 @@ function designChildren() {
   c.push(bullet("安卓 APK：默认不随网页更新构建；需要时手动触发 Build Android APK，或推 apk-vX.Y.Z 标签。"));
   c.push(bullet("建议节奏：网页随时更新；APK 每 3–5 次网页更新或一次大功能完成后构建一次。"));
   c.push(bullet("构建 APK 前同步提升 Android versionCode 与 versionName。"));
+  c.push(bullet("当前 APK 使用 CI 临时 debug 签名，跨版本覆盖安装会提示「签名不一致」；先导出存档，卸载旧版，安装新版，再导入。固定签名方案见「十七、待定事项」。"));
 
   c.push(h1("十七、待定事项"));
   [
@@ -1407,6 +1408,7 @@ function designChildren() {
     "后院地点的后续事件。",
     "内容分级系统与「血腥描写」开关的实装时机。",
     "存档跨版本迁移的字段表与版本回滚策略。",
+    "APK 固定签名（方案 B，GitHub Secrets）：生成固定 keystore 并备份到仓库外，配置 ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD；workflow 构建前解码 keystore，build.gradle 的 debug 签名读取环境变量；固定签名后的第一版仍需卸载一次，之后可覆盖更新。",
     "净化的具体代价：一人承担 / 众人分摊 / 消耗圣物 / 被净化者失忆。",
     "塞西莉亚沉默的原因。",
     "审判庭秘密仪式的具体流程。",
