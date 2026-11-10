@@ -290,6 +290,8 @@ button:disabled {
 
 .meter-num { text-align: right; color: var(--muted); font-size: 11px; margin-top: 3px; }
 
+.side-buff { margin-top: 10px; color: var(--gold); font-size: 11px; line-height: 1.5; }
+
 .side-sep { height: 1px; background: var(--line); margin: 18px 0; }
 
 .side-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
@@ -382,6 +384,9 @@ button:disabled {
 .map-node.far { opacity: 0.4; }
 .map-edge { width: 18px; height: 1px; background: var(--line); }
 .map-connector { width: 1px; height: 6px; background: var(--line); }
+.map-row-four { gap: 4px; }
+.map-row-four .map-node { padding: 1px 5px; font-size: 10px; }
+.map-row-four .map-edge { width: 10px; }
 
 .loc-npcs {
   margin-top: 8px;

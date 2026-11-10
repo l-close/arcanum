@@ -1,4 +1,11 @@
-import type { EquipmentSlot, Skill, SkillKey, WestProjectKey } from './types'
+import type {
+  CombatBuffKey,
+  CombatBuffs,
+  EquipmentSlot,
+  Skill,
+  SkillKey,
+  WestProjectKey,
+} from './types'
 
 export const TIER_REQ = [200, 1000, 3000, 7500, 20000]
 
@@ -69,7 +76,7 @@ export type ItemDef = {
   weapon?: 'staff' | 'sword'
   power?: number
   spellPower?: number
-  effect?: { stamina?: number; mana?: number; hp?: number }
+  effect?: { stamina?: number; mana?: number; hp?: number; combatBuff?: CombatBuffKey }
 }
 
 export const ITEMS: Record<string, ItemDef> = {
@@ -191,6 +198,36 @@ export const ITEMS: Record<string, ItemDef> = {
     medium: false,
     desc: '浓缩过的提神剂，苦味更重，见效也更快。恢复 30 点体力。',
     effect: { stamina: 30 },
+  },
+  sharp_draught: {
+    id: 'sharp_draught',
+    name: '锐锋药剂',
+    type: 'consumable',
+    quality: 'rare',
+    price: 18,
+    medium: false,
+    desc: '战前或战中饮用。24 小时内近战伤害 +1。同种药剂不可叠加。',
+    effect: { combatBuff: 'sharp' },
+  },
+  stone_draught: {
+    id: 'stone_draught',
+    name: '石肤药剂',
+    type: 'consumable',
+    quality: 'rare',
+    price: 18,
+    medium: false,
+    desc: '战前或战中饮用。24 小时内受到的伤害 -1，最低 1。同种药剂不可叠加。',
+    effect: { combatBuff: 'stone' },
+  },
+  swift_draught: {
+    id: 'swift_draught',
+    name: '疾行药剂',
+    type: 'consumable',
+    quality: 'rare',
+    price: 22,
+    medium: false,
+    desc: '战前或战中饮用。24 小时内行动条充能 +5%。同种药剂不可叠加。',
+    effect: { combatBuff: 'swift' },
   },
   dry_ration: {
     id: 'dry_ration',
@@ -432,6 +469,11 @@ export const SHOP_STOCKS: Record<string, Record<string, number>> = {
     old_city_stories: 1,
     silver_moon_lore: 1,
   },
+  potionWorkshop: {
+    sharp_draught: 2,
+    stone_draught: 2,
+    swift_draught: 2,
+  },
 }
 
 /** 西镇集市价格：阶段 0 更贵，阶段 1 回落。 */
@@ -450,11 +492,91 @@ export const CRAFTED_POTIONS = new Set([
   'stimulant_fine',
 ])
 
+export const WORKSHOP_HERBS = new Set(['bloodherb', 'bitterleaf'])
+
+export const WORKSHOP_HERB_PRICES: Record<string, number> = {
+  bloodherb: 4,
+  bitterleaf: 3,
+}
+
+export function canSellAt(location: string, id: string): boolean {
+  const def = ITEMS[id]
+  if (!def) return false
+  if (location === 'potionWorkshop') {
+    if (def.type === 'material') return WORKSHOP_HERBS.has(id)
+    return CRAFTED_POTIONS.has(id)
+  }
+  if (location === 'shop') {
+    if (def.type === 'material') return true
+    return CRAFTED_POTIONS.has(id)
+  }
+  if (location === 'westMarket') return def.type === 'material'
+  return false
+}
+
 export function sellPriceAt(location: string, id: string): number {
   const base = ITEMS[id]?.price ?? 0
-  if (CRAFTED_POTIONS.has(id)) return Math.floor(base * 0.6)
+  if (CRAFTED_POTIONS.has(id)) {
+    return Math.floor(base * (location === 'potionWorkshop' ? 0.7 : 0.6))
+  }
+  if (location === 'potionWorkshop' && WORKSHOP_HERB_PRICES[id] !== undefined) {
+    return WORKSHOP_HERB_PRICES[id]
+  }
   if (location === 'westMarket') return Math.floor(base * 0.7)
   return base
+}
+
+export const COMBAT_BUFF_DURATION_MINUTES = 24 * 60
+
+export const COMBAT_BUFF_LABEL: Record<CombatBuffKey, string> = {
+  sharp: '锐锋',
+  stone: '石肤',
+  swift: '疾行',
+}
+
+export const COMBAT_BUFF_EFFECT: Record<CombatBuffKey, string> = {
+  sharp: '近战伤害 +1',
+  stone: '受到伤害 -1',
+  swift: '行动条充能 +5%',
+}
+
+export const COMBAT_BUFF_ITEMS: Record<CombatBuffKey, string> = {
+  sharp: 'sharp_draught',
+  stone: 'stone_draught',
+  swift: 'swift_draught',
+}
+
+export function combatBuffUntilKey(key: CombatBuffKey): keyof CombatBuffs {
+  if (key === 'sharp') return 'sharpUntil'
+  if (key === 'stone') return 'stoneUntil'
+  return 'swiftUntil'
+}
+
+export const WORKSHOP_OPEN_START = 8 * 60
+export const WORKSHOP_OPEN_END = 20 * 60
+export const WORKSHOP_WORK_MINUTES = 120
+export const WORKSHOP_WORK_STAMINA = 8
+export const WORKSHOP_WORK_SPIRIT = 2
+export const WORKSHOP_WORK_MOOD = 2
+export const WORKSHOP_WORK_EXP = 1
+export const WORKSHOP_PAY_BY_TIER = [8, 11, 15, 20, 26]
+export const WORKSHOP_RENT_COST = 40
+export const WORKSHOP_RENT_DAYS = 7
+export const WORKSHOP_LESSON_COST = 8
+export const WORKSHOP_LESSON_MINUTES = 60
+export const WORKSHOP_LESSON_SPIRIT = 2
+export const WORKSHOP_LESSON_EXP = 3
+
+export const WORKSHOP_WORK_TEXTS = [
+  '你只能打下手，搬药材、洗瓶子。托比亚斯没让你碰火。',
+  '你开始负责看火和递料，偶尔能搅两下锅。',
+  '你独立处理了一锅基础药，托比亚斯只在旁边看了一眼。',
+  '你负责的锅不再需要人盯，学徒会来问你火候。',
+  '奥古斯特把一整批订单交给你，自己去前面谈生意。',
+]
+
+export function workshopPayForTier(tier: number): number {
+  return WORKSHOP_PAY_BY_TIER[Math.max(0, Math.min(4, tier))] ?? 8
 }
 
 export type RecipeDef = {
@@ -1155,7 +1277,14 @@ export const LOCATIONS: Location[] = [
     name: '中央广场',
     kind: 'area',
     childLabel: '广场',
-    desc: '广场中央有一座旧喷泉，四周是店铺和往来的行人。往东是学院区，往西是孤儿院。',
+    desc: '广场中央有一座旧喷泉，四周是店铺和往来的行人。往东是学院区，往西是孤儿院和教堂。',
+  },
+  {
+    id: 'craftDistrict',
+    name: '工坊区',
+    kind: 'area',
+    childLabel: '工坊',
+    desc: '窄街两侧是作坊和货栈，烟囱、铜招牌和热汽挤在一起。地上有车辙和散落的木屑。',
   },
   {
     id: 'academyStreet',
@@ -1167,13 +1296,13 @@ export const LOCATIONS: Location[] = [
     id: 'orphanStreet',
     name: '孤儿院',
     kind: 'area',
-    desc: '一片安静的地方，墙根长着草，尽头是孤儿院的院门。',
+    desc: '一片安静的地方，墙根长着草，教堂的尖顶从旁边露出来，尽头是孤儿院的院门。',
   },
   {
     id: 'churchStreet',
     name: '教堂',
     kind: 'area',
-    desc: '钟声从教堂的尖顶传下来，门前石阶被扫得很干净。',
+    desc: '教堂在孤儿院旁边，钟声从尖顶传下来，门前石阶被扫得很干净。',
   },
   {
     id: 'academy',
@@ -1224,6 +1353,13 @@ export const LOCATIONS: Location[] = [
     parent: 'academy',
     kind: 'room',
     desc: '学院东侧围出一块坡地，几畦药草按颜色分开，木牌上写着名字。',
+  },
+  {
+    id: 'potionWorkshop',
+    name: '药剂工坊',
+    parent: 'craftDistrict',
+    kind: 'room',
+    desc: '门口挂着铜釜招牌，熟客都叫这里铜釜工坊。里面是一排排药架和冒着热气的铜锅，学徒抱着货箱进出，空气里有苦味和炭火气。',
   },
   {
     id: 'orphanage',
@@ -2041,6 +2177,7 @@ const OUTDOOR = new Set([
   'academyStreet',
   'orphanStreet',
   'churchStreet',
+  'craftDistrict',
   'academy',
   'orphanage',
   'commercial',
@@ -2838,6 +2975,75 @@ export const NPCS: NpcDef[] = [
       ],
     },
   },
+  {
+    id: 'august',
+    name: '奥古斯特·瓦尔',
+    short: '奥古斯特',
+    title: '药剂工坊主人',
+    relationship: 'familiarity',
+    schedule: [{ location: 'potionWorkshop', days: 'all', start: 8 * 60, end: 20 * 60 }],
+    status: '他正低头看一张订单，手指在桌面上敲了两下。',
+    impression: {
+      far: '工坊主人，忙着看订单',
+      familiar: '开始记得你上一批药的质量',
+      close: '愿意和你多谈两句配方',
+    },
+    lines: {
+      far: [
+        '订单放柜台上。急单不接。',
+        '你挡光了。',
+        '这锅火候不对。谁看的火？',
+        '买药剂去柜台，找莉薇娅。',
+      ],
+      familiar: [
+        '上次那批止血膏，收得还行。',
+        '别省火。省下来的时间，后面要还。',
+        '今天的单子多，手脚麻利点。',
+        '你手稳了。再练练火候。',
+      ],
+      close: [
+        '配方不是藏起来的。看懂了，就是你的。',
+        '我年轻时也把一锅药熬糊过。别声张。',
+        '莉薇娅比我更会跟人打交道。',
+        '你要真想做这行，先把眼睛练出来。',
+      ],
+    },
+  },
+  {
+    id: 'livia',
+    name: '莉薇娅·瓦尔',
+    short: '莉薇娅',
+    title: '药剂工坊柜台',
+    schedule: [
+      { location: 'potionWorkshop', days: 'all', start: 10 * 60, end: 18 * 60, chance: 0.75 },
+    ],
+    status: '她把一叠订单按顺序码好，抬眼看你。',
+    impression: {
+      far: '工坊柜台，做事很利落',
+      familiar: '开始把你当成熟面孔',
+      close: '愿意和你多说几句工坊的事',
+    },
+    lines: {
+      far: [
+        '订单放这里。急单要加钱。',
+        '师傅在里间。小事跟我说。',
+        '学徒在左边，临时工在右边。别走错。',
+        '你第一次来？名字写在这张单子上。',
+      ],
+      familiar: [
+        '今天人手紧，你来得正好。',
+        '托比亚斯说你手稳了不少。',
+        '师傅记得你上一批药，不记得你名字。别介意。',
+        '柜台这边我来。你去帮托比亚斯吧。',
+      ],
+      close: [
+        '我父亲只谈配方。跟人打交道的事，归我。',
+        '这间工坊看着乱，其实每一单都排得很清楚。',
+        '你要是想学，别只盯着锅。也看看单子怎么写。',
+        '……你比我认识的多数学徒都稳。',
+      ],
+    },
+  },
 ]
 
 export function npcById(id: string): NpcDef | undefined {
@@ -2886,10 +3092,18 @@ const AREA_LINKS: Record<string, Exit[]> = {
     { to: 'academyStreet', minutes: 5 },
     { to: 'commercial', minutes: 5 },
     { to: 'churchStreet', minutes: 5 },
+    { to: 'craftDistrict', minutes: 5 },
   ],
-  orphanStreet: [{ to: 'town', minutes: 5 }],
+  craftDistrict: [{ to: 'town', minutes: 5 }],
+  orphanStreet: [
+    { to: 'town', minutes: 5 },
+    { to: 'churchStreet', minutes: 5 },
+  ],
   academyStreet: [{ to: 'town', minutes: 5 }],
-  churchStreet: [{ to: 'town', minutes: 5 }],
+  churchStreet: [
+    { to: 'town', minutes: 5 },
+    { to: 'orphanStreet', minutes: 5 },
+  ],
   commercial: [
     { to: 'town', minutes: 5 },
     { to: 'gate', minutes: 5 },
@@ -2902,6 +3116,7 @@ const AREA_LINKS: Record<string, Exit[]> = {
 }
 
 export const CITY_AREA_IDS = [
+  'craftDistrict',
   'churchStreet',
   'orphanStreet',
   'town',

@@ -72,11 +72,27 @@ import {
   courseExamLocationOn,
   courseLocationOn,
   coursesForYear,
+  COMBAT_BUFF_EFFECT,
+  COMBAT_BUFF_LABEL,
+  combatBuffUntilKey,
+  absoluteMinutes,
+  canSellAt,
+  WORKSHOP_OPEN_START,
+  WORKSHOP_OPEN_END,
+  WORKSHOP_WORK_MINUTES,
+  WORKSHOP_WORK_STAMINA,
+  WORKSHOP_WORK_SPIRIT,
+  WORKSHOP_RENT_COST,
+  WORKSHOP_RENT_DAYS,
+  WORKSHOP_LESSON_COST,
+  WORKSHOP_LESSON_MINUTES,
+  WORKSHOP_LESSON_SPIRIT,
+  WORKSHOP_LESSON_EXP,
+  workshopPayForTier,
   RECIPES,
   recipeUnlocked,
   brewSuccessChance,
   brewFineChance,
-  CRAFTED_POTIONS,
   currentMeal,
   currentYear,
   ageOf,
@@ -146,7 +162,7 @@ import {
 import type { SaveBundle } from './game/save'
 import { EVENTS, choiceBlockedReason, eventById, eventEffectSummary } from './game/events'
 import { STORY } from './game/story'
-import type { ExamPackage, Gender, SkillKey } from './game/types'
+import type { ExamPackage, GameData, Gender, SkillKey } from './game/types'
 import type { Location } from './game/content'
 import { ItemIcon } from './ui/icons'
 import { APP_VERSION } from './version'
@@ -494,6 +510,7 @@ function GameScreen() {
       {modal === 'guildBoard' && <GuildBoardModal />}
       {modal === 'shop' && <ShopModal />}
       {modal === 'brew' && <BrewModal />}
+      {modal === 'workshop' && <WorkshopModal />}
       {modal === 'drinks' && <DrinkModal />}
       {modal === 'save' && <SavesModal />}
       {modal === 'export' && <ExportModal />}
@@ -509,6 +526,20 @@ function formatBattleTime(ticks: number): string {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
+
+function combatBuffText(data: GameData): string {
+  const now = absoluteMinutes(data.day, data.minutes)
+  return (['sharp', 'stone', 'swift'] as const)
+    .map((key) => ({ key, until: data.combatBuffs[combatBuffUntilKey(key)] }))
+    .filter((item) => item.until > now)
+    .map(
+      (item) =>
+        `${COMBAT_BUFF_LABEL[item.key]} ${COMBAT_BUFF_EFFECT[item.key]}（${Math.ceil(
+          (item.until - now) / 60,
+        )}h）`,
+    )
+    .join(' · ')
 }
 
 function BattleView() {
@@ -575,7 +606,10 @@ function BattleView() {
   const battleItems = Object.entries(data.inventory).filter(([id, qty]) => {
     if (qty <= 0) return false
     const def = ITEMS[id]
-    return def?.type === 'consumable' && !!(def.effect?.hp || def.effect?.mana)
+    return (
+      def?.type === 'consumable' &&
+      !!(def.effect?.hp || def.effect?.mana || def.effect?.combatBuff)
+    )
   })
   const rangeText = (range: [number, number]) => `${range[0]}–${range[1]}`
   const castReason = !knownFireball
@@ -648,7 +682,9 @@ function BattleView() {
         {battle.casting && (
           <BattleBar label="吟唱" value={battle.casting.progress} max={100} kind="gauge" ready={false} />
         )}
-        <div className="battle-status">状态　—</div>
+        <div className="battle-status">
+          状态　{combatBuffText(data) || '—'}
+        </div>
       </div>
 
       {battle.phase === 'filling' && (
@@ -734,11 +770,21 @@ function BattleView() {
           {battleItems.length === 0 && <div className="hint">没有可以在战斗中使用的物品。</div>}
           {battleItems.map(([id, qty]) => {
             const def = ITEMS[id]
+            const buffKey = def.effect?.combatBuff
             const healHp = def.effect?.hp ?? 0
             const healMana = def.effect?.mana ?? 0
             const hpFull = healHp > 0 && battle.playerHp >= hpMax && !healMana
             const manaFull = healMana > 0 && data.mana >= 100 && !healHp
-            const disabled = hpFull || manaFull
+            const buffActive = buffKey
+              ? data.combatBuffs[combatBuffUntilKey(buffKey)] >
+                absoluteMinutes(data.day, data.minutes)
+              : false
+            const disabled = hpFull || manaFull || buffActive
+            const effectText = buffKey
+              ? `${COMBAT_BUFF_LABEL[buffKey]} ${COMBAT_BUFF_EFFECT[buffKey]}`
+              : `${healHp ? `生命 +${healHp}` : ''}${healHp && healMana ? ' · ' : ''}${
+                  healMana ? `魔力 +${healMana}` : ''
+                }`
             return (
               <button
                 key={id}
@@ -749,10 +795,12 @@ function BattleView() {
                 <span>{def.name} ×{qty}</span>
                 <small>
                   {disabled
-                    ? hpFull
-                      ? '生命已满'
-                      : '魔力已满'
-                    : `${healHp ? `生命 +${healHp}` : ''}${healHp && healMana ? ' · ' : ''}${healMana ? `魔力 +${healMana}` : ''}`}
+                    ? buffActive
+                      ? '已生效'
+                      : hpFull
+                        ? '生命已满'
+                        : '魔力已满'
+                    : effectText}
                 </small>
               </button>
             )
@@ -920,6 +968,7 @@ function StatusRail() {
       <Meter label="精神" value={data.spirit} max={spiritMax} kind="spirit" />
       <Meter label="心情" value={data.mood} max={100} kind="mood" />
       <Meter label="魔力" value={data.mana} max={100} kind="mana" />
+      <div className="side-buff">药剂　{combatBuffText(data) || '无'}</div>
       <div className="side-sep" />
       <div className="side-menu">
         <button className="side-menu-btn full" onClick={() => setModal('stats')}>属性</button>
@@ -1002,6 +1051,7 @@ function Actions({
   const eat = useGame((s) => s.eat)
   const rest = useGame((s) => s.rest)
   const workShop = useGame((s) => s.workShop)
+  const workPotionWorkshop = useGame((s) => s.workPotionWorkshop)
   const workTavern = useGame((s) => s.workTavern)
   const listenTavern = useGame((s) => s.listenTavern)
   const pray = useGame((s) => s.pray)
@@ -1318,6 +1368,13 @@ function Actions({
       )}
       {loc === 'dorm' && <ActionBtn onClick={meditate} label="冥想" cost="1 小时" />}
       {loc === 'dorm' && <ActionBtn onClick={() => setModal('bookshelf')} label="书柜" cost="—" />}
+      {loc === 'dorm' && data.workshop.brewKitUntilDay > data.day && (
+        <ActionBtn
+          onClick={() => setModal('brew')}
+          label="炼药"
+          cost={`30 分钟 · 炼药工具剩余 ${data.workshop.brewKitUntilDay - data.day} 天`}
+        />
+      )}
       {loc === 'dorm' &&
         (() => {
           const pkg = data.examPackages.find((p) => p.received && !p.opened)
@@ -1335,6 +1392,22 @@ function Actions({
           <ActionBtn onClick={workShop} label="打工" cost="2 小时 · 体力 -10" />
         </>
       )}
+      {loc === 'potionWorkshop' &&
+        (isTimeWindow(data.minutes, WORKSHOP_OPEN_START, WORKSHOP_OPEN_END) ? (
+          <>
+            <ActionBtn onClick={() => setModal('shop')} label="买卖药剂" cost="—" />
+            <ActionBtn onClick={() => setModal('workshop')} label="租借与请教" cost="—" />
+            <ActionBtn
+              onClick={workPotionWorkshop}
+              label="打临时工"
+              cost={`${WORKSHOP_WORK_MINUTES / 60} 小时 · 体力 -${WORKSHOP_WORK_STAMINA} · 精神 -${WORKSHOP_WORK_SPIRIT} · 报酬 ${workshopPayForTier(
+                data.skills.alchemy.tier,
+              )} 铜`}
+            />
+          </>
+        ) : (
+          <div className="hint">工坊已经关门了。</div>
+        ))}
       {loc === 'bookshop' && (
         <ActionBtn onClick={() => setModal('shop')} label="买书" cost="—" />
       )}
@@ -1642,9 +1715,11 @@ function CityMap({ location }: { location: string }) {
   }
   return (
     <div className="city-map" aria-label="银月城街区">
-      <div className="map-row">{node('churchStreet')}</div>
+      <div className="map-row">{node('craftDistrict')}</div>
       <div className="map-connector" />
-      <div className="map-row">
+      <div className="map-row map-row-four">
+        {node('churchStreet')}
+        <span className="map-edge" />
         {node('orphanStreet')}
         <span className="map-edge" />
         {node('town')}
@@ -2815,6 +2890,11 @@ function InventoryModal() {
   const selectedSlotLabel = selectedSlot
     ? EQUIPMENT_SLOTS.find((s) => s.key === selectedSlot)?.label
     : undefined
+  const selectedBuffKey = selectedDef?.effect?.combatBuff
+  const selectedBuffActive = selectedBuffKey
+    ? data.combatBuffs[combatBuffUntilKey(selectedBuffKey)] >
+      absoluteMinutes(data.day, data.minutes)
+    : false
 
   useEffect(() => {
     if (selected && !equippedIds.includes(selected) && (data.inventory[selected] ?? 0) <= 0) {
@@ -2913,7 +2993,13 @@ function InventoryModal() {
                 <button className="primary-btn detail-action" disabled={!!battle} onClick={() => equipItem(selectedDef.id)}>装备</button>
               )
             ) : selectedDef.type === 'consumable' ? (
-              <button className="primary-btn detail-action" disabled={!!battle} onClick={() => useItem(selectedDef.id)}>使用</button>
+              <button
+                className="primary-btn detail-action"
+                disabled={!!battle || selectedBuffActive}
+                onClick={() => useItem(selectedDef.id)}
+              >
+                {selectedBuffActive ? '已生效' : '使用'}
+              </button>
             ) : selectedDef.type === 'book' ? (
               <>
                 <div className="hint">
@@ -2947,11 +3033,9 @@ function ShopModal() {
   const sellItem = useGame((s) => s.sellItem)
   const stock = shopStockAt(data.location)
   const soldToday = data.shop.day === data.day ? data.shop.sold : {}
-  const sellable = Object.entries(data.inventory).filter(([id, qty]) => {
-    if (qty <= 0) return false
-    if (ITEMS[id]?.type === 'material') return true
-    return data.location === 'shop' && CRAFTED_POTIONS.has(id)
-  })
+  const sellable = Object.entries(data.inventory).filter(
+    ([id, qty]) => qty > 0 && canSellAt(data.location, id),
+  )
 
   return (
     <ModalShell title={getLocation(data.location).name} onClose={() => setModal(null)}>
@@ -2992,7 +3076,10 @@ function ShopModal() {
           )
         })}
       </div>
-      {(data.location === 'shop' || data.location === 'westMarket') && sellable.length > 0 && (
+      {(data.location === 'shop' ||
+        data.location === 'westMarket' ||
+        data.location === 'potionWorkshop') &&
+        sellable.length > 0 && (
         <div className="shop-sell">
           <div className="section-title">收购</div>
           {sellable.map(([id, qty]) => {
@@ -3065,6 +3152,65 @@ function BrewModal() {
             </div>
           )
         })}
+      </div>
+    </ModalShell>
+  )
+}
+
+function WorkshopModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  const rentBrewKit = useGame((s) => s.rentBrewKit)
+  const learnAlchemy = useGame((s) => s.learnAlchemyAtWorkshop)
+  const alchemy = data.skills.alchemy
+  const kitDays = Math.max(0, data.workshop.brewKitUntilDay - data.day)
+  const lessonDone = data.workshop.lessonDay === data.day
+
+  return (
+    <ModalShell title="工坊柜台" onClose={() => setModal(null)}>
+      <div className="hint">师傅只接大单。基础的火候和顺序，由学徒长托比亚斯带你做。</div>
+      <div className="shop-list">
+        <div className="shop-row">
+          <div className="row-head">
+            <span className="item-name">租借炼药工具</span>
+            <span className="shop-price">{WORKSHOP_RENT_COST} 铜</span>
+          </div>
+          <div className="item-desc">
+            {WORKSHOP_RENT_DAYS} 天内可以在寝室炼药。
+            {kitDays > 0 ? `当前还剩 ${kitDays} 天。` : '当前没有租借。'}
+          </div>
+          <div className="row-head">
+            <button
+              className="mini-btn"
+              disabled={data.money < WORKSHOP_RENT_COST}
+              onClick={rentBrewKit}
+            >
+              {kitDays > 0 ? `续租 ${WORKSHOP_RENT_DAYS} 天` : `租借 ${WORKSHOP_RENT_DAYS} 天`}
+            </button>
+          </div>
+        </div>
+
+        <div className="shop-row">
+          <div className="row-head">
+            <span className="item-name">向托比亚斯请教</span>
+            <span className="shop-price">{WORKSHOP_LESSON_COST} 铜</span>
+          </div>
+          <div className="item-desc">
+            {`${WORKSHOP_LESSON_MINUTES / 60} 小时，精神 -${WORKSHOP_LESSON_SPIRIT}，炼药经验 +${WORKSHOP_LESSON_EXP}。每天 1 次。当前炼药：${tierName(
+              'alchemy',
+              alchemy.tier,
+            )} ${formatPercent(alchemy.tier, alchemy.exp)}。`}
+          </div>
+          <div className="row-head">
+            <button
+              className="mini-btn"
+              disabled={lessonDone || data.money < WORKSHOP_LESSON_COST || data.spirit < WORKSHOP_LESSON_SPIRIT}
+              onClick={learnAlchemy}
+            >
+              {lessonDone ? '今天已请教' : '请教 1 次'}
+            </button>
+          </div>
+        </div>
       </div>
     </ModalShell>
   )

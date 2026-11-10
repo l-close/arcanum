@@ -44,6 +44,19 @@ export type GuildState = {
   escort: GuildEscortState | null
 }
 
+export type CombatBuffKey = 'sharp' | 'stone' | 'swift'
+
+export type CombatBuffs = {
+  sharpUntil: number
+  stoneUntil: number
+  swiftUntil: number
+}
+
+export type WorkshopState = {
+  brewKitUntilDay: number
+  lessonDay: number
+}
+
 export type ExamResult = 'pass' | 'fail' | 'absent'
 
 export type ExamPackage = {
@@ -93,6 +106,8 @@ export type GameData = {
   plaza: { day: number; fed: boolean }
   meals: { day: number; breakfast: boolean; lunch: boolean; dinner: boolean }
   relief: { day: number; cared: boolean; treated: boolean; volunteered: boolean }
+  workshop: WorkshopState
+  combatBuffs: CombatBuffs
   events: {
     day: number
     count: number

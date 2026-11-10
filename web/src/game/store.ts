@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import type {
   BattleState,
   BattleSubmenu,
+  CombatBuffKey,
+  CombatBuffs,
   EquipmentSlot,
   ExamPackage,
   ExamResult,
@@ -97,6 +99,25 @@ import {
   BOAR_TUSK_DROP_CHANCE,
   FOREST_DEEP_ENCOUNTER_CHANCE,
   HERB_GATHER_SUCCESS_CHANCE,
+  COMBAT_BUFF_DURATION_MINUTES,
+  COMBAT_BUFF_LABEL,
+  combatBuffUntilKey,
+  WORKSHOP_OPEN_START,
+  WORKSHOP_OPEN_END,
+  WORKSHOP_WORK_MINUTES,
+  WORKSHOP_WORK_STAMINA,
+  WORKSHOP_WORK_SPIRIT,
+  WORKSHOP_WORK_MOOD,
+  WORKSHOP_WORK_EXP,
+  workshopPayForTier,
+  WORKSHOP_WORK_TEXTS,
+  WORKSHOP_RENT_COST,
+  WORKSHOP_RENT_DAYS,
+  WORKSHOP_LESSON_COST,
+  WORKSHOP_LESSON_MINUTES,
+  WORKSHOP_LESSON_SPIRIT,
+  WORKSHOP_LESSON_EXP,
+  canSellAt,
   TAVERN_DRINK_END,
   TAVERN_LISTEN_SCENES,
   TAVERN_OPEN_END,
@@ -119,7 +140,6 @@ import {
   recipeUnlocked,
   brewSuccessChance,
   brewFineChance,
-  CRAFTED_POTIONS,
   currentMeal,
   currentYear,
   examDaysForYear,
@@ -235,6 +255,8 @@ export function freshData(): GameData {
     plaza: { day: 0, fed: false },
     meals: { day: 0, breakfast: false, lunch: false, dinner: false },
     relief: { day: 0, cared: false, treated: false, volunteered: false },
+    workshop: { brewKitUntilDay: 0, lessonDay: -1 },
+    combatBuffs: { sharpUntil: 0, stoneUntil: 0, swiftUntil: 0 },
     events: { day: 0, count: 0, today: [], lastSeen: {}, lastAt: -9999, seen: [] },
     examPackages: [],
     examStartDay: 0,
@@ -424,6 +446,15 @@ export function normalizeData(raw: GameData): GameData {
     plaza: raw.plaza ?? { day: 0, fed: false },
     meals: raw.meals ?? { day: 0, breakfast: false, lunch: false, dinner: false },
     relief: raw.relief ?? { day: 0, cared: false, treated: false, volunteered: false },
+    workshop: {
+      brewKitUntilDay: raw.workshop?.brewKitUntilDay ?? 0,
+      lessonDay: raw.workshop?.lessonDay ?? -1,
+    },
+    combatBuffs: {
+      sharpUntil: raw.combatBuffs?.sharpUntil ?? 0,
+      stoneUntil: raw.combatBuffs?.stoneUntil ?? 0,
+      swiftUntil: raw.combatBuffs?.swiftUntil ?? 0,
+    },
     events: {
       day: raw.events?.day ?? 0,
       count: raw.events?.count ?? 0,
@@ -483,6 +514,29 @@ function maybeUnlockFireballReading(d: GameData): string | null {
 
 function formatGain(value: number): string {
   return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100)
+}
+
+function combatBuffActive(buffs: CombatBuffs, key: CombatBuffKey, now: number): boolean {
+  return buffs[combatBuffUntilKey(key)] > now
+}
+
+function setCombatBuff(
+  buffs: CombatBuffs,
+  key: CombatBuffKey,
+  now: number,
+): { ok: boolean; until: number; remaining: number } {
+  const untilKey = combatBuffUntilKey(key)
+  const current = buffs[untilKey]
+  if (current > now) {
+    return { ok: false, until: current, remaining: current - now }
+  }
+  const until = now + COMBAT_BUFF_DURATION_MINUTES
+  buffs[untilKey] = until
+  return { ok: true, until, remaining: COMBAT_BUFF_DURATION_MINUTES }
+}
+
+function buffHours(minutes: number): string {
+  return `${Math.max(1, Math.ceil(minutes / 60))} 小时`
 }
 
 function addExp(d: GameData, key: SkillKey, amount: number): void {
@@ -691,7 +745,7 @@ function applyStoryEffects(d: GameData, e?: StoryEffects): void {
   if (e.location) d.location = e.location
 }
 
-type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'brew' | null
+type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'brew' | 'workshop' | null
 
 type TitlePanel = 'saves' | 'export' | 'import' | null
 
@@ -793,6 +847,9 @@ type Store = {
   chatWithNpc: (id: string) => boolean
   wait: (minutes: number) => void
   workShop: () => void
+  workPotionWorkshop: () => void
+  rentBrewKit: () => void
+  learnAlchemyAtWorkshop: () => void
   workTavern: () => void
   orderDrink: (id: string) => void
   listenTavern: () => void
@@ -1373,7 +1430,11 @@ export const useGame = create<Store>((set, get) => {
       b.elapsedTicks += 1
       let nextData = data
 
-      if (b.phase === 'filling') b.playerGauge = Math.min(100, b.playerGauge + 4)
+      if (b.phase === 'filling') {
+        const now = absoluteMinutes(data.day, data.minutes)
+        const swift = combatBuffActive(data.combatBuffs, 'swift', now)
+        b.playerGauge = Math.min(100, b.playerGauge + (swift ? 4.2 : 4))
+      }
       if (enemy.speed > 0) b.enemyGauge = Math.min(100, b.enemyGauge + enemy.speed)
 
       let castReady = false
@@ -1441,9 +1502,17 @@ export const useGame = create<Store>((set, get) => {
       if (enemy.speed > 0 && b.enemyGauge >= 100) {
         b.enemyGauge = 0
         b.actions += 1
+        const stone = combatBuffActive(
+          nextData.combatBuffs,
+          'stone',
+          absoluteMinutes(nextData.day, nextData.minutes),
+        )
+          ? 1
+          : 0
         const reduction =
           Math.floor(nextData.skills.physique.tier / 2) +
-          (nextData.flags.book_defense_notes ? 1 : 0)
+          (nextData.flags.book_defense_notes ? 1 : 0) +
+          stone
         const dmg = Math.max(1, enemy.attack + randInt(0, 2) - reduction)
         b.playerHp = Math.max(0, b.playerHp - dmg)
         const line = enemy.attackLines.length
@@ -1501,7 +1570,14 @@ export const useGame = create<Store>((set, get) => {
         enemy.defense,
         bookBonus,
       )
-      const dmg = randInt(min, max)
+      const sharp = combatBuffActive(
+        data.combatBuffs,
+        'sharp',
+        absoluteMinutes(data.day, data.minutes),
+      )
+        ? 1
+        : 0
+      const dmg = randInt(min, max) + sharp
       const next = structuredClone(data)
 
       const b: BattleState = { ...battle, log: [...battle.log] }
@@ -1560,6 +1636,27 @@ export const useGame = create<Store>((set, get) => {
       if (!battle || battle.phase !== 'submenu' || battle.submenu !== 'item') return
       const def = ITEMS[id]
       if (!def || (data.inventory[id] ?? 0) <= 0) return
+      const buffKey = def.effect?.combatBuff
+      if (buffKey) {
+        const now = absoluteMinutes(data.day, data.minutes)
+        const untilKey = combatBuffUntilKey(buffKey)
+        if (data.combatBuffs[untilKey] > now) {
+          set({
+            message: `${COMBAT_BUFF_LABEL[buffKey]}药剂已生效（剩余 ${buffHours(
+              data.combatBuffs[untilKey] - now,
+            )}）。`,
+          })
+          return
+        }
+        const next = structuredClone(data)
+        next.inventory[id] -= 1
+        if (next.inventory[id] <= 0) delete next.inventory[id]
+        setCombatBuff(next.combatBuffs, buffKey, now)
+        const b: BattleState = { ...battle, log: [...battle.log] }
+        battleLog(b, `你喝下${def.name}。${COMBAT_BUFF_LABEL[buffKey]}生效 24 小时。`)
+        set({ battle: b, data: next })
+        return
+      }
       const healHp = def.effect?.hp ?? 0
       const healMana = def.effect?.mana ?? 0
       if (!healHp && !healMana) return
@@ -2889,11 +2986,13 @@ export const useGame = create<Store>((set, get) => {
 
     brewPotion: (recipeId) => {
       const { data } = get()
-      if (data.location !== 'brewery') {
+      const atBrewery = data.location === 'brewery'
+      const atDorm = data.location === 'dorm' && data.workshop.brewKitUntilDay > data.day
+      if (!atBrewery && !atDorm) {
         set({ message: '这里不能炼药。' })
         return
       }
-      if (classSegmentAt(data.location, data.minutes, data.day)) {
+      if (atBrewery && classSegmentAt(data.location, data.minutes, data.day)) {
         set({ message: '正在上课，等下课再来。' })
         return
       }
@@ -3003,6 +3102,98 @@ export const useGame = create<Store>((set, get) => {
         return '你在杂货店打了两个小时的工，拿到 10 枚铜币。'
       })
       maybeEvent({ type: 'after', action: 'work' })
+    },
+
+    workPotionWorkshop: () => {
+      const { data } = get()
+      if (data.location !== 'potionWorkshop') {
+        set({ message: '这里没有你能打的工。' })
+        return
+      }
+      if (!isTimeWindow(data.minutes, WORKSHOP_OPEN_START, WORKSHOP_OPEN_END)) {
+        set({ message: '工坊已经关门了。' })
+        return
+      }
+      if (data.stamina < WORKSHOP_WORK_STAMINA) {
+        set({ message: '体力不足，先休息一下。' })
+        return
+      }
+      if (data.spirit < WORKSHOP_WORK_SPIRIT) {
+        set({ message: '精神不足，先休息一下。' })
+        return
+      }
+      const tier = data.skills.alchemy.tier
+      const pay = workshopPayForTier(tier)
+      const text = WORKSHOP_WORK_TEXTS[Math.max(0, Math.min(4, tier))]
+      mutate((d) => {
+        advanceTime(d, WORKSHOP_WORK_MINUTES)
+        d.stamina = clamp(d.stamina - WORKSHOP_WORK_STAMINA, 0, maxStamina(d.skills.physique.tier))
+        d.spirit = clamp(d.spirit - WORKSHOP_WORK_SPIRIT, 0, maxSpirit(d.skills.will.tier))
+        d.mood = clamp(d.mood - WORKSHOP_WORK_MOOD, 0, 100)
+        d.money += pay
+        addExp(d, 'alchemy', WORKSHOP_WORK_EXP)
+        pushLog(d, `${text} 你拿到 ${pay} 枚铜币。`)
+        return `${text} 炼药经验 +${WORKSHOP_WORK_EXP}，报酬 ${pay} 铜。`
+      })
+      maybeEvent({ type: 'after', action: 'work' })
+    },
+
+    rentBrewKit: () => {
+      const { data } = get()
+      if (data.location !== 'potionWorkshop') {
+        set({ message: '这里不租借炼药工具。' })
+        return
+      }
+      if (!isTimeWindow(data.minutes, WORKSHOP_OPEN_START, WORKSHOP_OPEN_END)) {
+        set({ message: '工坊已经关门了。' })
+        return
+      }
+      if (data.money < WORKSHOP_RENT_COST) {
+        set({ message: '钱不够。' })
+        return
+      }
+      mutate((d) => {
+        d.money -= WORKSHOP_RENT_COST
+        const base = Math.max(d.day, d.workshop.brewKitUntilDay)
+        d.workshop.brewKitUntilDay = base + WORKSHOP_RENT_DAYS
+        const text = `你租下了一套便携炼药工具，可以用到第 ${d.workshop.brewKitUntilDay} 天。`
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    learnAlchemyAtWorkshop: () => {
+      const { data } = get()
+      if (data.location !== 'potionWorkshop') {
+        set({ message: '这里不能请教炼药。' })
+        return
+      }
+      if (!isTimeWindow(data.minutes, WORKSHOP_OPEN_START, WORKSHOP_OPEN_END)) {
+        set({ message: '工坊已经关门了。' })
+        return
+      }
+      if (data.workshop.lessonDay === data.day) {
+        set({ message: '今天已经请教过了。' })
+        return
+      }
+      if (data.money < WORKSHOP_LESSON_COST) {
+        set({ message: '钱不够。' })
+        return
+      }
+      if (data.spirit < WORKSHOP_LESSON_SPIRIT) {
+        set({ message: '精神不足，没法集中注意力。' })
+        return
+      }
+      mutate((d) => {
+        d.money -= WORKSHOP_LESSON_COST
+        advanceTime(d, WORKSHOP_LESSON_MINUTES)
+        d.spirit = clamp(d.spirit - WORKSHOP_LESSON_SPIRIT, 0, maxSpirit(d.skills.will.tier))
+        addExp(d, 'alchemy', WORKSHOP_LESSON_EXP)
+        d.workshop.lessonDay = d.day
+        const text = '托比亚斯带你过了一遍基础的火候和顺序。'
+        pushLog(d, `${text} 炼药经验 +${WORKSHOP_LESSON_EXP}。`)
+        return `${text} 炼药经验 +${WORKSHOP_LESSON_EXP}。`
+      })
     },
 
     workTavern: () => {
@@ -3134,15 +3325,13 @@ export const useGame = create<Store>((set, get) => {
 
     sellItem: (id, all) => {
       const { data } = get()
-      if (data.location !== 'shop' && data.location !== 'westMarket') {
+      if (data.location !== 'shop' && data.location !== 'westMarket' && data.location !== 'potionWorkshop') {
         set({ message: '这里不收东西。' })
         return
       }
       const def = ITEMS[id]
       const have = data.inventory[id] ?? 0
-      const crafted = CRAFTED_POTIONS.has(id)
-      const allowed = def?.type === 'material' || (crafted && data.location === 'shop')
-      if (!def || !allowed || have <= 0) return
+      if (!def || !canSellAt(data.location, id) || have <= 0) return
       const count = all ? have : 1
       const price = sellPriceAt(data.location, id)
       mutate((d) => {
@@ -3164,6 +3353,29 @@ export const useGame = create<Store>((set, get) => {
       if (!def || (data.inventory[id] ?? 0) <= 0) return
       if (def.type === 'equipment') {
         get().equipItem(id)
+        return
+      }
+      const buffKey = def.effect?.combatBuff
+      if (buffKey) {
+        const now = absoluteMinutes(data.day, data.minutes)
+        const untilKey = combatBuffUntilKey(buffKey)
+        if (data.combatBuffs[untilKey] > now) {
+          set({
+            message: `${COMBAT_BUFF_LABEL[buffKey]}药剂已生效（剩余 ${buffHours(
+              data.combatBuffs[untilKey] - now,
+            )}）。`,
+          })
+          return
+        }
+        mutate((d) => {
+          if ((d.inventory[id] ?? 0) <= 0) return '你没有这个物品。'
+          d.inventory[id] -= 1
+          if (d.inventory[id] <= 0) delete d.inventory[id]
+          setCombatBuff(d.combatBuffs, buffKey, absoluteMinutes(d.day, d.minutes))
+          const text = `你喝下${def.name}。24 小时内${COMBAT_BUFF_LABEL[buffKey]}生效。`
+          pushLog(d, text)
+          return text
+        })
         return
       }
       if (def.effect?.hp && data.hp >= maxHp(data.skills.physique.tier)) {

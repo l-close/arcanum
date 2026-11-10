@@ -40,6 +40,25 @@ jobs:
       - run: npx cap sync android
 
       - run: chmod +x android/gradlew
+
+      - name: Decode fixed signing keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > android/arcanum-release.p12
+            echo "ANDROID_KEYSTORE_PATH=$GITHUB_WORKSPACE/web/android/arcanum-release.p12" >> $GITHUB_ENV
+            echo "ANDROID_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> $GITHUB_ENV
+            echo "ANDROID_KEY_ALIAS=$KEY_ALIAS" >> $GITHUB_ENV
+            echo "ANDROID_KEY_PASSWORD=$KEY_PASSWORD" >> $GITHUB_ENV
+            echo "Using fixed signing keystore."
+          else
+            echo "ANDROID_KEYSTORE_BASE64 is not set; falling back to the default debug signing key."
+          fi
+
       - run: cd android && ./gradlew assembleDebug --no-daemon
 
       - uses: actions/upload-artifact@v4
