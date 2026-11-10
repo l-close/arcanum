@@ -1384,7 +1384,12 @@ export const useGame = create<Store>((set, get) => {
             nextData.mana = clamp(nextData.mana - (spell.mana - b.casting.manaDrained), 0, 100)
             b.casting.manaDrained = spell.mana
           }
-          const [min, max] = spellDamageRange(spell, nextData.skills.nature.tier, enemy.defense)
+          const [min, max] = spellDamageRange(
+            spell,
+            nextData.skills.nature.tier,
+            enemy.defense,
+            ITEMS[nextData.equipment.mainHand ?? '']?.spellPower ?? 0,
+          )
           const dmg = randInt(min, max)
           b.enemyHp = Math.max(0, b.enemyHp - dmg)
           if (!b.usedSkills.includes('nature')) b.usedSkills = [...b.usedSkills, 'nature']

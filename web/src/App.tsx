@@ -543,7 +543,12 @@ function BattleView() {
   const fireball = SPELLS.fireball
   const knownFireball = data.spells.includes('fireball')
   const canCast = knownFireball && hasMedium && data.mana >= fireball.mana
-  const fireballRange = spellDamageRange(fireball, data.skills.nature.tier, enemy.defense)
+  const fireballRange = spellDamageRange(
+    fireball,
+    data.skills.nature.tier,
+    enemy.defense,
+    ITEMS[mainHand ?? '']?.spellPower ?? 0,
+  )
   const brawlRange = attackDamageRange('brawl', data.skills.brawl.tier, mainHand, enemy.defense)
   const swordRange = attackDamageRange(
     'sword',

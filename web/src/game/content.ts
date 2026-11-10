@@ -62,6 +62,7 @@ export type ItemDef = {
   medium: boolean
   weapon?: 'staff' | 'sword'
   power?: number
+  spellPower?: number
   effect?: { stamina?: number; mana?: number; hp?: number }
 }
 
@@ -87,8 +88,9 @@ export const ITEMS: Record<string, ItemDef> = {
     slot: 'mainHand',
     medium: true,
     weapon: 'staff',
-    power: 2,
-    desc: '做工更好的施法媒介。杖击比练习魔杖稍有力。',
+    power: 1,
+    spellPower: 2,
+    desc: '做工更好的施法媒介。法术伤害 +2。',
   },
   practice_sword: {
     id: 'practice_sword',
@@ -668,8 +670,9 @@ export function spellDamageRange(
   spell: SpellDef,
   natureTier: number,
   defense: number,
+  spellPower = 0,
 ): [number, number] {
-  const base = spell.baseDamage + natureTier * spell.tierScale
+  const base = spell.baseDamage + natureTier * spell.tierScale + spellPower
   return [Math.max(1, base - defense), Math.max(1, base + spell.variance - defense)]
 }
 
