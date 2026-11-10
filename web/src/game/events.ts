@@ -114,7 +114,7 @@ export const EVENTS: GameEvent[] = [
     timeRanges: [[at(8), at(9)]],
     expCapTier: 2,
     text: [
-      '你比上课早到了一会儿。讲堂里还空着，黑板上留着上一节课没擦干净的板书：半行古文，旁边几个被涂改过的字。',
+      '你比上课早到了一会儿。讲堂里还空着，黑板上留着上一节课的板书：半行古文，旁边几个被涂改过的字。',
     ],
     choices: [
       {
@@ -251,14 +251,14 @@ export const EVENTS: GameEvent[] = [
   },
   {
     id: 'yard_old_sword',
-    title: '演武场的旧木剑',
+    title: '演武场的木剑',
     trigger: { type: 'enter' },
     locations: ['yard'],
     days: 'workday',
     timeRanges: [[at(15), at(15, 29)]],
     expCapTier: 2,
     text: [
-      '演武场边上的木架上多了一把旧木剑，握柄被磨得发亮，剑身上有几道深浅不一的刻痕。',
+      '演武场边上的木架上多了一把木剑，握柄被磨得发亮，剑身上有几道深浅不一的刻痕。',
     ],
     choices: [
       {

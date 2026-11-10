@@ -114,6 +114,12 @@ import {
   clamp,
   classSegmentAt,
   courseById,
+  courseExamLocationOn,
+  recipeById,
+  recipeUnlocked,
+  brewSuccessChance,
+  brewFineChance,
+  CRAFTED_POTIONS,
   currentMeal,
   currentYear,
   examDaysForYear,
@@ -174,6 +180,8 @@ function makeSkills(): Record<SkillKey, Skill> {
     sword: { tier: 0, exp: 0 },
     nature: { tier: 0, exp: 0 },
     divine: { tier: 0, exp: 0 },
+    cultivation: { tier: 0, exp: 0 },
+    alchemy: { tier: 0, exp: 0 },
   }
 }
 
@@ -529,7 +537,16 @@ function settleWeek(d: GameData): void {
   }
   const week = Math.floor(d.day / 7)
   const trained = d.training?.week === week ? d.training.skills : []
-  const decayable: SkillKey[] = ['physique', 'knowledge', 'will', 'brawl', 'sword', 'nature']
+  const decayable: SkillKey[] = [
+    'physique',
+    'knowledge',
+    'will',
+    'brawl',
+    'sword',
+    'nature',
+    'cultivation',
+    'alchemy',
+  ]
   const decayed: SkillKey[] = []
   for (const key of decayable) {
     if (trained.includes(key)) continue
@@ -674,7 +691,7 @@ function applyStoryEffects(d: GameData, e?: StoryEffects): void {
   if (e.location) d.location = e.location
 }
 
-type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | null
+type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'brew' | null
 
 type TitlePanel = 'saves' | 'export' | 'import' | null
 
@@ -771,6 +788,8 @@ type Store = {
   walkForest: () => void
   exploreForestDeep: () => void
   gatherHerbs: () => void
+  careHerbs: () => void
+  brewPotion: (recipeId: string) => void
   chatWithNpc: (id: string) => boolean
   wait: (minutes: number) => void
   workShop: () => void
@@ -1192,7 +1211,7 @@ export const useGame = create<Store>((set, get) => {
       if (!isExamDay(data.day) || (year !== 1 && year !== 2)) return
       const course = examCoursesForYear(year).find((c) => c.id === courseId)
       if (!course) return
-      if (data.location !== course.location) {
+      if (data.location !== courseExamLocationOn(course, data.day)) {
         set({ message: '你不在考场。' })
         return
       }
@@ -1216,7 +1235,7 @@ export const useGame = create<Store>((set, get) => {
       if (!isExamDay(data.day) || (year !== 1 && year !== 2)) return
       const course = examCoursesForYear(year).find((c) => c.id === courseId)
       if (!course) return
-      if (data.location !== course.location) {
+      if (data.location !== courseExamLocationOn(course, data.day)) {
         set({ message: '你不在考场。' })
         return
       }
@@ -2826,17 +2845,101 @@ export const useGame = create<Store>((set, get) => {
       mutate((d) => {
         advanceTime(d, 30)
         d.stamina = clamp(d.stamina - 3, 0, maxStamina(d.skills.physique.tier))
+        addExp(d, 'cultivation', 1)
         if (success) {
           d.inventory[herbId] = (d.inventory[herbId] ?? 0) + 1
           const def = ITEMS[herbId]
           const text =
             herbId === 'bloodherb'
-              ? '你在树根边找到了一株止血草。'
+              ? '你在树根边找到了止血草。'
               : '你摘了几片苦叶。'
           pushLog(d, text)
-          return `${text} 获得${def.name} ×1。`
+          return `${text} 获得${def.name} ×1。种植经验 +1。`
         }
         const text = '你蹲在林子里找了一会儿，只翻到几片不能用的叶子。'
+        pushLog(d, text)
+        return text + ' 种植经验 +1。'
+      })
+    },
+
+    careHerbs: () => {
+      const { data } = get()
+      if (data.location !== 'herbGarden') {
+        set({ message: '这里没有药草可照料。' })
+        return
+      }
+      if (classSegmentAt(data.location, data.minutes, data.day)) {
+        set({ message: '正在上课，等下课再来。' })
+        return
+      }
+      if (data.stamina < 2) {
+        set({ message: '你太累了，先休息一下。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, 30)
+        d.stamina = clamp(d.stamina - 2, 0, maxStamina(d.skills.physique.tier))
+        d.mood = clamp(d.mood + 1, 0, 100)
+        addExp(d, 'cultivation', 1)
+        const text = '你蹲在畦边松了松土，又把歪掉的木牌插正。'
+        pushLog(d, text)
+        return `${text}种植经验 +1，心情 +1。`
+      })
+    },
+
+    brewPotion: (recipeId) => {
+      const { data } = get()
+      if (data.location !== 'brewery') {
+        set({ message: '这里不能炼药。' })
+        return
+      }
+      if (classSegmentAt(data.location, data.minutes, data.day)) {
+        set({ message: '正在上课，等下课再来。' })
+        return
+      }
+      const recipe = recipeById(recipeId)
+      if (!recipe) return
+      if (!recipeUnlocked(recipe, data.skills.alchemy)) {
+        set({ message: '你还没掌握这个配方。' })
+        return
+      }
+      if (data.stamina < 2) {
+        set({ message: '你太累了，先休息一下。' })
+        return
+      }
+      if (data.spirit < 1) {
+        set({ message: '精神不足，没法集中注意力。' })
+        return
+      }
+      const missing = Object.entries(recipe.inputs).find(
+        ([id, qty]) => (data.inventory[id] ?? 0) < qty,
+      )
+      if (missing) {
+        set({ message: `材料不够：${ITEMS[missing[0]]?.name ?? missing[0]}。` })
+        return
+      }
+      const success = Math.random() * 100 < brewSuccessChance(recipe, data.skills.alchemy)
+      const fine =
+        success && Math.random() * 100 < brewFineChance(recipe, data.skills.alchemy)
+      mutate((d) => {
+        advanceTime(d, 30)
+        d.stamina = clamp(d.stamina - 2, 0, maxStamina(d.skills.physique.tier))
+        d.spirit = clamp(d.spirit - 1, 0, maxSpirit(d.skills.will.tier))
+        for (const [id, qty] of Object.entries(recipe.inputs)) {
+          d.inventory[id] = (d.inventory[id] ?? 0) - qty
+          if (d.inventory[id] <= 0) delete d.inventory[id]
+        }
+        if (!success) {
+          addExp(d, 'alchemy', 1)
+          const text = '火候没压住，锅里的药糊成了一团。材料全废了。炼药经验 +1。'
+          pushLog(d, text)
+          return text
+        }
+        const outputId = fine ? recipe.fine : recipe.standard
+        const def = ITEMS[outputId]
+        d.inventory[outputId] = (d.inventory[outputId] ?? 0) + 1
+        addExp(d, 'alchemy', 3)
+        const text = `你炼出了一份${def.name}。炼药经验 +3。`
         pushLog(d, text)
         return text
       })
@@ -3037,7 +3140,9 @@ export const useGame = create<Store>((set, get) => {
       }
       const def = ITEMS[id]
       const have = data.inventory[id] ?? 0
-      if (!def || def.type !== 'material' || have <= 0) return
+      const crafted = CRAFTED_POTIONS.has(id)
+      const allowed = def?.type === 'material' || (crafted && data.location === 'shop')
+      if (!def || !allowed || have <= 0) return
       const count = all ? have : 1
       const price = sellPriceAt(data.location, id)
       mutate((d) => {
@@ -3365,7 +3470,7 @@ export const useGame = create<Store>((set, get) => {
       return '金钱 +100。'
     }),
     debugExp: () => mutate((d) => {
-      ;(['physique', 'knowledge', 'will', 'brawl', 'sword', 'nature', 'divine'] as SkillKey[]).forEach((k) => addExp(d, k, 50))
+      ;(['physique', 'knowledge', 'will', 'brawl', 'sword', 'nature', 'divine', 'cultivation', 'alchemy'] as SkillKey[]).forEach((k) => addExp(d, k, 50))
       pushLog(d, '（调试）全技能经验 +50。')
       return '全技能经验 +50。'
     }),

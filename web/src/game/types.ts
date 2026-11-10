@@ -8,6 +8,8 @@ export type SkillKey =
   | 'sword'
   | 'nature'
   | 'divine'
+  | 'cultivation'
+  | 'alchemy'
 
 export type Skill = { tier: number; exp: number }
 

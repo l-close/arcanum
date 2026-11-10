@@ -1,4 +1,4 @@
-import type { EquipmentSlot, SkillKey, WestProjectKey } from './types'
+import type { EquipmentSlot, Skill, SkillKey, WestProjectKey } from './types'
 
 export const TIER_REQ = [200, 1000, 3000, 7500, 20000]
 
@@ -10,6 +10,8 @@ const TIER_NAMES: Record<SkillKey, string[]> = {
   sword: ['入门', '初识', '娴熟', '精湛', '大师'],
   nature: ['入门', '初识', '娴熟', '精湛', '大师'],
   divine: ['入门', '初识', '娴熟', '精湛', '大师'],
+  cultivation: ['入门', '初识', '娴熟', '精湛', '大师'],
+  alchemy: ['入门', '初识', '娴熟', '精湛', '大师'],
 }
 
 export const SKILL_LABEL: Record<SkillKey, string> = {
@@ -20,6 +22,8 @@ export const SKILL_LABEL: Record<SkillKey, string> = {
   sword: '剑术',
   nature: '自然系',
   divine: '神圣系',
+  cultivation: '种植',
+  alchemy: '炼药',
 }
 
 export const SKILL_ORDER: SkillKey[] = [
@@ -30,6 +34,8 @@ export const SKILL_ORDER: SkillKey[] = [
   'sword',
   'nature',
   'divine',
+  'cultivation',
+  'alchemy',
 ]
 
 export type ItemType = 'consumable' | 'equipment' | 'material' | 'book'
@@ -145,6 +151,46 @@ export const ITEMS: Record<string, ItemDef> = {
     medium: false,
     desc: '恢复 20 点生命。',
     effect: { hp: 20 },
+  },
+  salve: {
+    id: 'salve',
+    name: '止血膏',
+    type: 'consumable',
+    quality: 'common',
+    price: 16,
+    medium: false,
+    desc: '用止血草熬成的药膏。抹在伤口上会有一阵凉意。恢复 25 点生命。',
+    effect: { hp: 25 },
+  },
+  salve_fine: {
+    id: 'salve_fine',
+    name: '精制止血膏',
+    type: 'consumable',
+    quality: 'rare',
+    price: 28,
+    medium: false,
+    desc: '滤得更细的止血膏，药性更足。恢复 40 点生命。',
+    effect: { hp: 40 },
+  },
+  stimulant: {
+    id: 'stimulant',
+    name: '提神剂',
+    type: 'consumable',
+    quality: 'common',
+    price: 12,
+    medium: false,
+    desc: '苦叶煎出的提神剂。喝下去舌根发苦，身上会暖起来。恢复 20 点体力。',
+    effect: { stamina: 20 },
+  },
+  stimulant_fine: {
+    id: 'stimulant_fine',
+    name: '精制提神剂',
+    type: 'consumable',
+    quality: 'rare',
+    price: 20,
+    medium: false,
+    desc: '浓缩过的提神剂，苦味更重，见效也更快。恢复 30 点体力。',
+    effect: { stamina: 30 },
   },
   dry_ration: {
     id: 'dry_ration',
@@ -397,10 +443,85 @@ export function shopPriceAt(location: string, id: string, westStage = 0): number
   return base
 }
 
+export const CRAFTED_POTIONS = new Set([
+  'salve',
+  'salve_fine',
+  'stimulant',
+  'stimulant_fine',
+])
+
 export function sellPriceAt(location: string, id: string): number {
   const base = ITEMS[id]?.price ?? 0
+  if (CRAFTED_POTIONS.has(id)) return Math.floor(base * 0.6)
   if (location === 'westMarket') return Math.floor(base * 0.7)
   return base
+}
+
+export type RecipeDef = {
+  id: string
+  name: string
+  level: number
+  unlockExp: number
+  inputs: Record<string, number>
+  standard: string
+  fine: string
+  successBase: number
+  fineBase: number
+  desc: string
+}
+
+export const RECIPES: RecipeDef[] = [
+  {
+    id: 'salve',
+    name: '止血膏',
+    level: 1,
+    unlockExp: 0,
+    inputs: { bloodherb: 2 },
+    standard: 'salve',
+    fine: 'salve_fine',
+    successBase: 105,
+    fineBase: 30,
+    desc: '把止血草熬成膏。基础配方，适合练手。',
+  },
+  {
+    id: 'stimulant',
+    name: '提神剂',
+    level: 1,
+    unlockExp: 40,
+    inputs: { bitterleaf: 2 },
+    standard: 'stimulant',
+    fine: 'stimulant_fine',
+    successBase: 105,
+    fineBase: 20,
+    desc: '苦叶煎出的提神剂。比止血膏难出精制品。',
+  },
+]
+
+export function recipeById(id: string): RecipeDef | undefined {
+  return RECIPES.find((recipe) => recipe.id === id)
+}
+
+/** 炼药累计经验：已升档消耗的部分 + 当前档位经验 */
+export function alchemyLifetimeExp(skill: Skill): number {
+  let total = skill.exp
+  for (let i = 0; i < Math.min(skill.tier, TIER_REQ.length); i++) total += TIER_REQ[i]
+  return total
+}
+
+export function recipeUnlocked(recipe: RecipeDef, skill: Skill): boolean {
+  return alchemyLifetimeExp(skill) >= recipe.unlockExp
+}
+
+/** 成功率：基础值 + 档位 × 15% - 配方等级 × 25%，0–100 */
+export function brewSuccessChance(recipe: RecipeDef, skill: Skill): number {
+  const value = recipe.successBase + skill.tier * 15 - recipe.level * 25
+  return Math.max(0, Math.min(100, value))
+}
+
+/** 精制率：基础值 + 档位 × 10% - 配方等级 × 5%，0–100 */
+export function brewFineChance(recipe: RecipeDef, skill: Skill): number {
+  const value = recipe.fineBase + skill.tier * 10 - recipe.level * 5
+  return Math.max(0, Math.min(100, value))
 }
 
 export type WestCommissionKind = 'repair' | 'patrol' | 'care' | 'maintenance'
@@ -1067,14 +1188,14 @@ export const LOCATIONS: Location[] = [
     name: '讲堂',
     parent: 'academy',
     kind: 'room',
-    desc: '长桌一排排摆到窗边，空气里有粉笔和旧纸的味道。',
+    desc: '长桌一排排摆到窗边，空气里有粉笔和纸页的味道。',
   },
   {
     id: 'library',
     name: '藏书阁',
     parent: 'academy',
     kind: 'room',
-    desc: '书架一直排到天花板，最上面几层落着灰。这里安静得能听见翻页声。',
+    desc: '书架一直排到天花板，最上面几层摆着成套的厚册。这里安静得能听见翻页声。',
   },
   {
     id: 'canteen',
@@ -1089,6 +1210,20 @@ export const LOCATIONS: Location[] = [
     parent: 'academy',
     kind: 'room',
     desc: '地面是压实的黄土，四周立着一圈木桩。风一吹，尘土轻轻扬起来。',
+  },
+  {
+    id: 'brewery',
+    name: '炼药室',
+    parent: 'academy',
+    kind: 'room',
+    desc: '石台上摆着研钵和几把刀，墙边立着一排药柜。角落里的小炉常年温着，空气里有苦味和炭火气。',
+  },
+  {
+    id: 'herbGarden',
+    name: '药草园',
+    parent: 'academy',
+    kind: 'room',
+    desc: '学院东侧围出一块坡地，几畦药草按颜色分开，木牌上写着名字。',
   },
   {
     id: 'orphanage',
@@ -1236,7 +1371,7 @@ export const LOCATIONS: Location[] = [
     name: '传送室',
     parent: 'academy',
     kind: 'room',
-    desc: '房间中央嵌着一圈发暗的金属纹路，边缘刻着细小的符文。空气里有轻微的嗡鸣。',
+    desc: '房间中央嵌着一圈深色金属纹路，边缘刻着细小的符文。空气里有轻微的嗡鸣。',
   },
   {
     id: 'westTown',
@@ -1332,12 +1467,12 @@ const DESC_BY_TIME: Record<string, [string, string, string]> = {
     '石墙沉进夜色，只有门房还亮着一盏灯。庭院里安静得能听见风穿过藤蔓。',
   ],
   lecture: [
-    '长桌一排排摆到窗边，晨光落在桌面上，空气里有粉笔和旧纸的味道。',
-    '日光把长桌照得发亮，空气里有粉笔和旧纸的味道。',
+    '长桌一排排摆到窗边，晨光落在桌面上，空气里有粉笔和纸页的味道。',
+    '日光把长桌照得发亮，空气里有粉笔和纸页的味道。',
     '讲堂空着，长桌隐在暗处，粉笔灰在月光里浮着。',
   ],
   library: [
-    '书架一直排到天花板，晨光从高窗斜进来，照见最上层落着的灰。',
+    '书架一直排到天花板，晨光从高窗斜进来，照亮最上层成套的厚册。',
     '书架一直排到天花板，这里安静得能听见翻页声。',
     '藏书阁只点着几盏灯，书架的影子压得很低，偶尔传来纸张翻动的声音。',
   ],
@@ -1911,6 +2046,7 @@ const OUTDOOR = new Set([
   'commercial',
   'church',
   'yard',
+  'herbGarden',
   'backyard',
   'bellTower',
   'gate',
@@ -3022,11 +3158,20 @@ export type CourseDef = {
   name: string
   skill: SkillKey
   kind: 'literature' | 'nature' | 'physical'
-  location: 'lecture' | 'yard'
+  location: string
   start: number
   end: number
-  /** 体术类课程按星期在格斗与剑术之间轮换 */
+  teacher: string
+  /** 考试地点；不填则跟随当天的上课地点 */
+  examLocation?: string
+  /** 按星期指定上课地点，索引 0 = 周一 */
+  locationByWeekday?: string[]
+  /** 按星期指定上课技能，索引 0 = 周一 */
+  skillByWeekday?: SkillKey[]
+  /** 体术类课程在格斗与剑术之间轮换 */
   rotate?: boolean
+  /** 按整周轮换，而不是按天轮换 */
+  rotateWeekly?: boolean
   /** 单双周轮换预留，暂未启用 */
   weekParity?: 'odd' | 'even'
 }
@@ -3041,6 +3186,7 @@ export const COURSES: CourseDef[] = [
     location: 'lecture',
     start: 9 * 60,
     end: 11 * 60,
+    teacher: '伊莲娜',
   },
   {
     id: 'y1_nature',
@@ -3051,6 +3197,7 @@ export const COURSES: CourseDef[] = [
     location: 'lecture',
     start: 13 * 60,
     end: 15 * 60,
+    teacher: '阿尔文·莱特',
   },
   {
     id: 'y1_physical',
@@ -3061,7 +3208,9 @@ export const COURSES: CourseDef[] = [
     location: 'yard',
     start: 15 * 60 + 30,
     end: 17 * 60 + 30,
+    teacher: '格里高利·索恩',
     rotate: true,
+    rotateWeekly: true,
   },
   {
     id: 'y2_history',
@@ -3072,6 +3221,7 @@ export const COURSES: CourseDef[] = [
     location: 'lecture',
     start: 8 * 60,
     end: 9 * 60 + 30,
+    teacher: '伊莲娜',
   },
   {
     id: 'y2_advanced_nature',
@@ -3082,6 +3232,7 @@ export const COURSES: CourseDef[] = [
     location: 'lecture',
     start: 10 * 60,
     end: 11 * 60 + 30,
+    teacher: '阿尔文·莱特',
   },
   {
     id: 'y2_sword',
@@ -3092,16 +3243,21 @@ export const COURSES: CourseDef[] = [
     location: 'yard',
     start: 13 * 60,
     end: 14 * 60 + 30,
+    teacher: '格里高利·索恩',
   },
   {
     id: 'y2_course_4',
     year: 2,
-    name: '课程4',
-    skill: 'knowledge',
-    kind: 'literature',
-    location: 'lecture',
+    name: '草药学',
+    skill: 'alchemy',
+    kind: 'nature',
+    location: 'brewery',
     start: 15 * 60,
     end: 16 * 60 + 30,
+    teacher: '赛拉·莫恩',
+    examLocation: 'lecture',
+    locationByWeekday: ['brewery', 'brewery', 'brewery', 'herbGarden', 'herbGarden'],
+    skillByWeekday: ['alchemy', 'alchemy', 'alchemy', 'cultivation', 'cultivation'],
   },
 ]
 
@@ -3286,6 +3442,35 @@ export function courseById(id: string): CourseDef | undefined {
   return COURSES.find((c) => c.id === id)
 }
 
+/** 某门课当天的上课地点 */
+export function courseLocationOn(course: CourseDef, day: number): string {
+  const wd = weekday(day)
+  if (course.locationByWeekday && wd >= 0 && wd < 5) {
+    return course.locationByWeekday[wd] ?? course.location
+  }
+  return course.location
+}
+
+/** 某门课当天实际训练的的技能 */
+export function courseSkillOn(course: CourseDef, day: number): SkillKey {
+  const wd = weekday(day)
+  if (course.skillByWeekday && wd >= 0 && wd < 5) {
+    return course.skillByWeekday[wd] ?? course.skill
+  }
+  if (course.rotate) {
+    if (course.rotateWeekly) {
+      return Math.floor(day / 7) % 2 === 0 ? 'brawl' : 'sword'
+    }
+    return wd === 0 || wd === 2 || wd === 4 ? 'brawl' : 'sword'
+  }
+  return course.skill
+}
+
+/** 某门课考试当天的地点 */
+export function courseExamLocationOn(course: CourseDef, day: number): string {
+  return course.examLocation ?? courseLocationOn(course, day)
+}
+
 export function examThresholdForDay(day: number): number {
   const year = currentYear(day)
   const days = examDaysForYear(year)
@@ -3319,17 +3504,14 @@ export function classSegmentAt(location: string, minutes: number, day: number): 
   if (wd >= 5) return null
 
   const course = coursesForYear(currentYear(day)).find(
-    (c) => c.location === location && minutes >= c.start && minutes < c.end,
+    (c) => courseLocationOn(c, day) === location && minutes >= c.start && minutes < c.end,
   )
   if (!course) return null
 
-  let skill = course.skill
-  let extraSkill: SkillKey | undefined
-  if (course.kind === 'physical') {
-    if (course.rotate) skill = wd === 0 || wd === 2 || wd === 4 ? 'brawl' : 'sword'
-    extraSkill = 'physique'
-  }
-  const label = course.rotate ? `${course.name} · ${SKILL_LABEL[skill]}` : course.name
+  const skill = courseSkillOn(course, day)
+  const extraSkill: SkillKey | undefined = course.kind === 'physical' ? 'physique' : undefined
+  const rotating = Boolean(course.rotate || course.skillByWeekday)
+  const label = rotating ? `${course.name} · ${SKILL_LABEL[skill]}` : course.name
 
   const index = Math.floor((minutes - course.start) / 30)
   const segmentStart = course.start + index * 30
@@ -3357,7 +3539,11 @@ export function masteryCourseForSkill(skill: SkillKey, day: number): string | nu
     )
     return physical?.id ?? null
   }
-  const match = courses.find((c) => c.kind !== 'physical' && c.skill === skill)
+  const match = courses.find(
+    (c) =>
+      c.kind !== 'physical' &&
+      (c.skill === skill || c.skillByWeekday?.includes(skill)),
+  )
   return match?.id ?? null
 }
 
@@ -3368,7 +3554,7 @@ export function classWindowAt(
 ): { start: number; end: number } | null {
   if (!isClassDay(day)) return null
   const course = coursesForYear(currentYear(day)).find(
-    (c) => c.location === location && minutes >= c.start && minutes < c.end,
+    (c) => courseLocationOn(c, day) === location && minutes >= c.start && minutes < c.end,
   )
   return course ? { start: course.start, end: course.end } : null
 }
@@ -3376,7 +3562,7 @@ export function classWindowAt(
 export function nextClassStart(location: string, day: number, minutes: number): number | null {
   if (!isClassDay(day)) return null
   const starts = coursesForYear(currentYear(day))
-    .filter((c) => c.location === location)
+    .filter((c) => courseLocationOn(c, day) === location)
     .map((c) => c.start)
     .sort((a, b) => a - b)
   return starts.find((s) => s > minutes) ?? null

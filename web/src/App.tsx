@@ -69,7 +69,14 @@ import {
   areaNeighbors,
   classSegmentAt,
   courseById,
+  courseExamLocationOn,
+  courseLocationOn,
   coursesForYear,
+  RECIPES,
+  recipeUnlocked,
+  brewSuccessChance,
+  brewFineChance,
+  CRAFTED_POTIONS,
   currentMeal,
   currentYear,
   ageOf,
@@ -77,6 +84,7 @@ import {
   examThresholdForDay,
   examCoursesForYear,
   isExamDay,
+  isClassDay,
   semesterEndDay,
   semesterLastExamDay,
   exitsOf,
@@ -485,6 +493,7 @@ function GameScreen() {
       {modal === 'academyBoard' && <AcademyBoardModal />}
       {modal === 'guildBoard' && <GuildBoardModal />}
       {modal === 'shop' && <ShopModal />}
+      {modal === 'brew' && <BrewModal />}
       {modal === 'drinks' && <DrinkModal />}
       {modal === 'save' && <SavesModal />}
       {modal === 'export' && <ExportModal />}
@@ -1021,6 +1030,7 @@ function Actions({
   const walkForest = useGame((s) => s.walkForest)
   const exploreForestDeep = useGame((s) => s.exploreForestDeep)
   const gatherHerbs = useGame((s) => s.gatherHerbs)
+  const careHerbs = useGame((s) => s.careHerbs)
   const tidyDonations = useGame((s) => s.tidyDonations)
   const careForPatients = useGame((s) => s.careForPatients)
   const treatAtRelief = useGame((s) => s.treatAtRelief)
@@ -1041,7 +1051,7 @@ function Actions({
     <>
       <div className="hint">今天是月考日，课程暂停。</div>
       {examCourses
-        .filter((course) => course.location === loc)
+        .filter((course) => courseExamLocationOn(course, data.day) === loc)
         .map((course) => {
           const result = examResultFor(course.id)
           if (result) {
@@ -1240,6 +1250,7 @@ function Actions({
           </>
         )
       )}
+      {segment && (loc === 'brewery' || loc === 'herbGarden') && classActions}
       {loc === 'backyard' && (
         <>
           <ActionBtn onClick={helpBackyard} label="打理后院" cost="2 小时 · 体力 -10" />
@@ -1497,7 +1508,35 @@ function Actions({
       {loc === 'forestDeep' && (
         <>
           <ActionBtn onClick={exploreForestDeep} label="探索" cost="30 分钟 · 体力 -6" />
-          <ActionBtn onClick={gatherHerbs} label="采药" cost="30 分钟 · 体力 -3" />
+          <ActionBtn onClick={gatherHerbs} label="采药" cost="30 分钟 · 体力 -3 · 种植 +1" />
+        </>
+      )}
+      {loc === 'herbGarden' && !segment && (
+        <>
+          <ActionBtn
+            onClick={careHerbs}
+            label="照料药草"
+            cost="30 分钟 · 体力 -2 · 种植 +1 · 心情 +1"
+          />
+          {canWaitToClass && (
+            <ActionBtn
+              onClick={() => wait(waitToClass!)}
+              label="等到上课"
+              cost={`${waitToClass} 分钟 · ${formatTime(nextClass!)}`}
+            />
+          )}
+        </>
+      )}
+      {loc === 'brewery' && !segment && (
+        <>
+          <ActionBtn onClick={() => setModal('brew')} label="炼药" cost="30 分钟 · 体力 -2 · 精神 -1" />
+          {canWaitToClass && (
+            <ActionBtn
+              onClick={() => wait(waitToClass!)}
+              label="等到上课"
+              cost={`${waitToClass} 分钟 · ${formatTime(nextClass!)}`}
+            />
+          )}
         </>
       )}
       {data.stamina < REST_THRESHOLD && (
@@ -1651,6 +1690,7 @@ function MoveList({ restrictedTarget }: { restrictedTarget?: string | null }) {
   const adjacent = exits.filter((e) => loc.kind === 'area' && e.loc.kind === 'area')
   const shown = new Set([...children, ...back, ...adjacent].map((e) => e.loc.id))
   const others = exits.filter((e) => !shown.has(e.loc.id))
+  const leave = [...back, ...others]
 
   const item = (target: Location, minutes: number) => (
     <button key={target.id} className="loc-btn" onClick={() => moveTo(target.id)}>
@@ -1673,16 +1713,10 @@ function MoveList({ restrictedTarget }: { restrictedTarget?: string | null }) {
           {adjacent.map((e) => item(e.loc, e.minutes))}
         </div>
       )}
-      {back.length > 0 && (
-        <div className="district">
-          <div className="district-name">返回</div>
-          {back.map((e) => item(e.loc, e.minutes))}
-        </div>
-      )}
-      {others.length > 0 && (
+      {leave.length > 0 && (
         <div className="district">
           <div className="district-name">离开</div>
-          {others.map((e) => item(e.loc, e.minutes))}
+          {leave.map((e) => item(e.loc, e.minutes))}
         </div>
       )}
     </div>
@@ -2674,7 +2708,7 @@ function StatsModal() {
                   <span className="stat-pct">掌握度 {Math.floor(value)}</span>
                 </div>
                 <div className="stat-desc">
-                  {nextThreshold === null ? '考试安排待定' : `下次考试：${nextThreshold}`}
+                  {course.teacher} · {nextThreshold === null ? '考试安排待定' : `下次考试：${nextThreshold}`}
                 </div>
                 <div className="stat-bar">
                   <div className="stat-fill" style={{ width: `${pct}%` }} />
@@ -2696,7 +2730,9 @@ function StatsModal() {
             <div className="stat-desc">消耗 8 魔力，对单个目标造成伤害。需要主手施法媒介。</div>
           </div>
         ) : (
-          <div className="hint">尚未学会战斗法术。法术导论掌握度达到 20 后可以学会火球术。</div>
+          <div className="hint">
+            尚未学会战斗法术。在藏书阁翻阅《火球术》，并达到自然系 0 级进度 30% 后可以学会。
+          </div>
         )}
       </div>
 
@@ -2718,6 +2754,9 @@ function StatsModal() {
             </div>
           )
         })}
+        <div className="hint">
+          种植暂未开放作物种植，目前通过草药学课程、采药和照料药草积累。
+        </div>
       </div>
     </ModalShell>
   )
@@ -2908,9 +2947,11 @@ function ShopModal() {
   const sellItem = useGame((s) => s.sellItem)
   const stock = shopStockAt(data.location)
   const soldToday = data.shop.day === data.day ? data.shop.sold : {}
-  const materials = Object.entries(data.inventory).filter(
-    ([id, qty]) => qty > 0 && ITEMS[id]?.type === 'material',
-  )
+  const sellable = Object.entries(data.inventory).filter(([id, qty]) => {
+    if (qty <= 0) return false
+    if (ITEMS[id]?.type === 'material') return true
+    return data.location === 'shop' && CRAFTED_POTIONS.has(id)
+  })
 
   return (
     <ModalShell title={getLocation(data.location).name} onClose={() => setModal(null)}>
@@ -2951,10 +2992,10 @@ function ShopModal() {
           )
         })}
       </div>
-      {(data.location === 'shop' || data.location === 'westMarket') && materials.length > 0 && (
+      {(data.location === 'shop' || data.location === 'westMarket') && sellable.length > 0 && (
         <div className="shop-sell">
           <div className="section-title">收购</div>
-          {materials.map(([id, qty]) => {
+          {sellable.map(([id, qty]) => {
             const def = ITEMS[id]
             const price = sellPriceAt(data.location, id)
             return (
@@ -2971,6 +3012,60 @@ function ShopModal() {
           })}
         </div>
       )}
+    </ModalShell>
+  )
+}
+
+function BrewModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  const brewPotion = useGame((s) => s.brewPotion)
+  const alchemy = data.skills.alchemy
+
+  return (
+    <ModalShell title="炼药" onClose={() => setModal(null)}>
+      <div className="hint">每次 30 分钟，体力 -2，精神 -1。失败会消耗全部材料。</div>
+      <div className="shop-list">
+        {RECIPES.map((recipe) => {
+          const unlocked = recipeUnlocked(recipe, alchemy)
+          const success = brewSuccessChance(recipe, alchemy)
+          const fine = brewFineChance(recipe, alchemy)
+          const enough = Object.entries(recipe.inputs).every(
+            ([id, qty]) => (data.inventory[id] ?? 0) >= qty,
+          )
+          const inputText = Object.entries(recipe.inputs)
+            .map(([id, qty]) => `${ITEMS[id]?.name ?? id} ×${qty}`)
+            .join(' + ')
+          return (
+            <div className="shop-row" key={recipe.id}>
+              <div className="row-head">
+                <span className="item-name">{recipe.name}</span>
+                <span className="shop-price">{recipe.level} 级</span>
+                {!unlocked && (
+                  <span className="shop-stock">累计炼药经验 {recipe.unlockExp} 解锁</span>
+                )}
+              </div>
+              <div className="item-desc">{recipe.desc}</div>
+              <div className="item-desc">材料：{inputText}</div>
+              <div className="item-desc">
+                成功率 {Math.round(success)}% · 精制率 {Math.round(fine)}%
+                {unlocked && !enough ? ' · 材料不足' : ''}
+              </div>
+              {unlocked && (
+                <div className="row-head">
+                  <button
+                    className="mini-btn"
+                    disabled={!enough || data.stamina < 2 || data.spirit < 1}
+                    onClick={() => brewPotion(recipe.id)}
+                  >
+                    炼 1 份
+                  </button>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </ModalShell>
   )
 }
@@ -3228,6 +3323,7 @@ function AcademyBoardModal() {
   const year = currentYear(data.day)
   const examDay = isExamDay(data.day)
   const construction = isConstructionWeek(data.day)
+  const classDay = isClassDay(data.day)
   const holiday = semesterState(data.day) === 'summer' || semesterState(data.day) === 'winter'
   const period = supportPeriodAt(data.day)
   const next = nextSupportPeriod(data.day)
@@ -3244,6 +3340,8 @@ function AcademyBoardModal() {
         <p className="hint">假期无课。</p>
       ) : construction ? (
         <p className="hint">本周建设周，停课。</p>
+      ) : !classDay ? (
+        <p className="hint">今日无课。</p>
       ) : (
         <div className="board-lines">
           {courses.map((course) => (
@@ -3252,7 +3350,7 @@ function AcademyBoardModal() {
                 {formatTime(course.start)}–{formatTime(course.end)}
               </span>
               <span>{course.name}</span>
-              <span className="muted">{getLocation(course.location).name}</span>
+              <span className="muted">{getLocation(courseLocationOn(course, data.day)).name}</span>
             </div>
           ))}
         </div>
@@ -3302,10 +3400,10 @@ function ExamModal() {
     ? '演武场清空了，格里高利把木桩摆成一排。'
     : course.id === 'y1_nature' || course.id === 'y2_advanced_nature'
       ? '讲堂里比平时安静。阿尔文站在窗边，看着你们低头答题。'
-      : course.id === 'y2_history'
-        ? '长桌上摆着试卷，窗外的光落在纸边。'
+      : course.id === 'y1_literature' || course.id === 'y2_history'
+        ? '伊莲娜把试卷一份份发下去，教室里很安静。'
         : course.id === 'y2_course_4'
-          ? '讲堂里比平时安静。试卷已经发下来了。'
+          ? '讲堂里摆着几盆药草。赛拉·莫恩站在讲台边，手里拿着一份名单。'
           : '长桌上摆着试卷，窗外的光落在纸边。'
   const canPrep = physical ? data.stamina >= 2 : data.spirit >= 1
   const duration = course.end - course.start

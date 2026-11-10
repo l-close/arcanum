@@ -196,7 +196,12 @@ export function ItemIcon({ id, size = 32 }: { id: string; size?: number }) {
     case 'tonic':
       return <TonicIcon size={size} />
     case 'healing_potion':
+    case 'salve':
+    case 'salve_fine':
       return <HealingPotionIcon size={size} />
+    case 'stimulant':
+    case 'stimulant_fine':
+      return <TonicIcon size={size} />
     case 'dry_ration':
       return <DryRationIcon size={size} />
     case 'slime_gel':
