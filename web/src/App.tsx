@@ -1047,7 +1047,7 @@ function Actions({
               key={course.id}
               onClick={() => startExam(course.id)}
               label={`参加考试 · ${course.name}`}
-              cost="2 小时 · 开考后 30 分钟内入场"
+              cost={`${(course.end - course.start) / 60} 小时 · 开考后 30 分钟内入场`}
             />
           )
         })}
@@ -3116,18 +3116,24 @@ function ExamModal() {
   const takeExam = useGame((s) => s.takeExam)
   const [step, setStep] = useState<'pre' | 'during'>('pre')
   const [prep, setPrep] = useState(false)
+  const year = currentYear(data.day)
   const course = examCourseId
-    ? examCoursesForYear(1).find((c) => c.id === examCourseId)
+    ? examCoursesForYear(year).find((c) => c.id === examCourseId)
     : undefined
   if (!course) return null
   const physical = course.kind === 'physical'
-  const intro =
-    course.id === 'y1_literature'
-      ? '长桌上摆着试卷，窗外的光落在纸边。'
-      : course.id === 'y1_nature'
-        ? '讲堂里比平时安静。阿尔文站在窗边，看着你们低头答题。'
-        : '演武场清空了，格里高利把木桩摆成一排。'
+  const intro = physical
+    ? '演武场清空了，格里高利把木桩摆成一排。'
+    : course.id === 'y1_nature' || course.id === 'y2_advanced_nature'
+      ? '讲堂里比平时安静。阿尔文站在窗边，看着你们低头答题。'
+      : course.id === 'y2_history'
+        ? '长桌上摆着试卷，窗外的光落在纸边。'
+        : course.id === 'y2_course_4'
+          ? '讲堂里比平时安静。试卷已经发下来了。'
+          : '长桌上摆着试卷，窗外的光落在纸边。'
   const canPrep = physical ? data.stamina >= 2 : data.spirit >= 1
+  const duration = course.end - course.start
+  const durationText = (m: number) => (m % 60 === 0 ? `${m / 60} 小时` : `${m} 分钟`)
 
   return (
     <ModalShell title={`${course.name} · 考试`} onClose={() => setModal(null)}>
@@ -3176,14 +3182,14 @@ function ExamModal() {
               onClick={() => takeExam(course.id, prep, false)}
             >
               {physical ? '正常完成' : '正常作答'}
-              <small>2 小时 · 正常判定</small>
+              <small>{durationText(duration)} · 正常判定</small>
             </button>
             <button
               className="choice-btn"
               onClick={() => takeExam(course.id, prep, true)}
             >
               {physical ? '提前收手' : '提前交卷'}
-              <small>1 小时 · 本门判定 -1</small>
+              <small>{durationText(Math.round(duration / 2))} · 本门判定 -1</small>
             </button>
           </div>
         </>

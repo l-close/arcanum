@@ -2762,22 +2762,28 @@ export const MAX_YEAR = 2
 export type SemesterState = 'semester1' | 'summer' | 'semester2' | 'winter' | 'after'
 
 export const EXAM_DAYS_YEAR1 = [25, 53, 81, 137, 165, 193]
-export const EXAM_DAYS_YEAR2 = [27, 55, 83, 139, 167, 195]
+export const EXAM_DAYS_YEAR2 = [25, 53, 81, 137, 165, 193]
 
 export function examDaysForYear(year: number): number[] {
   return year === 1 ? EXAM_DAYS_YEAR1 : EXAM_DAYS_YEAR2
 }
 
 export function isExamDay(day: number): boolean {
-  return currentYear(day) === 1 && EXAM_DAYS_YEAR1.includes(dayInYear(day))
+  const year = currentYear(day)
+  if (year !== 1 && year !== 2) return false
+  return examDaysForYear(year).includes(dayInYear(day))
 }
 
-/** 第一学年月考课程：按原本的上课时间开考。 */
-const YEAR1_EXAM_COURSE_IDS = ['y1_literature', 'y1_nature', 'y1_physical']
+/** 月考课程：按原本的上课时间开考。 */
+const EXAM_COURSE_IDS: Record<number, string[]> = {
+  1: ['y1_literature', 'y1_nature', 'y1_physical'],
+  2: ['y2_history', 'y2_advanced_nature', 'y2_sword', 'y2_course_4'],
+}
 
 export function examCoursesForYear(year: number): CourseDef[] {
-  if (year !== 1) return []
-  return coursesForYear(1).filter((c) => YEAR1_EXAM_COURSE_IDS.includes(c.id))
+  const ids = EXAM_COURSE_IDS[year]
+  if (!ids) return []
+  return coursesForYear(year).filter((c) => ids.includes(c.id))
 }
 
 /** 月考包裹在考试后的周日 08:00 到达孤儿院。 */
@@ -2805,7 +2811,7 @@ export function semesterLastExamDay(year: number, semester: 1 | 2): number {
 const YEAR_THRESHOLDS: Record<number, number[]> = {
   1: [20, 60, 100, 120, 160, 200],
   // 第二学年每月少一周课，考试线下调
-  2: [15, 40, 65, 85, 110, 130],
+  2: [15, 35, 60, 80, 100, 120],
 }
 
 const YEAR_LABEL: Record<number, string> = {
@@ -3083,13 +3089,13 @@ export function nextRentTotal(day: number, minutes: number): number {
 
 export function nextExamTotal(day: number, minutes: number): number | null {
   if (isExamDay(day) && minutes < 20 * 60) {
-    return day * 1440 + 9 * 60
+    return day * 1440 + (currentYear(day) === 1 ? 9 * 60 : 8 * 60)
   }
   const t = absoluteMinutes(day, minutes)
   const year = currentYear(day)
   const candidates: number[] = []
   for (let y = year; y <= Math.min(MAX_YEAR, year + 1); y++) {
-    const start = y === 1 ? 9 * 60 : 22 * 60
+    const start = y === 1 ? 9 * 60 : 8 * 60
     for (const offset of examDaysForYear(y)) {
       candidates.push(((y - 1) * YEAR_DAYS + offset) * 1440 + start)
     }

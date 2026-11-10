@@ -73,7 +73,6 @@ import {
   SLEEP_MIN_RECOVERY_MINUTES,
   SLEEP_LOCATIONS,
   TELEPORT_YEAR,
-  MAX_YEAR,
   MEDITATION_MINUTES,
   MEDITATION_WILL_GAIN,
   MEDITATION_LOCATIONS,
@@ -101,7 +100,6 @@ import {
   clamp,
   classSegmentAt,
   courseById,
-  coursesForYear,
   currentMeal,
   currentYear,
   examDaysForYear,
@@ -290,12 +288,15 @@ function fillMissingExamResults(pkg: ExamPackage): boolean {
 function ensureMonthlyPackages(d: GameData): boolean {
   const now = packageNow(d)
   let changed = false
-  for (const examDay of examDaysForYear(1)) {
-    if (examDay < d.examStartDay) continue
-    if (examPackageTime(examDay) > now) continue
-    const { pkg, created } = ensureMonthlyPackage(d, examDay)
-    if (created) changed = true
-    if (fillMissingExamResults(pkg)) changed = true
+  for (const year of [1, 2]) {
+    for (const offset of examDaysForYear(year)) {
+      const examDay = (year - 1) * YEAR_DAYS + offset
+      if (examDay < d.examStartDay) continue
+      if (examPackageTime(examDay) > now) continue
+      const { pkg, created } = ensureMonthlyPackage(d, examDay)
+      if (created) changed = true
+      if (fillMissingExamResults(pkg)) changed = true
+    }
   }
   return changed
 }
@@ -472,20 +473,6 @@ function decaySkill(d: GameData, key: SkillKey): boolean {
   return s.tier !== beforeTier || s.exp !== beforeExp
 }
 
-function runExam(d: GameData, day: number): void {
-  const threshold = examThresholdForDay(day)
-  const courses = coursesForYear(currentYear(day))
-  const failed = courses
-    .filter((c) => (d.courseMastery[c.id] ?? 0) < threshold)
-    .map((c) => c.name)
-  const pass = failed.length === 0
-  d.mood = clamp(d.mood + (pass ? 3 : -6), 0, 100)
-  const text = pass ? '月度考核通过。你松了一口气。' : `月度考核不及格：${failed.join('、')}。`
-  d.notice = d.notice ? `${d.notice} ${text}` : text
-  pushLog(d, text)
-  d.flags[`exam_${day}`] = pass
-}
-
 function settleWeek(d: GameData): void {
   d.money -= 50
   if (d.money < 0) {
@@ -550,15 +537,6 @@ function advanceTime(d: GameData, minutes: number): boolean {
   const firstWeekBoundary = Math.floor(beforeTotal / 10080) * 10080 + 6 * 1440 + 22 * 60
   for (let b = firstWeekBoundary; b <= afterTotal; b += 10080) {
     if (b > beforeTotal) settleWeek(d)
-  }
-
-  for (let y = 1; y <= MAX_YEAR; y++) {
-    if (y === 1) continue
-    for (const offset of examDaysForYear(y)) {
-      const day = (y - 1) * YEAR_DAYS + offset
-      const b = day * 1440 + 22 * 60
-      if (b > beforeTotal && b <= afterTotal) runExam(d, day)
-    }
   }
 
   if (beforeDay < YEAR_DAYS && d.day >= YEAR_DAYS) {
@@ -1153,8 +1131,9 @@ export const useGame = create<Store>((set, get) => {
 
     startExam: (courseId) => {
       const { data } = get()
-      if (!isExamDay(data.day) || currentYear(data.day) !== 1) return
-      const course = examCoursesForYear(1).find((c) => c.id === courseId)
+      const year = currentYear(data.day)
+      if (!isExamDay(data.day) || (year !== 1 && year !== 2)) return
+      const course = examCoursesForYear(year).find((c) => c.id === courseId)
       if (!course) return
       if (data.location !== course.location) {
         set({ message: '你不在考场。' })
@@ -1176,8 +1155,9 @@ export const useGame = create<Store>((set, get) => {
 
     takeExam: (courseId, prep, early) => {
       const { data } = get()
-      if (!isExamDay(data.day) || currentYear(data.day) !== 1) return
-      const course = examCoursesForYear(1).find((c) => c.id === courseId)
+      const year = currentYear(data.day)
+      if (!isExamDay(data.day) || (year !== 1 && year !== 2)) return
+      const course = examCoursesForYear(year).find((c) => c.id === courseId)
       if (!course) return
       if (data.location !== course.location) {
         set({ message: '你不在考场。' })
@@ -1204,6 +1184,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       const examDay = data.day
+      const duration = course.end - course.start
       mutate((d) => {
         if (prep) {
           advanceTime(d, 30)
@@ -1213,7 +1194,7 @@ export const useGame = create<Store>((set, get) => {
             d.spirit = clamp(d.spirit - 1, 0, maxSpirit(d.skills.will.tier))
           }
         }
-        advanceTime(d, early ? 60 : 120)
+        advanceTime(d, early ? Math.round(duration / 2) : duration)
         const threshold = examThresholdForDay(examDay)
         const mastery = d.courseMastery[courseId] ?? 0
         const bonus = (prep ? 0.5 : 0) - (early ? 1 : 0)
