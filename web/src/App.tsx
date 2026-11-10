@@ -28,6 +28,10 @@ import {
   WEST_GENERIC_STAMINA,
   WEST_GENERIC_CONSTRUCTION,
   WEST_GENERIC_POINTS,
+  GUILD_JOB_DEFS,
+  GUILD_ESCORTS,
+  guildJobsForDay,
+  guildEscortForDay,
   supportPeriodAt,
   nextSupportPeriod,
   isConstructionWeek,
@@ -381,6 +385,8 @@ function GameScreen() {
         <main className="main-panel">
           {battle ? (
             <BattleView />
+          ) : data.guild.escort ? (
+            <EscortView />
           ) : (
             <>
               <div className="countdown">
@@ -477,6 +483,7 @@ function GameScreen() {
       {modal === 'westBoard' && <WestBoardModal />}
       {modal === 'westRecord' && <WestRecordModal />}
       {modal === 'academyBoard' && <AcademyBoardModal />}
+      {modal === 'guildBoard' && <GuildBoardModal />}
       {modal === 'shop' && <ShopModal />}
       {modal === 'drinks' && <DrinkModal />}
       {modal === 'save' && <SavesModal />}
@@ -576,7 +583,7 @@ function BattleView() {
   return (
     <div className="battle-screen">
       <div className="battle-head">
-        <span className="battle-title">{battle.kind === 'wild' ? `${locName} · 遭遇` : '演武场 · 切磋'}</span>
+        <span className="battle-title">{battle.kind === 'wild' ? `${data.guild.escort ? '护送途中' : locName} · 遭遇` : '演武场 · 切磋'}</span>
         <span className="battle-round">战斗时间 {formatBattleTime(battle.elapsedTicks)} · {phaseLabel}</span>
       </div>
 
@@ -991,6 +998,9 @@ function Actions({
   const listenWestRumors = useGame((s) => s.listenWestRumors)
   const westLookout = useGame((s) => s.westLookout)
   const westPatrol = useGame((s) => s.westPatrol)
+  const doGuildJob = useGame((s) => s.doGuildJob)
+  const startEscort = useGame((s) => s.startEscort)
+  const returnFromEscort = useGame((s) => s.returnFromEscort)
   const helpBackyard = useGame((s) => s.helpBackyard)
   const teleport = useGame((s) => s.teleport)
   const helpOrphanKids = useGame((s) => s.helpOrphanKids)
@@ -1084,6 +1094,19 @@ function Actions({
         }
       />
     ))
+  }
+  const guildEscort = guildEscortForDay(data.day)
+  const guildJobBtn = (id: 'haul' | 'errand' | 'inventory') => {
+    if (!data.guild.accepted.includes(id) || data.guild.done.includes(id)) return null
+    const def = GUILD_JOB_DEFS[id]
+    return (
+      <ActionBtn
+        key={id}
+        onClick={() => doGuildJob(id)}
+        label={def.name}
+        cost={`${def.minutes} 分钟 · 体力 -${def.stamina} · ${def.money} 铜`}
+      />
+    )
   }
   const remain = segment ? segment.segmentEnd - data.minutes : 0
   const nextClass = nextClassStart(loc, data.day, data.minutes)
@@ -1249,6 +1272,25 @@ function Actions({
       )}
       {loc === 'academy' && (
         <ActionBtn onClick={() => setModal('academyBoard')} label="查看告示板" cost="—" />
+      )}
+      {loc === 'guild' && (
+        <ActionBtn onClick={() => setModal('guildBoard')} label="查看委托板" cost="—" />
+      )}
+      {loc === 'guild' && guildJobBtn('haul')}
+      {loc === 'guild' && guildJobBtn('errand')}
+      {loc === 'guild' && guildJobBtn('inventory')}
+      {loc === 'gate' &&
+        data.guild.accepted.includes('escort') &&
+        !data.guild.done.includes('escort') &&
+        !data.guild.escort && (
+          <ActionBtn
+            onClick={startEscort}
+            label={`开始护送 · ${guildEscort.name}`}
+            cost={`${guildEscort.segments * 30} 分钟 · 体力 -12`}
+          />
+        )}
+      {['oldStation', 'forestDepot', 'eastFarm'].includes(loc) && (
+        <ActionBtn onClick={returnFromEscort} label="返回城门" cost="1 小时" />
       )}
       {loc === 'dorm' && <ActionBtn onClick={meditate} label="冥想" cost="1 小时" />}
       {loc === 'dorm' && <ActionBtn onClick={() => setModal('bookshelf')} label="书柜" cost="—" />}
@@ -2925,6 +2967,100 @@ function DrinkModal() {
         })}
       </div>
     </ModalShell>
+  )
+}
+
+function GuildBoardModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  const acceptGuildJob = useGame((s) => s.acceptGuildJob)
+  const jobs = guildJobsForDay(data.day)
+  const escort = guildEscortForDay(data.day)
+  const allDone = jobs.every((id) => data.guild.done.includes(id))
+
+  const jobRow = (id: string) => {
+    const isEscort = id === 'escort'
+    const def = isEscort ? null : GUILD_JOB_DEFS[id as keyof typeof GUILD_JOB_DEFS]
+    const name = isEscort ? `护送货车 · ${escort.name}` : def?.name ?? id
+    const minutes = isEscort ? escort.minutes : def?.minutes ?? 0
+    const stamina = isEscort ? 12 : def?.stamina ?? 0
+    const money = isEscort ? escort.money : def?.money ?? 0
+    const done = data.guild.done.includes(id)
+    const accepted = data.guild.accepted.includes(id)
+    return (
+      <div className="guild-job" key={id}>
+        <div className="row-head">
+          <span className="item-name">{name}</span>
+          <span className="shop-price">{money} 铜</span>
+        </div>
+        <div className="item-desc">
+          {minutes} 分钟 · 体力 -{stamina}
+          {isEscort ? ' · 途中可能遭遇战斗' : ''}
+        </div>
+        {done ? (
+          <div className="hint">已完成</div>
+        ) : accepted ? (
+          <div className="hint">
+            {isEscort ? '已接取 · 去城门开始护送' : '已接取'}
+          </div>
+        ) : (
+          <button className="mini-btn" onClick={() => acceptGuildJob(id)}>
+            接取
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <ModalShell title="商会委托板" onClose={() => setModal(null)}>
+      <p className="hint">每周一刷新，每个委托只能接一次。</p>
+      {allDone ? (
+        <p className="package-text">本周委托已经全部完成。</p>
+      ) : (
+        <div className="guild-list">{jobs.map(jobRow)}</div>
+      )}
+    </ModalShell>
+  )
+}
+
+function EscortView() {
+  const data = useGame((s) => s.data)
+  const message = useGame((s) => s.message)
+  const setModal = useGame((s) => s.setModal)
+  const escortContinue = useGame((s) => s.escortContinue)
+  const escortArrive = useGame((s) => s.escortArrive)
+  const escortAbort = useGame((s) => s.escortAbort)
+  const escort = data.guild.escort
+  if (!escort) return null
+  const dest = getLocation(escort.destination)
+  const def = GUILD_ESCORTS.find((x) => x.destination === escort.destination)
+  const arrived = escort.segment >= escort.totalSegments
+
+  return (
+    <div className="escort-view">
+      <div className="section-title">护送途中</div>
+      <p className="package-text">目的地：{dest.name}</p>
+      <p className="package-text">
+        第 {escort.segment} / {escort.totalSegments} 段
+      </p>
+      <p className="package-text">
+        货物状态：{escort.goodsDamaged ? '受损' : '完好'}
+      </p>
+      {message && <p className="hint">{message}</p>}
+      <div className="actions">
+        {arrived ? (
+          <ActionBtn onClick={escortArrive} label="到达目的地" cost="—" />
+        ) : (
+          <ActionBtn onClick={escortContinue} label="继续赶路" cost="30 分钟" />
+        )}
+        <ActionBtn onClick={() => setModal('inventory')} label="使用物品" cost="—" />
+        <ActionBtn onClick={escortAbort} label="中断护送" cost="回城门" />
+      </div>
+      <p className="hint">
+        {def ? `${def.name} · 基础报酬 ${def.money} 铜` : ''}
+      </p>
+    </div>
   )
 }
 

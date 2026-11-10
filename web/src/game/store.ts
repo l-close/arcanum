@@ -7,6 +7,7 @@ import type {
   ExamResult,
   GameData,
   Gender,
+  GuildState,
   Player,
   Screen,
   Skill,
@@ -34,6 +35,15 @@ import {
   WEST_PROJECT_MAX,
   WEST_REPAIR_TEXTS,
   WEST_COMMISSION_TEXTS,
+  GUILD_JOB_DEFS,
+  GUILD_ESCORTS,
+  GUILD_SEGMENT_MINUTES,
+  GUILD_ENCOUNTER_CHANCE,
+  GUILD_RETURN_MINUTES,
+  GUILD_ROAD_TEXTS,
+  guildWeek,
+  guildEscortForDay,
+  guildJobsForDay,
   westRumor,
   supportPeriodAt,
   shopPriceAt,
@@ -202,6 +212,12 @@ export function freshData(): GameData {
       setIndex: 0,
       accepted: [],
       done: [],
+    },
+    guild: {
+      week: 0,
+      accepted: [],
+      done: [],
+      escort: null,
     },
     prayers: { day: 0, count: 0 },
     plaza: { day: 0, fed: false },
@@ -379,6 +395,19 @@ export function normalizeData(raw: GameData): GameData {
       accepted: raw.west?.accepted ?? [],
       done: raw.west?.done ?? [],
     },
+    guild: {
+      week: raw.guild?.week ?? guildWeek(raw.day),
+      accepted: raw.guild?.accepted ?? [],
+      done: raw.guild?.done ?? [],
+      escort: raw.guild?.escort
+        ? {
+            destination: raw.guild.escort.destination,
+            segment: raw.guild.escort.segment ?? 0,
+            totalSegments: raw.guild.escort.totalSegments ?? 1,
+            goodsDamaged: !!raw.guild.escort.goodsDamaged,
+          }
+        : null,
+    },
     prayers: raw.prayers ?? { day: 0, count: 0 },
     plaza: raw.plaza ?? { day: 0, fed: false },
     meals: raw.meals ?? { day: 0, breakfast: false, lunch: false, dinner: false },
@@ -418,6 +447,7 @@ export function normalizeData(raw: GameData): GameData {
     storyDone: raw.storyDone ?? true,
   }
   resetWestPeriod(data)
+  syncGuildWeek(data)
   maybeLearnSpells(data)
   return data
 }
@@ -636,7 +666,7 @@ function applyStoryEffects(d: GameData, e?: StoryEffects): void {
   if (e.location) d.location = e.location
 }
 
-type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | null
+type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | null
 
 type TitlePanel = 'saves' | 'export' | 'import' | null
 
@@ -708,6 +738,13 @@ type Store = {
   listenWestRumors: () => void
   westLookout: () => void
   westPatrol: () => void
+  acceptGuildJob: (id: string) => void
+  doGuildJob: (id: string) => void
+  startEscort: () => void
+  escortContinue: () => void
+  escortArrive: () => void
+  escortAbort: () => void
+  returnFromEscort: () => void
   startWildBattle: (enemyId: string, bonusCopper: number) => void
   eat: () => void
   rest: () => void
@@ -801,8 +838,17 @@ function refreshWestSet(d: GameData): void {
   pushLog(d, text)
 }
 
-function checkWestStage(d: GameData): void {
-  if (d.west.stage >= 1) {
+function syncGuildWeek(d: GameData): void {
+  if (d.guild.escort) return
+  const week = guildWeek(d.day)
+  if (d.guild.week !== week) {
+    d.guild.week = week
+    d.guild.accepted = []
+    d.guild.done = []
+  }
+}
+
+function checkWestStage(d: GameData): void {  if (d.west.stage >= 1) {
     d.west.construction = Math.min(WEST_CONSTRUCTION_MAX, d.west.construction)
     return
   }
@@ -824,6 +870,7 @@ export const useGame = create<Store>((set, get) => {
     const next = structuredClone(data)
     const msg = fn(next)
     resetWestPeriod(next)
+    syncGuildWeek(next)
     checkWestStage(next)
     const learned = maybeLearnSpells(next)
     const report = semesterEndFor(data.day, next.day)
@@ -835,7 +882,7 @@ export const useGame = create<Store>((set, get) => {
       }
     }
     set({ data: next, message: learned ? (msg ? `${msg} ${learned}` : learned) : msg })
-    if (next.day !== data.day) {
+    if (next.day !== data.day && !next.guild.escort) {
       saveGame('auto', player, next)
     }
   }
@@ -1551,13 +1598,17 @@ export const useGame = create<Store>((set, get) => {
           ensureSemesterPackage(next, report)
         }
       }
+      if (next.guild.escort && battle.kind === 'wild' && battle.phase !== 'victory') {
+        next.guild.escort.goodsDamaged = true
+        pushLog(next, '货车在混乱中受了损。')
+      }
       const text =
         (battle.kind === 'wild'
           ? `战斗结束，用时约 ${minutes} 分钟。`
           : `你结束了练习，用时约 ${minutes} 分钟。`) + dropText
       pushLog(next, text)
       set({ battle: null, data: next, message: text, modal: null, battleBonusCopper: 0 })
-      saveGame('auto', player, next)
+      if (!next.guild.escort) saveGame('auto', player, next)
     },
 
     moveTo: (id) => {
@@ -2009,6 +2060,155 @@ export const useGame = create<Store>((set, get) => {
       if (Math.random() < 0.35) {
         get().startWildBattle('corrupted_dog', 3)
       }
+    },
+
+    acceptGuildJob: (id) => {
+      const { data } = get()
+      const jobs = guildJobsForDay(data.day)
+      if (!jobs.includes(id as (typeof jobs)[number])) {
+        set({ message: '本周没有这个委托。' })
+        return
+      }
+      const next = structuredClone(data)
+      syncGuildWeek(next)
+      if (next.guild.accepted.includes(id) || next.guild.done.includes(id)) {
+        set({ message: '这个委托已经接过了。' })
+        return
+      }
+      next.guild.accepted.push(id)
+      set({ data: next, message: '已接取商会委托。' })
+    },
+
+    doGuildJob: (id) => {
+      const { data } = get()
+      const def = GUILD_JOB_DEFS[id as keyof typeof GUILD_JOB_DEFS]
+      if (!def) return
+      if (!data.guild.accepted.includes(id) || data.guild.done.includes(id)) {
+        set({ message: '你还没有接取这个委托。' })
+        return
+      }
+      if (data.location !== def.location) {
+        set({ message: `你需要去${getLocation(def.location).name}。` })
+        return
+      }
+      if (data.stamina < def.stamina) {
+        set({ message: '你太累了，先休息一下。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, def.minutes)
+        d.stamina = clamp(d.stamina - def.stamina, 0, maxStamina(d.skills.physique.tier))
+        d.money += def.money
+        d.guild.done.push(id)
+        const text =
+          id === 'haul'
+            ? '你把箱子搬进后院，按货单分开。'
+            : id === 'errand'
+              ? '你把信送到地方，又赶回商会。'
+              : '你对着货单清点了一遍，把短少的数目记下来。'
+        pushLog(d, text)
+        return `${text} 你得到了 ${def.money} 铜。`
+      })
+    },
+
+    startEscort: () => {
+      const { data } = get()
+      if (data.location !== 'gate') {
+        set({ message: '你需要到城门才能出发。' })
+        return
+      }
+      if (data.guild.escort) {
+        set({ message: '你已经在护送途中了。' })
+        return
+      }
+      if (!data.guild.accepted.includes('escort') || data.guild.done.includes('escort')) {
+        set({ message: '你还没有接取护送委托。' })
+        return
+      }
+      const def = guildEscortForDay(data.day)
+      mutate((d) => {
+        d.guild.escort = {
+          destination: def.destination,
+          segment: 0,
+          totalSegments: def.segments,
+          goodsDamaged: false,
+        }
+        pushLog(d, `你押着货车出发，前往${def.name}。`)
+        return '货车已经装好。你们准备出发。'
+      })
+    },
+
+    escortContinue: () => {
+      const { data } = get()
+      const escort = data.guild.escort
+      if (!escort) return
+      if (escort.segment >= escort.totalSegments) {
+        set({ message: '已经到达了。' })
+        return
+      }
+      const encounter = Math.random() < GUILD_ENCOUNTER_CHANCE
+      mutate((d) => {
+        advanceTime(d, GUILD_SEGMENT_MINUTES)
+        const e = d.guild.escort
+        if (!e) return ''
+        e.segment += 1
+        const text = GUILD_ROAD_TEXTS[Math.floor(Math.random() * GUILD_ROAD_TEXTS.length)]
+        pushLog(d, text)
+        if (e.segment >= e.totalSegments) {
+          return `${text} 已经能看到${getLocation(e.destination).name}了。`
+        }
+        return text
+      })
+      if (encounter) {
+        const def = GUILD_ESCORTS.find((x) => x.destination === escort.destination)
+        if (def) get().startWildBattle(def.enemy, 4)
+      }
+    },
+
+    escortArrive: () => {
+      const { data } = get()
+      const escort = data.guild.escort
+      if (!escort || escort.segment < escort.totalSegments) return
+      const def = GUILD_ESCORTS.find((x) => x.destination === escort.destination)
+      if (!def) return
+      const reward = escort.goodsDamaged ? Math.floor(def.money / 2) : def.money
+      mutate((d) => {
+        const e = d.guild.escort
+        if (!e) return ''
+        d.money += reward
+        d.location = e.destination
+        if (!d.guild.done.includes('escort')) d.guild.done.push('escort')
+        const damage = e.goodsDamaged ? '货物有些损伤，' : ''
+        const text = `你把货车送到了${getLocation(e.destination).name}。${damage}你拿到了 ${reward} 铜。`
+        d.guild.escort = null
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    escortAbort: () => {
+      const { data } = get()
+      if (!data.guild.escort) return
+      mutate((d) => {
+        d.guild.escort = null
+        if (!d.guild.done.includes('escort')) d.guild.done.push('escort')
+        d.location = 'gate'
+        const text = '你掉转车头，把货车带回了城门。商会没有给报酬。'
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    returnFromEscort: () => {
+      const { data } = get()
+      if (!['oldStation', 'forestDepot', 'eastFarm'].includes(data.location)) return
+      mutate((d) => {
+        advanceTime(d, GUILD_RETURN_MINUTES)
+        d.location = 'gate'
+        const text = '你搭上回程的货车，回到了城门。'
+        pushLog(d, text)
+        return text
+      })
     },
 
     startWildBattle: (enemyId, bonusCopper) => {
@@ -2998,6 +3198,10 @@ export const useGame = create<Store>((set, get) => {
         set({ message: '战斗中无法存档。' })
         return
       }
+      if (data.guild?.escort) {
+        set({ message: '护送途中无法存档。' })
+        return
+      }
       if (saveGame(slot, player, data)) {
         set({ savesRev: get().savesRev + 1, message: `已保存到${slot === 'auto' ? '自动存档' : `槽位 ${slot}`}。` })
       } else {
@@ -3005,8 +3209,8 @@ export const useGame = create<Store>((set, get) => {
       }
     },
     loadSlot: (slot) => {
-      if (get().battle) {
-        set({ message: '战斗中无法读档。' })
+      if (get().battle || get().data.guild?.escort) {
+        set({ message: get().battle ? '战斗中无法读档。' : '护送途中无法读档。' })
         return
       }
       const s = loadGame(slot)
@@ -3040,7 +3244,7 @@ export const useGame = create<Store>((set, get) => {
     refreshSaves: () => set({ savesRev: get().savesRev + 1 }),
     autosave: () => {
       const { screen, battle, player, data } = get()
-      if (screen !== 'game' || battle) return
+      if (screen !== 'game' || battle || data.guild?.escort) return
       saveGame('auto', player, data)
     },
 

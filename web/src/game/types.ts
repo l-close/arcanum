@@ -28,6 +28,20 @@ export type WestState = {
   done: string[]
 }
 
+export type GuildEscortState = {
+  destination: string
+  segment: number
+  totalSegments: number
+  goodsDamaged: boolean
+}
+
+export type GuildState = {
+  week: number
+  accepted: string[]
+  done: string[]
+  escort: GuildEscortState | null
+}
+
 export type ExamResult = 'pass' | 'fail' | 'absent'
 
 export type ExamPackage = {
@@ -72,6 +86,7 @@ export type GameData = {
   books: Record<string, { progress: number; completed: boolean }>
   bookshelf: string[]
   west: WestState
+  guild: GuildState
   prayers: { day: number; count: number }
   plaza: { day: number; fed: boolean }
   meals: { day: number; breakfast: boolean; lunch: boolean; dinner: boolean }

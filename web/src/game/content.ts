@@ -476,6 +476,113 @@ export function westRumor(stage: number): string {
   return pool[Math.floor(Math.random() * pool.length)]
 }
 
+export type GuildJobId = 'escort' | 'haul' | 'errand' | 'inventory'
+
+export type GuildJobDef = {
+  id: Exclude<GuildJobId, 'escort'>
+  name: string
+  minutes: number
+  stamina: number
+  money: number
+  location: string
+  desc: string
+}
+
+export const GUILD_JOB_DEFS: Record<Exclude<GuildJobId, 'escort'>, GuildJobDef> = {
+  haul: {
+    id: 'haul',
+    name: '搬运货物',
+    minutes: 120,
+    stamina: 10,
+    money: 12,
+    location: 'guild',
+    desc: '把到货的箱子从车上搬到后院，再按单子分开。',
+  },
+  errand: {
+    id: 'errand',
+    name: '跑腿送信',
+    minutes: 60,
+    stamina: 5,
+    money: 7,
+    location: 'guild',
+    desc: '把一封封好的信送到学院或教堂，再回来复命。',
+  },
+  inventory: {
+    id: 'inventory',
+    name: '清点货单',
+    minutes: 90,
+    stamina: 4,
+    money: 9,
+    location: 'guild',
+    desc: '对着货单清点箱子，把短少的数目记下来。',
+  },
+}
+
+export type GuildEscortDef = {
+  id: string
+  name: string
+  destination: string
+  segments: number
+  minutes: number
+  money: number
+  enemy: string
+}
+
+export const GUILD_ESCORTS: GuildEscortDef[] = [
+  {
+    id: 'oldStation',
+    name: '旧驿站',
+    destination: 'oldStation',
+    segments: 6,
+    minutes: 180,
+    money: 20,
+    enemy: 'deserter',
+  },
+  {
+    id: 'forestDepot',
+    name: '林间货栈',
+    destination: 'forestDepot',
+    segments: 4,
+    minutes: 120,
+    money: 16,
+    enemy: 'gray_wolf',
+  },
+  {
+    id: 'eastFarm',
+    name: '东边农庄',
+    destination: 'eastFarm',
+    segments: 3,
+    minutes: 90,
+    money: 14,
+    enemy: 'deserter',
+  },
+]
+
+export const GUILD_SEGMENT_MINUTES = 30
+export const GUILD_ENCOUNTER_CHANCE = 0.075
+export const GUILD_RETURN_MINUTES = 60
+
+export function guildWeek(day: number): number {
+  return Math.floor(day / 7)
+}
+
+export function guildEscortForDay(day: number): GuildEscortDef {
+  return GUILD_ESCORTS[guildWeek(day) % GUILD_ESCORTS.length]
+}
+
+export function guildJobsForDay(day: number): GuildJobId[] {
+  const week = guildWeek(day)
+  return ['escort', 'haul', week % 2 === 0 ? 'errand' : 'inventory']
+}
+
+export const GUILD_ROAD_TEXTS = [
+  '货车压过碎石，车轮发出低响。',
+  '路边的草被风吹向一边，远处看不到人。',
+  '你们在路边停了一会儿，让马喘口气。',
+  '前面的路拐进一片矮林，视野短了下来。',
+  '车轮陷进一段软土，几个人下来推了一把。',
+]
+
 export function shopStockAt(location: string): Record<string, number> {
   return SHOP_STOCKS[location] ?? {}
 }
@@ -547,8 +654,8 @@ export const SPELLS: Record<string, SpellDef> = {
     element: '火',
     desc: '自然系·火。把魔力压成一颗火球，砸向单个目标。',
     mana: 8,
-    baseDamage: 10,
-    tierScale: 3,
+    baseDamage: 12,
+    tierScale: 4,
     variance: 3,
     castTicks: 10,
   },
@@ -615,10 +722,10 @@ export const ENEMIES: Record<string, EnemyDef> = {
     id: 'slime',
     name: '史莱姆',
     desc: '一团半透明的胶质，里面浮着几片没消化的叶子和石子。',
-    hp: 40,
-    attack: 6,
+    hp: 45,
+    attack: 7,
     defense: 0,
-    speed: 2.2,
+    speed: 2.3,
     expValue: 0.8,
     intro: '灌木里传来黏腻的声响。一团半透明的史莱姆慢慢从草里滑出来。',
     attackLines: [
@@ -632,10 +739,10 @@ export const ENEMIES: Record<string, EnemyDef> = {
     id: 'corrupted_dog',
     name: '被侵蚀的野狗',
     desc: '它的身体像被什么东西从里面撑开，肋骨顶破了皮，脊背弯成一个不自然的角度。',
-    hp: 65,
-    attack: 10,
+    hp: 80,
+    attack: 11,
     defense: 1,
-    speed: 2.8,
+    speed: 2.9,
     expValue: 1.5,
     intro:
       '路边的草里传来低低的喘息。\n它的身体像被什么东西从里面撑开，肋骨顶破了皮，脊背弯成一个不自然的角度。\n半边脸塌下去，露出的牙床比正常的狗长了一截。\n它还在喘气，喉咙里发出不像狗的声音。\n你只能从脖子上的旧项圈，勉强认出这原本是条狗。',
@@ -645,6 +752,42 @@ export const ENEMIES: Record<string, EnemyDef> = {
       '它喉咙里发出湿漉漉的声音，又扑了一次。',
     ],
     defeatLine: '它倒在地上，身体还在抽动。你退开两步，等它彻底不动。',
+  },
+  gray_wolf: {
+    id: 'gray_wolf',
+    name: '灰狼',
+    desc: '一只瘦而结实的灰狼，压低身子，在路边慢慢逼近。',
+    hp: 60,
+    attack: 10,
+    defense: 0,
+    speed: 3.3,
+    expValue: 1.2,
+    intro:
+      '路边的灌木动了一下。\n一只灰狼从阴影里探出头，压低身子，慢慢逼近。',
+    attackLines: [
+      '灰狼从侧面扑上来，咬向你的小腿。',
+      '它绕了半圈，又冲了一次。',
+      '灰狼低吼着，爪子刨过地面。',
+    ],
+    defeatLine: '灰狼退了两步，转身钻进林子，很快不见了。',
+  },
+  deserter: {
+    id: 'deserter',
+    name: '劫道散兵',
+    desc: '一个穿着褪色军服的人，手里握着一把旧刀。',
+    hp: 75,
+    attack: 11,
+    defense: 1,
+    speed: 2.8,
+    expValue: 1.3,
+    intro:
+      '一个人从路边的石头后面站起来，手里握着一把旧刀。\n衣服上是褪色的军服，边角磨破了。',
+    attackLines: [
+      '他挥刀砍过来，刀刃擦过你的肩。',
+      '他往前逼了一步，刀尖压得很低。',
+      '他喘着气，又劈了一刀。',
+    ],
+    defeatLine: '他退进林子，刀掉在地上。你没有追。',
   },
 }
 
@@ -854,6 +997,13 @@ export const LOCATIONS: Location[] = [
     desc: '几张旧木桌，一盏吊灯，墙上钉着褪色的菜单。傍晚之后，这里才会真正热闹起来。',
   },
   {
+    id: 'guild',
+    name: '商会办事处',
+    parent: 'commercial',
+    kind: 'room',
+    desc: '商会办事处里堆着账本和货单。柜台后面有人在核账，抬眼看你一下，又低下头。',
+  },
+  {
     id: 'church',
     name: '教堂内堂',
     parent: 'churchStreet',
@@ -964,6 +1114,24 @@ export const LOCATIONS: Location[] = [
     parent: 'westTown',
     kind: 'room',
     desc: '哨塔的木梯断了一级，塔顶的棚布被风吹开。上面很久没人上去了。',
+  },
+  {
+    id: 'oldStation',
+    name: '旧驿站',
+    kind: 'room',
+    desc: '官道旁的旧驿站，屋檐下挂着褪色的招牌。院子里停着两辆空货车，井台边堆着草料。',
+  },
+  {
+    id: 'forestDepot',
+    name: '林间货栈',
+    kind: 'room',
+    desc: '林子边缘的木棚，四周堆着货箱。风从树梢上压下来，带着湿木头的味道。',
+  },
+  {
+    id: 'eastFarm',
+    name: '东边农庄',
+    kind: 'room',
+    desc: '城东的田地，几间低矮的农舍。井台边放着水桶，远处有人弯着腰。',
   },
 ]
 
