@@ -1756,32 +1756,26 @@ function ActionBtn({ label, cost, onClick }: { label: string; cost: string; onCl
 function CityMap({ location }: { location: string }) {
   if (!isCityArea(location)) return null
   const near = new Set(areaNeighbors(location))
-  const node = (id: string) => {
+  const node = (id: string, cls = '') => {
     const loc = getLocation(id)
     const state = id === location ? 'current' : near.has(id) ? 'near' : 'far'
-    return (
-      <span key={id} className={`map-node ${state}`}>
-        {loc.name}
-      </span>
-    )
+    return <span className={`map-node ${state} ${cls}`.trim()}>{loc.name}</span>
   }
   return (
     <div className="city-map" aria-label="银月城街区">
-      <div className="map-row">{node('craftDistrict')}</div>
-      <div className="map-connector" />
-      <div className="map-row map-row-four">
-        {node('churchStreet')}
-        <span className="map-edge" />
-        {node('orphanStreet')}
-        <span className="map-edge" />
-        {node('town')}
-        <span className="map-edge" />
-        {node('academyStreet')}
-      </div>
-      <div className="map-connector" />
-      <div className="map-row">{node('commercial')}</div>
-      <div className="map-connector" />
-      <div className="map-row">{node('gate')}</div>
+      {node('churchStreet', 'map-church')}
+      {node('craftDistrict', 'map-craft')}
+      <span className="map-line-v map-line-v-church" />
+      <span className="map-line-v map-line-v-craft" />
+      {node('orphanStreet', 'map-orphan')}
+      <span className="map-line-h map-line-h-left" />
+      {node('town', 'map-town')}
+      <span className="map-line-h map-line-h-right" />
+      {node('academyStreet', 'map-academy')}
+      <span className="map-line-v map-line-v-town" />
+      {node('commercial', 'map-commercial')}
+      <span className="map-line-v map-line-v-gate" />
+      {node('gate', 'map-gate')}
     </div>
   )
 }
