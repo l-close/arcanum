@@ -90,9 +90,8 @@ import {
   SKILL_LABEL,
   SOCIAL_MINUTES,
   SPELLS,
-  SPELL_UNLOCK_COURSE,
+  FIREBALL_READING_EXP,
   SLIME_GEL_DROP_CHANCE,
-  SPELL_UNLOCK_MASTERY,
   TAVERN_DRINK_END,
   TAVERN_LISTEN_SCENES,
   TAVERN_OPEN_END,
@@ -448,19 +447,23 @@ export function normalizeData(raw: GameData): GameData {
   }
   resetWestPeriod(data)
   syncGuildWeek(data)
-  maybeLearnSpells(data)
+  maybeUnlockFireballReading(data)
   return data
 }
 
-function maybeLearnSpells(d: GameData): string | null {
-  const mastery = d.courseMastery[SPELL_UNLOCK_COURSE] ?? 0
-  if (mastery < SPELL_UNLOCK_MASTERY) return null
-  if (d.spells.includes('fireball')) return null
-  d.spells.push('fireball')
-  const text = '你终于能稳定地构出火球术了。'
-  if (!d.notice.includes(text)) {
-    d.notice = d.notice ? `${d.notice} ${text}` : text
+function maybeUnlockFireballReading(d: GameData): string | null {
+  if (d.flags.fireball_ready) return null
+  if (d.spells.includes('fireball')) {
+    d.flags.fireball_ready = true
+    return null
   }
+  const nature = d.skills.nature
+  const qualified =
+    nature.tier >= 1 || (nature.tier === 0 && nature.exp >= FIREBALL_READING_EXP)
+  if (!qualified) return null
+  d.flags.fireball_ready = true
+  const text = '你对法术的理解又深了一层。有些以前看不懂的东西，现在能看懂了。'
+  d.notice = d.notice ? `${d.notice} ${text}` : text
   pushLog(d, text)
   return text
 }
@@ -872,7 +875,7 @@ export const useGame = create<Store>((set, get) => {
     resetWestPeriod(next)
     syncGuildWeek(next)
     checkWestStage(next)
-    const learned = maybeLearnSpells(next)
+    const learned = maybeUnlockFireballReading(next)
     const report = semesterEndFor(data.day, next.day)
     if (report) {
       const key = `report_s${report.year}_${report.semester}`
@@ -1777,6 +1780,12 @@ export const useGame = create<Store>((set, get) => {
         set({ message: '你身上没有这本书。' })
         return
       }
+      if (book.requiresFlag && !data.flags[book.requiresFlag]) {
+        set({
+          message: `你还看不懂这本书。需要${book.requirementText ?? '更高的学识'}。`,
+        })
+        return
+      }
       const state = data.books[id] ?? { progress: 0, completed: false }
       const cost = book.spiritCost ?? 0
       if (cost > 0 && data.spirit <= cost) {
@@ -1811,11 +1820,16 @@ export const useGame = create<Store>((set, get) => {
               addExp(d, key as SkillKey, value ?? 0)
             }
           }
+          if (reward.spell && !d.spells.includes(reward.spell)) {
+            d.spells.push(reward.spell)
+            pushLog(d, `你学会了${SPELLS[reward.spell]?.name ?? '新法术'}。`)
+          }
           if (reward.flag) d.flags[reward.flag] = true
           const parts: string[] = []
           if (reward.mood) parts.push(`心情 +${reward.mood}`)
           if (reward.spirit) parts.push(`精神 +${reward.spirit}`)
           if (reward.exp) parts.push(reward.text ?? '经验提升')
+          if (reward.spell) parts.push(reward.text ?? '学会了新法术')
           if (reward.flag) parts.push(reward.text ?? '记下了一些东西')
           const rewardText = parts.length ? `${parts.join('，')}。` : ''
           if (book.repeatable) {

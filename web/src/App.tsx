@@ -2125,27 +2125,36 @@ function ReadingModal() {
             const state = data.books[id]
             const progress = state?.progress ?? 0
             const completed = !!state?.completed && !book.repeatable
+            const locked = !!book.requiresFlag && !data.flags[book.requiresFlag]
             return (
               <div className="reading-item" key={id}>
                 <div className="reading-head">
                   <span className="reading-name">{book.name}</span>
-                  <span className="reading-progress">{completed ? '已读完' : `${progress}%`}</span>
+                  <span className="reading-progress">
+                    {locked ? '看不懂' : completed ? '已读完' : `${progress}%`}
+                  </span>
                 </div>
                 <div className="reading-desc">{book.desc}</div>
                 <div className="reading-bar">
-                  <div style={{ width: `${completed ? 100 : progress}%` }} />
+                  <div style={{ width: `${locked ? 0 : completed ? 100 : progress}%` }} />
                 </div>
                 <div className="reading-meta">
                   <span>30 分钟</span>
                   <span>{book.spiritCost ? `精神 -${book.spiritCost}` : '不耗精神'}</span>
                   <span>{book.repeatable ? '可重复阅读' : '一次性'}</span>
                 </div>
+                {locked && (
+                  <div className="hint">
+                    需要{book.requirementText ?? '更高的学识'}才能读懂。
+                  </div>
+                )}
                 {completed && <div className="hint">已读完，重读没有收益。</div>}
                 <button
                   className="primary-btn"
+                  disabled={locked || completed}
                   onClick={() => readBook(id)}
                 >
-                  {completed ? '重读 30 分钟' : '阅读 30 分钟'}
+                  {locked ? '看不懂' : completed ? '重读 30 分钟' : '阅读 30 分钟'}
                 </button>
               </div>
             )

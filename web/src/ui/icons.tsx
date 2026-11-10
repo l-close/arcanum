@@ -160,6 +160,8 @@ export function ItemIcon({ id, size = 32 }: { id: string; size?: number }) {
       return <BookIcon size={size} />
     case 'sword_manual':
       return <BookIcon size={size} />
+    case 'fireball_book':
+      return <BookIcon size={size} />
     case 'brawl_manual':
     case 'defense_notes':
     case 'old_city_stories':

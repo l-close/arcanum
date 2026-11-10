@@ -183,6 +183,15 @@ export const ITEMS: Record<string, ItemDef> = {
     medium: false,
     desc: '一本被压在旧书堆里的剑术图解。封面磨白，页边留着前一个主人的批注。',
   },
+  fireball_book: {
+    id: 'fireball_book',
+    name: '火球术',
+    type: 'book',
+    quality: 'rare',
+    price: 0,
+    medium: false,
+    desc: '一本薄薄的手抄本。前面的段落讲吟唱，后面的段落讲怎么把魔力压成火球。',
+  },
   brawl_manual: {
     id: 'brawl_manual',
     name: '格斗札记',
@@ -226,6 +235,7 @@ export type BookReward = {
   spirit?: number
   exp?: Partial<Record<SkillKey, number>>
   flag?: string
+  spell?: string
   text?: string
 }
 
@@ -237,6 +247,8 @@ export type BookDef = {
   repeatable: boolean
   spiritCost?: number
   foundText?: string
+  requiresFlag?: string
+  requirementText?: string
   reward: BookReward
 }
 
@@ -259,6 +271,19 @@ export const BOOKS: Record<string, BookDef> = {
     foundText:
       '你在一排旧书的最后，翻到一本被压住的剑术图解。\n封面已经磨白，里面还留着前一个主人的批注。',
     reward: { flag: 'book_sword_manual', text: '剑术攻击伤害永久 +1' },
+  },
+  fireball_book: {
+    id: 'fireball_book',
+    name: '火球术',
+    desc: '一本薄薄的手抄本。前面的段落讲吟唱，后面的段落讲怎么把魔力压成火球。',
+    progressPerRead: 25,
+    repeatable: false,
+    spiritCost: 1,
+    requiresFlag: 'fireball_ready',
+    requirementText: '自然系 0 级进度 30%',
+    foundText:
+      '你在一本讲基础法术的旧册子后面，翻到一本薄薄的手抄本。\n封面上写着《火球术》。',
+    reward: { spell: 'fireball', text: '学会火球术' },
   },
   brawl_manual: {
     id: 'brawl_manual',
@@ -297,7 +322,7 @@ export const BOOKS: Record<string, BookDef> = {
   },
 }
 
-export const SEARCHABLE_BOOKS = ['sword_manual']
+export const SEARCHABLE_BOOKS = ['sword_manual', 'fireball_book']
 
 export const SHOP_STOCKS: Record<string, Record<string, number>> = {
   shop: {
@@ -740,8 +765,7 @@ export const SPELLS: Record<string, SpellDef> = {
   },
 }
 
-export const SPELL_UNLOCK_MASTERY = 20
-export const SPELL_UNLOCK_COURSE = 'y1_nature'
+export const FIREBALL_READING_EXP = 60
 
 export function spellDamageRange(
   spell: SpellDef,
