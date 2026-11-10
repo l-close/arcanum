@@ -29,8 +29,6 @@ APK 由 GitHub Actions 云构建，不需要本地 Android SDK。默认**不随�
 
 已接入固定签名（GitHub Secrets 已配置）。CI 会使用固定 keystore；固定签名后的第一版仍需卸载一次，之后可覆盖更新。未配置 Secrets 时会回退到临时 debug 签名。
 
-签名备份与恢复步骤见仓库根目录 `backup/README.md`。加密归档为 `backup/arcanum-signing-backup.7z`，密码不存放在仓库内。
-
 ## 运行
 
 ```powershell

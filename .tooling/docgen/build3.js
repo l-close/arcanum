@@ -1416,7 +1416,6 @@ function designChildren() {
   c.push(bullet("建议节奏：网页随时更新；APK 每 3–5 次网页更新或一次大功能完成后构建一次。"));
   c.push(bullet("构建 APK 前同步提升 Android versionCode 与 versionName。"));
   c.push(bullet("APK 固定签名已接入并配置 GitHub Secrets：workflow 解码 keystore，build.gradle 的 debug 签名读取环境变量；固定签名后的第一版仍需卸载一次，之后可覆盖更新。"));
-  c.push(bullet("签名备份：仓库根目录 backup/arcanum-signing-backup.7z，7-Zip AES-256 加密并加密文件名；密码不存放在仓库内，恢复步骤见 backup/README.md。"));
 
   c.push(h1("十七、待定事项"));
   [
