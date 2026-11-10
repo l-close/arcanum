@@ -183,6 +183,42 @@ export const ITEMS: Record<string, ItemDef> = {
     medium: false,
     desc: '一本被压在旧书堆里的剑术图解。封面磨白，页边留着前一个主人的批注。',
   },
+  brawl_manual: {
+    id: 'brawl_manual',
+    name: '格斗札记',
+    type: 'book',
+    quality: 'uncommon',
+    price: 40,
+    medium: false,
+    desc: '一本记着近身格斗要点的旧札记。页边画着不少受力方向的小图。',
+  },
+  defense_notes: {
+    id: 'defense_notes',
+    name: '防身笔记',
+    type: 'book',
+    quality: 'uncommon',
+    price: 45,
+    medium: false,
+    desc: '一本讲怎么挨打、怎么卸力的笔记。字迹很密，边角被翻得发软。',
+  },
+  old_city_stories: {
+    id: 'old_city_stories',
+    name: '旧城故事集',
+    type: 'book',
+    quality: 'common',
+    price: 20,
+    medium: false,
+    desc: '一本收着银月城旧街传闻和短故事的小册子。纸页发黄，读起来不费力。',
+  },
+  silver_moon_lore: {
+    id: 'silver_moon_lore',
+    name: '银月风土记',
+    type: 'book',
+    quality: 'common',
+    price: 25,
+    medium: false,
+    desc: '一本讲银月城旧街、节令和日常规矩的杂记。字不深，读起来很慢。',
+  },
 }
 
 export type BookReward = {
@@ -224,6 +260,41 @@ export const BOOKS: Record<string, BookDef> = {
       '你在一排旧书的最后，翻到一本被压住的剑术图解。\n封面已经磨白，里面还留着前一个主人的批注。',
     reward: { flag: 'book_sword_manual', text: '剑术攻击伤害永久 +1' },
   },
+  brawl_manual: {
+    id: 'brawl_manual',
+    name: '格斗札记',
+    desc: '一本记着近身格斗要点的旧札记。页边画着不少受力方向的小图。',
+    progressPerRead: 20,
+    repeatable: false,
+    spiritCost: 1,
+    reward: { flag: 'book_brawl_manual', text: '格斗攻击伤害永久 +1' },
+  },
+  defense_notes: {
+    id: 'defense_notes',
+    name: '防身笔记',
+    desc: '一本讲怎么挨打、怎么卸力的笔记。字迹很密，边角被翻得发软。',
+    progressPerRead: 17,
+    repeatable: false,
+    spiritCost: 1,
+    reward: { flag: 'book_defense_notes', text: '受到伤害永久 -1' },
+  },
+  old_city_stories: {
+    id: 'old_city_stories',
+    name: '旧城故事集',
+    desc: '一本收着银月城旧街传闻和短故事的小册子。纸页发黄，读起来不费力。',
+    progressPerRead: 34,
+    repeatable: true,
+    reward: { mood: 6 },
+  },
+  silver_moon_lore: {
+    id: 'silver_moon_lore',
+    name: '银月风土记',
+    desc: '一本讲银月城旧街、节令和日常规矩的杂记。字不深，读起来很慢。',
+    progressPerRead: 50,
+    repeatable: true,
+    spiritCost: 2,
+    reward: { exp: { knowledge: 5 }, text: '学识经验 +5' },
+  },
 }
 
 export const SEARCHABLE_BOOKS = ['sword_manual']
@@ -247,6 +318,12 @@ export const SHOP_STOCKS: Record<string, Record<string, number>> = {
     healing_potion: 2,
     tonic: 2,
     dry_ration: 4,
+  },
+  bookshop: {
+    brawl_manual: 1,
+    defense_notes: 1,
+    old_city_stories: 1,
+    silver_moon_lore: 1,
   },
 }
 
@@ -1005,6 +1082,13 @@ export const LOCATIONS: Location[] = [
     parent: 'commercial',
     kind: 'room',
     desc: '商会办事处里堆着账本和货单。柜台后面有人在核账，抬眼看你一下，又低下头。',
+  },
+  {
+    id: 'bookshop',
+    name: '旧书铺',
+    parent: 'commercial',
+    kind: 'room',
+    desc: '旧书铺里堆着高低不齐的书堆，空气里有纸和灰尘的味道。柜台边摆着几本翻旧了的册子。',
   },
   {
     id: 'church',

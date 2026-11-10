@@ -549,7 +549,13 @@ function BattleView() {
     enemy.defense,
     ITEMS[mainHand ?? '']?.spellPower ?? 0,
   )
-  const brawlRange = attackDamageRange('brawl', data.skills.brawl.tier, mainHand, enemy.defense)
+  const brawlRange = attackDamageRange(
+    'brawl',
+    data.skills.brawl.tier,
+    mainHand,
+    enemy.defense,
+    data.flags.book_brawl_manual ? 1 : 0,
+  )
   const swordRange = attackDamageRange(
     'sword',
     data.skills.sword.tier,
@@ -1315,6 +1321,9 @@ function Actions({
           <ActionBtn onClick={() => setModal('shop')} label="购买" cost="—" />
           <ActionBtn onClick={workShop} label="打工" cost="2 小时 · 体力 -10" />
         </>
+      )}
+      {loc === 'bookshop' && (
+        <ActionBtn onClick={() => setModal('shop')} label="买书" cost="—" />
       )}
       {loc === 'weaponShop' && (
         <ActionBtn onClick={() => setModal('shop')} label="购买" cost="—" />
@@ -2897,19 +2906,28 @@ function ShopModal() {
           const sold = soldToday[`${data.location}:${id}`] ?? 0
           const left = Math.max(0, stockCount - sold)
           const price = shopPriceAt(data.location, id, data.west.stage)
+          const owned =
+            def.type === 'book' &&
+            ((data.inventory[id] ?? 0) > 0 || data.bookshelf.includes(id))
           return (
             <div className="shop-row" key={id}>
               <div className="row-head">
                 <span className="item-name">{def.name}</span>
                 <span className="shop-price">{price} 铜</span>
-                <span className="shop-stock">剩 {left}</span>
-                <button
-                  className="mini-btn"
-                  disabled={left <= 0 || data.money < price}
-                  onClick={() => buyItem(id)}
-                >
-                  购买
-                </button>
+                {owned ? (
+                  <span className="shop-stock">已拥有</span>
+                ) : (
+                  <>
+                    <span className="shop-stock">剩 {left}</span>
+                    <button
+                      className="mini-btn"
+                      disabled={left <= 0 || data.money < price}
+                      onClick={() => buyItem(id)}
+                    >
+                      购买
+                    </button>
+                  </>
+                )}
               </div>
               <div className="item-desc">{def.desc}</div>
             </div>

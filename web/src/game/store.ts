@@ -1412,7 +1412,9 @@ export const useGame = create<Store>((set, get) => {
       if (enemy.speed > 0 && b.enemyGauge >= 100) {
         b.enemyGauge = 0
         b.actions += 1
-        const reduction = Math.floor(nextData.skills.physique.tier / 2)
+        const reduction =
+          Math.floor(nextData.skills.physique.tier / 2) +
+          (nextData.flags.book_defense_notes ? 1 : 0)
         const dmg = Math.max(1, enemy.attack + randInt(0, 2) - reduction)
         b.playerHp = Math.max(0, b.playerHp - dmg)
         const line = enemy.attackLines.length
@@ -1458,12 +1460,17 @@ export const useGame = create<Store>((set, get) => {
         return
       }
 
+      const bookBonus =
+        (kind === 'sword' && data.flags.book_sword_manual) ||
+        (kind === 'brawl' && data.flags.book_brawl_manual)
+          ? 1
+          : 0
       const [min, max] = attackDamageRange(
         kind,
         data.skills[kind].tier,
         mainHand,
         enemy.defense,
-        kind === 'sword' && data.flags.book_sword_manual ? 1 : 0,
+        bookBonus,
       )
       const dmg = randInt(min, max)
       const next = structuredClone(data)
@@ -1808,7 +1815,7 @@ export const useGame = create<Store>((set, get) => {
           const parts: string[] = []
           if (reward.mood) parts.push(`心情 +${reward.mood}`)
           if (reward.spirit) parts.push(`精神 +${reward.spirit}`)
-          if (reward.exp) parts.push('经验提升')
+          if (reward.exp) parts.push(reward.text ?? '经验提升')
           if (reward.flag) parts.push(reward.text ?? '记下了一些东西')
           const rewardText = parts.length ? `${parts.join('，')}。` : ''
           if (book.repeatable) {
@@ -2900,6 +2907,13 @@ export const useGame = create<Store>((set, get) => {
       const stock = stockMap[id]
       if (!def || !stock) {
         set({ message: '这里不卖这个。' })
+        return
+      }
+      if (
+        def.type === 'book' &&
+        ((data.inventory[id] ?? 0) > 0 || data.bookshelf.includes(id))
+      ) {
+        set({ message: '你已经有一本了。' })
         return
       }
       const soldKey = `${data.location}:${id}`

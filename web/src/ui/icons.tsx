@@ -160,6 +160,11 @@ export function ItemIcon({ id, size = 32 }: { id: string; size?: number }) {
       return <BookIcon size={size} />
     case 'sword_manual':
       return <BookIcon size={size} />
+    case 'brawl_manual':
+    case 'defense_notes':
+    case 'old_city_stories':
+    case 'silver_moon_lore':
+      return <BookIcon size={size} />
     default:
       return (
         <svg {...base(size)} aria-hidden="true">
