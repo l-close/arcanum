@@ -165,6 +165,42 @@ export const ITEMS: Record<string, ItemDef> = {
     medium: false,
     desc: '半透明的胶质，摸起来凉而弹。杂货店会收。',
   },
+  beast_hide: {
+    id: 'beast_hide',
+    name: '兽皮',
+    type: 'material',
+    quality: 'common',
+    price: 5,
+    medium: false,
+    desc: '从野兽身上剥下的皮，边缘还带着毛。杂货店会收。',
+  },
+  boar_tusk: {
+    id: 'boar_tusk',
+    name: '野猪牙',
+    type: 'material',
+    quality: 'rare',
+    price: 15,
+    medium: false,
+    desc: '一根粗壮的野猪獠牙，表面泛着黄。很少见，杂货店会收。',
+  },
+  bloodherb: {
+    id: 'bloodherb',
+    name: '止血草',
+    type: 'material',
+    quality: 'common',
+    price: 3,
+    medium: false,
+    desc: '叶背带一点暗红的草药。碾碎后有股涩味。',
+  },
+  bitterleaf: {
+    id: 'bitterleaf',
+    name: '苦叶',
+    type: 'material',
+    quality: 'common',
+    price: 2,
+    medium: false,
+    desc: '一种味道很苦的叶子。晒干后能放很久。',
+  },
   picture_book: {
     id: 'picture_book',
     name: '绘本',
@@ -893,6 +929,24 @@ export const ENEMIES: Record<string, EnemyDef> = {
     ],
     defeatLine: '他退进林子，刀掉在地上。你没有追。',
   },
+  boar: {
+    id: 'boar',
+    name: '野猪',
+    desc: '一头结实的野猪，肩背隆起，獠牙从嘴角支出来。',
+    hp: 70,
+    attack: 11,
+    defense: 2,
+    speed: 2.4,
+    expValue: 1.4,
+    intro:
+      '灌木被撞开。\n一头野猪低下头，獠牙从嘴角支出来。',
+    attackLines: [
+      '野猪低头撞过来，肩膀撞在你身上。',
+      '它用獠牙挑了一下，泥土被掀起来。',
+      '野猪喷着气，又冲了一次。',
+    ],
+    defeatLine: '野猪退了两步，转身撞进灌木里，很快没了声音。',
+  },
 }
 
 export function spiritCost(base: number, mood: number): number {
@@ -1171,6 +1225,13 @@ export const LOCATIONS: Location[] = [
     desc: '树木很快密了起来，脚下的落叶踩上去很软。远处偶尔传来枝叶晃动的声音。',
   },
   {
+    id: 'forestDeep',
+    name: '森林深处',
+    parent: 'forest',
+    kind: 'room',
+    desc: '树木更密，光被枝叶切成碎片。脚下的落叶很厚，远处偶尔有重物压过灌木的声音。',
+  },
+  {
     id: 'teleportRoom',
     name: '传送室',
     parent: 'academy',
@@ -1374,6 +1435,11 @@ const DESC_BY_TIME: Record<string, [string, string, string]> = {
     '树木很快密了起来，晨光被叶子切成碎片，脚下全是湿的落叶。',
     '树木很快密了起来，脚下的落叶踩上去很软。远处偶尔传来枝叶晃动的声音。',
     '林子里几乎看不见路，枝叶在风里发出细碎的响声。',
+  ],
+  forestDeep: [
+    '树木更密，晨光只剩下几道细线。落叶很厚，踩下去几乎没有声音。',
+    '光被枝叶切成碎片，远处的灌木偶尔动一下，又安静下来。',
+    '林子深处几乎全黑，只有脚下的落叶反着一点微光。',
   ],
   westTown: [
     '雾还没散，街上只有几个裹着旧衣的人。多数店铺的门板还关着。',
@@ -1851,6 +1917,7 @@ const OUTDOOR = new Set([
   'outside',
   'cemetery',
   'forest',
+  'forestDeep',
 ])
 
 export type WeatherKind = 'sunny' | 'cloudy' | 'overcast' | 'rain' | 'snow'
@@ -2333,6 +2400,11 @@ export const FOREST_WALK_STAMINA = 1
 export const FOREST_WALK_MOOD = 1
 export const FOREST_ENCOUNTER_CHANCE = 0.25
 export const SLIME_GEL_DROP_CHANCE = 0.6
+export const WOLF_HIDE_DROP_CHANCE = 0.6
+export const BOAR_HIDE_DROP_CHANCE = 0.6
+export const BOAR_TUSK_DROP_CHANCE = 0.2
+export const FOREST_DEEP_ENCOUNTER_CHANCE = 0.2
+export const HERB_GATHER_SUCCESS_CHANCE = 0.6
 export const MATERIAL_SELL_LOCATION = 'shop'
 
 export type SocialTier = 'far' | 'familiar' | 'close'

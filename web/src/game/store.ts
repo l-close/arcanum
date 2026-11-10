@@ -92,6 +92,11 @@ import {
   SPELLS,
   FIREBALL_READING_EXP,
   SLIME_GEL_DROP_CHANCE,
+  WOLF_HIDE_DROP_CHANCE,
+  BOAR_HIDE_DROP_CHANCE,
+  BOAR_TUSK_DROP_CHANCE,
+  FOREST_DEEP_ENCOUNTER_CHANCE,
+  HERB_GATHER_SUCCESS_CHANCE,
   TAVERN_DRINK_END,
   TAVERN_LISTEN_SCENES,
   TAVERN_OPEN_END,
@@ -764,6 +769,8 @@ type Store = {
   prepareRite: () => void
   sweepGrave: () => void
   walkForest: () => void
+  exploreForestDeep: () => void
+  gatherHerbs: () => void
   chatWithNpc: (id: string) => boolean
   wait: (minutes: number) => void
   workShop: () => void
@@ -1599,10 +1606,24 @@ export const useGame = create<Store>((set, get) => {
           return `${SKILL_LABEL[key]}经验 +${enemy.expValue}`
         })
         if (gains.length) pushLog(next, `战斗经验：${gains.join('、')}。`)
+        const addDrop = (id: string, text: string) => {
+          next.inventory[id] = (next.inventory[id] ?? 0) + 1
+          dropText += ` ${text}`
+          pushLog(next, `你获得${ITEMS[id]?.name ?? id} ×1。`)
+        }
         if (enemy.id === 'slime' && Math.random() < SLIME_GEL_DROP_CHANCE) {
-          next.inventory.slime_gel = (next.inventory.slime_gel ?? 0) + 1
-          dropText = ' 你从史莱姆留下的胶质里拾到一块凝胶。'
-          pushLog(next, '你获得史莱姆凝胶 ×1。')
+          addDrop('slime_gel', '你从史莱姆留下的胶质里拾到一块凝胶。')
+        }
+        if (enemy.id === 'gray_wolf' && Math.random() < WOLF_HIDE_DROP_CHANCE) {
+          addDrop('beast_hide', '你从灰狼身上剥下一张兽皮。')
+        }
+        if (enemy.id === 'boar') {
+          if (Math.random() < BOAR_HIDE_DROP_CHANCE) {
+            addDrop('beast_hide', '你从野猪身上剥下一张兽皮。')
+          }
+          if (Math.random() < BOAR_TUSK_DROP_CHANCE) {
+            addDrop('boar_tusk', '你撬下一根野猪牙。')
+          }
         }
       }
       const report = semesterEndFor(data.day, next.day)
@@ -2762,6 +2783,63 @@ export const useGame = create<Store>((set, get) => {
           message: '',
         })
       }
+    },
+
+    exploreForestDeep: () => {
+      const { data } = get()
+      if (data.location !== 'forestDeep') {
+        set({ message: '这里不是森林深处。' })
+        return
+      }
+      if (data.stamina < 6) {
+        set({ message: '你太累了，先休息一下。' })
+        return
+      }
+      const encounter = Math.random() < FOREST_DEEP_ENCOUNTER_CHANCE
+      mutate((d) => {
+        advanceTime(d, 30)
+        d.stamina = clamp(d.stamina - 6, 0, maxStamina(d.skills.physique.tier))
+        const text = encounter
+          ? '前面的灌木被什么东西撞开，枝叶还在晃。'
+          : '你往林子深处走了一段。除了被踩倒的草和新泥印，什么也没发现。'
+        pushLog(d, text)
+        return text
+      })
+      if (encounter) {
+        const enemyId = Math.random() < 0.6 ? 'boar' : 'gray_wolf'
+        get().startWildBattle(enemyId, 0)
+      }
+    },
+
+    gatherHerbs: () => {
+      const { data } = get()
+      if (data.location !== 'forestDeep') {
+        set({ message: '这里不是森林深处。' })
+        return
+      }
+      if (data.stamina < 3) {
+        set({ message: '你太累了，先休息一下。' })
+        return
+      }
+      const success = Math.random() < HERB_GATHER_SUCCESS_CHANCE
+      const herbId = Math.random() < 0.5 ? 'bloodherb' : 'bitterleaf'
+      mutate((d) => {
+        advanceTime(d, 30)
+        d.stamina = clamp(d.stamina - 3, 0, maxStamina(d.skills.physique.tier))
+        if (success) {
+          d.inventory[herbId] = (d.inventory[herbId] ?? 0) + 1
+          const def = ITEMS[herbId]
+          const text =
+            herbId === 'bloodherb'
+              ? '你在树根边找到了一株止血草。'
+              : '你摘了几片苦叶。'
+          pushLog(d, text)
+          return `${text} 获得${def.name} ×1。`
+        }
+        const text = '你蹲在林子里找了一会儿，只翻到几片不能用的叶子。'
+        pushLog(d, text)
+        return text
+      })
     },
 
     chatWithNpc: (id) => {

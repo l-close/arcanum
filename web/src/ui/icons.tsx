@@ -126,8 +126,53 @@ export function BookIcon({ size = 32 }: IconProps) {
   )
 }
 
-export function DryRationIcon({ size = 32 }: IconProps) {
+export function BeastHideIcon({ size = 32 }: IconProps) {
   return (
+    <svg {...base(size)} aria-hidden="true">
+      <rect x="4" y="3" width="8" height="2" fill="#8a623f" />
+      <rect x="3" y="5" width="10" height="6" fill="#a8784f" />
+      <rect x="4" y="11" width="8" height="2" fill="#7a5538" />
+      <rect x="5" y="6" width="3" height="1" fill="#c9a06e" />
+      <rect x="8" y="8" width="3" height="1" fill="#c9a06e" />
+    </svg>
+  )
+}
+
+export function BoarTuskIcon({ size = 32 }: IconProps) {
+  return (
+    <svg {...base(size)} aria-hidden="true">
+      <rect x="4" y="10" width="2" height="3" fill="#d8c9a8" />
+      <rect x="6" y="7" width="2" height="4" fill="#e8dcc0" />
+      <rect x="8" y="4" width="2" height="4" fill="#f0e8d2" />
+      <rect x="10" y="3" width="2" height="2" fill="#f7f1e0" />
+    </svg>
+  )
+}
+
+export function BloodHerbIcon({ size = 32 }: IconProps) {
+  return (
+    <svg {...base(size)} aria-hidden="true">
+      <rect x="7" y="4" width="2" height="9" fill="#5f7a46" />
+      <rect x="4" y="6" width="3" height="2" fill="#6f9a52" />
+      <rect x="9" y="8" width="3" height="2" fill="#6f9a52" />
+      <rect x="5" y="10" width="2" height="2" fill="#8a4a42" />
+      <rect x="9" y="11" width="2" height="1" fill="#8a4a42" />
+    </svg>
+  )
+}
+
+export function BitterleafIcon({ size = 32 }: IconProps) {
+  return (
+    <svg {...base(size)} aria-hidden="true">
+      <rect x="7" y="4" width="2" height="9" fill="#537044" />
+      <rect x="4" y="5" width="3" height="3" fill="#6f9a52" />
+      <rect x="9" y="7" width="3" height="3" fill="#6f9a52" />
+      <rect x="5" y="10" width="3" height="2" fill="#5f8448" />
+    </svg>
+  )
+}
+
+export function DryRationIcon({ size = 32 }: IconProps) {  return (
     <svg {...base(size)} aria-hidden="true">
       <rect x="3" y="5" width="10" height="6" fill="#b08a58" />
       <rect x="4" y="6" width="8" height="1" fill="#d8b47a" />
@@ -156,6 +201,14 @@ export function ItemIcon({ id, size = 32 }: { id: string; size?: number }) {
       return <DryRationIcon size={size} />
     case 'slime_gel':
       return <SlimeGelIcon size={size} />
+    case 'beast_hide':
+      return <BeastHideIcon size={size} />
+    case 'boar_tusk':
+      return <BoarTuskIcon size={size} />
+    case 'bloodherb':
+      return <BloodHerbIcon size={size} />
+    case 'bitterleaf':
+      return <BitterleafIcon size={size} />
     case 'picture_book':
       return <BookIcon size={size} />
     case 'sword_manual':

@@ -1019,6 +1019,8 @@ function Actions({
   const prepareRite = useGame((s) => s.prepareRite)
   const sweepGrave = useGame((s) => s.sweepGrave)
   const walkForest = useGame((s) => s.walkForest)
+  const exploreForestDeep = useGame((s) => s.exploreForestDeep)
+  const gatherHerbs = useGame((s) => s.gatherHerbs)
   const tidyDonations = useGame((s) => s.tidyDonations)
   const careForPatients = useGame((s) => s.careForPatients)
   const treatAtRelief = useGame((s) => s.treatAtRelief)
@@ -1491,6 +1493,12 @@ function Actions({
           label="走走"
           cost={`${FOREST_WALK_MINUTES} 分钟 · 体力 -${FOREST_WALK_STAMINA} · 心情 +${FOREST_WALK_MOOD}`}
         />
+      )}
+      {loc === 'forestDeep' && (
+        <>
+          <ActionBtn onClick={exploreForestDeep} label="探索" cost="30 分钟 · 体力 -6" />
+          <ActionBtn onClick={gatherHerbs} label="采药" cost="30 分钟 · 体力 -3" />
+        </>
       )}
       {data.stamina < REST_THRESHOLD && (
         <ActionBtn onClick={rest} label="原地休息" cost="30 分钟" />
