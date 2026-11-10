@@ -799,6 +799,7 @@ type Store = {
   battleAttack: (kind: 'brawl' | 'sword') => void
   battleCast: (spellId: string) => void
   battleUseItem: (id: string) => void
+  battleChangeWeapon: (id: string) => void
   battleYield: () => void
   battleClose: () => void
 
@@ -1684,6 +1685,27 @@ export const useGame = create<Store>((set, get) => {
         b,
         `你使用了${def.name}。${healHp ? `生命 +${healHp}。` : ''}${healMana ? `魔力 +${healMana}。` : ''}`,
       )
+      set({ battle: b, data: next })
+    },
+
+    battleChangeWeapon: (id) => {
+      const { battle, data } = get()
+      if (!battle || battle.phase !== 'submenu' || battle.submenu !== 'weapon') return
+      const def = ITEMS[id]
+      if (!def || def.type !== 'equipment' || def.slot !== 'mainHand') return
+      if ((data.inventory[id] ?? 0) <= 0) return
+      if (data.equipment.mainHand === id) {
+        set({ message: '已经装备着这件武器。' })
+        return
+      }
+      const next = structuredClone(data)
+      next.equipment.mainHand = id
+      const b: BattleState = { ...battle, log: [...battle.log] }
+      b.actions += 1
+      b.playerGauge = 0
+      b.submenu = null
+      b.phase = 'filling'
+      battleLog(b, `你换上了${def.name}。`)
       set({ battle: b, data: next })
     },
 

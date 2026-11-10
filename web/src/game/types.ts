@@ -135,7 +135,7 @@ export type SaveData = {
 
 export type BattlePhase = 'filling' | 'casting' | 'player' | 'submenu' | 'victory' | 'defeat'
 
-export type BattleSubmenu = 'attack' | 'spell' | 'item' | null
+export type BattleSubmenu = 'attack' | 'spell' | 'item' | 'weapon' | null
 
 export type BattleCasting = {
   spellId: string

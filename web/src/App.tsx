@@ -554,6 +554,7 @@ function BattleView() {
   const attack = useGame((s) => s.battleAttack)
   const cast = useGame((s) => s.battleCast)
   const useItem = useGame((s) => s.battleUseItem)
+  const changeWeapon = useGame((s) => s.battleChangeWeapon)
   const yieldBattle = useGame((s) => s.battleYield)
   const close = useGame((s) => s.battleClose)
   const logRef = useRef<HTMLDivElement>(null)
@@ -578,6 +579,13 @@ function BattleView() {
   const hpMax = maxHp(data.skills.physique.tier)
   const mainHand = data.equipment.mainHand
   const weapon = mainHand ? ITEMS[mainHand] : null
+  const battleWeapons = Object.entries(data.inventory)
+    .filter(([id, qty]) => {
+      const def = ITEMS[id]
+      return qty > 0 && def?.type === 'equipment' && def.slot === 'mainHand'
+    })
+    .sort(([a], [b]) => (a === mainHand ? -1 : b === mainHand ? 1 : 0))
+  const hasOtherWeapon = battleWeapons.some(([id]) => id !== mainHand)
   const swordEquipped = weapon?.weapon === 'sword'
   const hasMedium = !!weapon?.medium
   const fireball = SPELLS.fireball
@@ -718,6 +726,10 @@ function BattleView() {
               {battleItems.length === 0 ? '没有可用物品' : `${battleItems.length} 种`}
             </span>
           </button>
+          <button className="battle-action-btn" onClick={() => openSubmenu('weapon')}>
+            <span className="battle-action-label">换武器</span>
+            <span className="battle-action-cost">{weapon?.name ?? '未装备主手'}</span>
+          </button>
           <button className="battle-action-btn danger" onClick={yieldBattle}>
             <span className="battle-action-label">{battle.kind === 'wild' ? '逃跑' : '认输'}</span>
             <span className="battle-action-cost">
@@ -743,6 +755,46 @@ function BattleView() {
             <small>{swordEquipped ? `剑 · ${rangeText(swordRange)}` : '需要装备剑'}</small>
           </button>
           <button className="battle-back" onClick={back}>返回</button>
+        </div>
+      )}
+
+      {battle.phase === 'submenu' && battle.submenu === 'weapon' && (
+        <div className="battle-subpanel">
+          <div className="battle-sub-title">换武器</div>
+          {battleWeapons.length === 0 ? (
+            <div className="hint">背包里没有主手武器。</div>
+          ) : (
+            <>
+              {battleWeapons.map(([id, qty]) => {
+                const def = ITEMS[id]
+                const equipped = mainHand === id
+                const kindLabel = def.medium
+                  ? '施法媒介'
+                  : def.weapon === 'sword'
+                    ? '剑'
+                    : '主手'
+                return (
+                  <button
+                    key={id}
+                    className="battle-sub-btn"
+                    disabled={equipped}
+                    onClick={() => changeWeapon(id)}
+                  >
+                    <span>
+                      {def.name} ×{qty}
+                    </span>
+                    <small>
+                      {equipped ? '已装备' : `${kindLabel} · 威力 ${def.power ?? 0}`}
+                    </small>
+                  </button>
+                )
+              })}
+              {!hasOtherWeapon && <div className="hint">没有其他主手武器。</div>}
+            </>
+          )}
+          <button className="battle-back" onClick={back}>
+            返回
+          </button>
         </div>
       )}
 

@@ -1290,7 +1290,7 @@ button:disabled {
 .battle-log-line { color: var(--text); font-size: 14px; line-height: 1.65; }
 .battle-hint { color: var(--muted); font-size: 12px; text-align: center; padding: 8px; }
 
-.battle-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.battle-actions { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 
 .battle-action-btn {
   display: flex;
