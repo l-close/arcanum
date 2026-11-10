@@ -6,3 +6,6 @@ web/.vite/
 *.docx
 ~$*
 .DS_Store
+SIGNING_SECRETS.txt
+arcanum-release.p12.b64
+BACKUP_PASSWORD.txt
