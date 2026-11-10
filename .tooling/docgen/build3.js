@@ -1417,6 +1417,20 @@ function designChildren() {
   c.push(bullet("构建 APK 前同步提升 Android versionCode 与 versionName。"));
   c.push(bullet("APK 固定签名已接入并配置 GitHub Secrets：workflow 解码 keystore，build.gradle 的 debug 签名读取环境变量；固定签名后的第一版仍需卸载一次，之后可覆盖更新。"));
 
+  c.push(h2("版本号规则"));
+  c.push(p("版本号格式：主版本 . 小版本 . 补丁（x.y.z）。"));
+  c.push(table([
+    ["位", "含义", "例子"],
+    ["x 主版本", "大版本、学年篇、大规模重构", "第二版 → 第三版"],
+    ["y 小版本", "新内容包、新系统、新区域、新课程", "药剂工坊、城市四季、西镇阶段 2"],
+    ["z 补丁", "修复、UI、文本、平衡、小功能", "地图布局、换武器、掉率调整"],
+  ], [18, 46, 36]));
+  c.push(bullet("边界：新系统 / 新区域 / 新课程 / 一整包新事件算小版本；现有系统里的小功能、按钮、UI、文本、数值算补丁。"));
+  c.push(bullet("几个小补丁连续发布时，继续加第三个数字，不升小版本。"));
+  c.push(bullet("每次发布同步 package.json 的 version、build.gradle 的 versionName、README 标题、游戏内页脚与 Git 标签 vX.Y.Z。"));
+  c.push(bullet("APK 的 versionCode 每次发布 +1，不参与 x.y.z 的语义；APK 标签为 apk-vX.Y.Z。"));
+  c.push(bullet("已经发布的版本号和标签不回头修改，规则从下一个版本开始执行。"));
+
   c.push(h1("十七、待定事项"));
   [
     "游戏名称（暂用 arcanum）。",
