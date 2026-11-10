@@ -356,24 +356,28 @@ button:disabled {
 }
 
 .city-map {
-  margin: 14px 0 0;
+  width: max-content;
+  max-width: 100%;
+  margin: 14px auto 0;
   padding: 6px 8px;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.015);
   display: grid;
-  grid-template-columns: auto 18px auto 18px auto;
-  grid-template-rows: auto 10px auto 10px auto 10px auto;
+  grid-template-columns: max-content 80px max-content 80px max-content;
+  grid-template-rows: auto 24px auto 24px auto 24px auto;
   justify-items: center;
   align-items: center;
 }
 .map-node {
   display: inline-block;
+  min-width: 72px;
   padding: 1px 8px;
   border: 1px solid var(--line);
   color: var(--muted);
   font-size: 11px;
   line-height: 1.3;
   letter-spacing: 0.06em;
+  text-align: center;
   white-space: nowrap;
 }
 .map-node.near { color: var(--text); border-color: rgba(255, 255, 255, 0.18); }
@@ -390,14 +394,20 @@ button:disabled {
 .map-node.map-academy { grid-column: 5; grid-row: 3; }
 .map-node.map-commercial { grid-column: 3; grid-row: 5; }
 .map-node.map-gate { grid-column: 3; grid-row: 7; }
-.map-line-v { width: 2px; height: 10px; background: rgba(255, 255, 255, 0.3); }
+.map-line-v { width: 2px; height: 24px; background: rgba(255, 255, 255, 0.3); }
 .map-line-v-church { grid-column: 1; grid-row: 2; }
 .map-line-v-craft { grid-column: 3; grid-row: 2; }
 .map-line-v-town { grid-column: 3; grid-row: 4; }
 .map-line-v-gate { grid-column: 3; grid-row: 6; }
-.map-line-h { width: 18px; height: 1px; background: rgba(255, 255, 255, 0.22); }
+.map-line-h { width: 100%; height: 1px; background: rgba(255, 255, 255, 0.22); }
 .map-line-h-left { grid-column: 2; grid-row: 3; }
 .map-line-h-right { grid-column: 4; grid-row: 3; }
+
+@media (max-width: 600px) {
+  .city-map {
+    grid-template-columns: max-content 32px max-content 32px max-content;
+  }
+}
 
 .loc-npcs {
   margin-top: 8px;
