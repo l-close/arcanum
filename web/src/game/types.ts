@@ -71,6 +71,11 @@ export type RuneShopState = {
   looked: boolean
 }
 
+export type StarWatchState = {
+  night: number
+  watched: boolean
+}
+
 export type ExamResult = 'pass' | 'fail' | 'absent'
 
 export type ExamPackage = {
@@ -124,6 +129,8 @@ export type GameData = {
   greenhouse: GreenhouseState
   runeShop: RuneShopState
   engravings: Record<string, string[]>
+  starChart: string[]
+  starWatch: StarWatchState
   combatBuffs: CombatBuffs
   events: {
     day: number

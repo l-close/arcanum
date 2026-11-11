@@ -193,6 +193,18 @@ import {
   RUNES,
   runeApplicable,
   runeById,
+  CONSTELLATIONS,
+  OBSERVE_KNOWLEDGE,
+  OBSERVE_MINUTES,
+  OBSERVE_MOOD,
+  OBSERVE_SPIRIT,
+  OBSERVE_TEXTS,
+  CALENDAR_MINUTES,
+  STAR_CHART_MINUTES,
+  observatoryOpenAt,
+  nightKey,
+  currentConstellation,
+  weatherBlocksStars,
 } from './content'
 import {
   EVENTS,
@@ -277,6 +289,8 @@ export function freshData(): GameData {
     greenhouse: { day: -1, visited: false },
     runeShop: { day: -1, looked: false },
     engravings: {},
+    starChart: [],
+    starWatch: { night: -1, watched: false },
     combatBuffs: { sharpUntil: 0, stoneUntil: 0, swiftUntil: 0 },
     events: { day: 0, count: 0, today: [], lastSeen: {}, lastAt: -9999, seen: [] },
     examPackages: [],
@@ -485,6 +499,13 @@ export function normalizeData(raw: GameData): GameData {
         Array.isArray(runes) ? runes.filter((r) => typeof r === 'string') : [],
       ]),
     ),
+    starChart: Array.isArray(raw.starChart)
+      ? raw.starChart.filter((id) => CONSTELLATIONS.some((c) => c.id === id))
+      : [],
+    starWatch: {
+      night: raw.starWatch?.night ?? -1,
+      watched: !!raw.starWatch?.watched,
+    },
     combatBuffs: {
       sharpUntil: raw.combatBuffs?.sharpUntil ?? 0,
       stoneUntil: raw.combatBuffs?.stoneUntil ?? 0,
@@ -574,6 +595,9 @@ function closeTimedLocation(d: GameData): void {
   ) {
     d.location = 'commercial'
     pushLog(d, '赛拉斯把铺子的门板上好，你回到商业区。')
+  } else if (d.location === 'observatory' && !observatoryOpenAt(d.minutes)) {
+    d.location = 'gate'
+    pushLog(d, '伊芙把天窗合上，你回到城门。')
   }
 }
 
@@ -806,7 +830,7 @@ function applyStoryEffects(d: GameData, e?: StoryEffects): void {
   if (e.location) d.location = e.location
 }
 
-type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'brew' | 'workshop' | 'engrave' | null
+type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'brew' | 'workshop' | 'engrave' | 'starChart' | 'calendar' | null
 
 type TitlePanel = 'saves' | 'export' | 'import' | null
 
@@ -900,6 +924,9 @@ type Store = {
   identifyHerbs: () => void
   lookAtRunes: () => void
   engraveRune: (itemId: string, runeId: string) => void
+  observeStars: () => void
+  askCalendar: () => void
+  openStarChart: () => void
   helpBackyard: () => void
   helpOrphanKids: () => void
   joinRite: () => void
@@ -1904,6 +1931,10 @@ export const useGame = create<Store>((set, get) => {
       }
       if (id === 'runeShop' && !isTimeWindow(data.minutes, RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END)) {
         set({ message: '符文刻印铺已经上板了。' })
+        return
+      }
+      if (id === 'observatory' && !observatoryOpenAt(data.minutes)) {
+        set({ message: '星象台已经关门了。' })
         return
       }
       const cost = edge.minutes
@@ -2970,6 +3001,92 @@ export const useGame = create<Store>((set, get) => {
         return text
       })
       if (get().data.location !== 'runeShop') set({ modal: null })
+    },
+
+    observeStars: () => {
+      const { data } = get()
+      if (data.location !== 'observatory') {
+        set({ message: '这里不是星象台。' })
+        return
+      }
+      if (!observatoryOpenAt(data.minutes)) {
+        set({ message: '星象台已经关门了。' })
+        return
+      }
+      if (data.spirit <= OBSERVE_SPIRIT) {
+        set({ message: '精神不足，没法集中注意力。' })
+        return
+      }
+      const observationDay = data.day
+      const night = nightKey(data.day, data.minutes)
+      const constellation = currentConstellation(observationDay)
+      const recorded = data.starChart.includes(constellation.id)
+      const blocked = weatherBlocksStars(night)
+      mutate((d) => {
+        advanceTime(d, OBSERVE_MINUTES)
+        d.spirit = clamp(d.spirit - OBSERVE_SPIRIT, 0, maxSpirit(d.skills.will.tier))
+        const first = d.starWatch.night !== night || !d.starWatch.watched
+        if (first) {
+          d.mood = clamp(d.mood + OBSERVE_MOOD, 0, 100)
+          d.starWatch = { night, watched: true }
+        }
+        const base = OBSERVE_TEXTS[(d.day + Math.floor(d.minutes / 30)) % OBSERVE_TEXTS.length]
+        let text = base
+        if (!recorded && !blocked) {
+          d.starChart = [...d.starChart, constellation.id]
+          addExp(d, 'knowledge', OBSERVE_KNOWLEDGE)
+          text += `\n\n${constellation.name}：${constellation.lore}\n知识经验 +${OBSERVE_KNOWLEDGE}。`
+          if (
+            d.starChart.length === CONSTELLATIONS.length &&
+            !d.flags.star_chart_complete
+          ) {
+            d.flags.star_chart_complete = true
+            text += '\n伊芙把最后一笔写完，看了你一眼：“四季都齐了。”'
+          }
+        } else if (!recorded && blocked) {
+          text += '\n\n云太厚，今晚看不到星星。'
+        }
+        if (first) text += ` 心情 +${OBSERVE_MOOD}。`
+        closeTimedLocation(d)
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    askCalendar: () => {
+      const { data } = get()
+      if (data.location !== 'observatory') {
+        set({ message: '这里不是星象台。' })
+        return
+      }
+      if (!observatoryOpenAt(data.minutes)) {
+        set({ message: '星象台已经关门了。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, CALENDAR_MINUTES)
+        closeTimedLocation(d)
+        return '伊芙翻了翻星图。'
+      })
+      set({ modal: 'calendar' })
+    },
+
+    openStarChart: () => {
+      const { data } = get()
+      if (data.location !== 'observatory') {
+        set({ message: '这里不是星象台。' })
+        return
+      }
+      if (!observatoryOpenAt(data.minutes)) {
+        set({ message: '星象台已经关门了。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, STAR_CHART_MINUTES)
+        closeTimedLocation(d)
+        return '你翻了翻伊芙的星图。'
+      })
+      set({ modal: 'starChart' })
     },
 
     helpBackyard: () => {

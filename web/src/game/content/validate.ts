@@ -1,6 +1,7 @@
 import {
   BOOKS,
   COMBAT_BUFF_LABEL,
+  CONSTELLATIONS,
   COURSES,
   ENEMIES,
   EQUIPMENT_SLOTS,
@@ -62,6 +63,23 @@ export function validateContent(): ContentIssue[] {
   checkUnique('events', EVENTS.map((e) => e.id))
   checkUnique('story', STORY.map((s) => s.id))
   checkUnique('runes', RUNES.map((r) => r.id))
+  checkUnique('constellations', CONSTELLATIONS.map((c) => c.id))
+
+  for (const constellation of CONSTELLATIONS) {
+    if (!constellation.name) error('constellations', `${constellation.id}: 缺少名字`)
+    if (!constellation.lore) error('constellations', `${constellation.id}: 缺少说明`)
+    if (constellation.stars.length === 0) {
+      error('constellations', `${constellation.id}: 没有星点`)
+    }
+    for (const [a, b] of constellation.lines) {
+      if (!constellation.stars[a] || !constellation.stars[b]) {
+        error('constellations', `${constellation.id}: 星线 ${a}-${b} 超出星点范围`)
+      }
+    }
+  }
+  if (new Set(CONSTELLATIONS.map((c) => c.season)).size !== 4) {
+    warn('constellations', '四季星座没有覆盖全部四个季节')
+  }
 
   for (const rune of RUNES) {
     if (rune.price < 0) error('runes', `${rune.id}: price 为负`)

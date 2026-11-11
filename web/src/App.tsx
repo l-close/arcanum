@@ -20,6 +20,10 @@ import {
   RUNE_SHOP_OPEN_START,
   RUNES,
   runeApplicable,
+  observatoryOpenAt,
+  CONSTELLATIONS,
+  SEASON_LABEL,
+  calendarInfo,
   FOREST_WALK_MINUTES,
   FOREST_WALK_MOOD,
   FOREST_WALK_STAMINA,
@@ -519,6 +523,8 @@ function GameScreen() {
       {modal === 'brew' && <BrewModal />}
       {modal === 'workshop' && <WorkshopModal />}
       {modal === 'engrave' && <EngraveModal />}
+      {modal === 'starChart' && <StarChartModal />}
+      {modal === 'calendar' && <CalendarModal />}
       {modal === 'drinks' && <DrinkModal />}
       {modal === 'save' && <SavesModal />}
       {modal === 'export' && <ExportModal />}
@@ -1116,6 +1122,9 @@ function Actions({
   const visitGreenhouse = useGame((s) => s.visitGreenhouse)
   const identifyHerbs = useGame((s) => s.identifyHerbs)
   const lookAtRunes = useGame((s) => s.lookAtRunes)
+  const observeStars = useGame((s) => s.observeStars)
+  const askCalendar = useGame((s) => s.askCalendar)
+  const openStarChart = useGame((s) => s.openStarChart)
   const eat = useGame((s) => s.eat)
   const rest = useGame((s) => s.rest)
   const workShop = useGame((s) => s.workShop)
@@ -1478,6 +1487,16 @@ function Actions({
           </>
         ) : (
           <div className="hint">铺子已经上板了。</div>
+        ))}
+      {loc === 'observatory' &&
+        (observatoryOpenAt(data.minutes) ? (
+          <>
+            <ActionBtn onClick={observeStars} label="观星" cost="30 分钟 · 精神 -1" />
+            <ActionBtn onClick={askCalendar} label="问节令" cost="10 分钟" />
+            <ActionBtn onClick={openStarChart} label="看星图" cost="5 分钟" />
+          </>
+        ) : (
+          <div className="hint">星象台已经关门了。</div>
         ))}
       {loc === 'potionWorkshop' &&
         (isTimeWindow(data.minutes, WORKSHOP_OPEN_START, WORKSHOP_OPEN_END) ? (
@@ -3252,6 +3271,96 @@ function EngraveModal() {
           })}
         </div>
       )}
+    </ModalShell>
+  )
+}
+
+function StarChartModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  const recorded = new Set(data.starChart)
+  const count = CONSTELLATIONS.filter((c) => recorded.has(c.id)).length
+
+  return (
+    <ModalShell title="星图" wide onClose={() => setModal(null)}>
+      <div className="star-chart-head">
+        <div>
+          <div className="section-title">四季星座</div>
+          <div className="hint">伊芙的记录</div>
+        </div>
+        <div className="star-count">
+          已记录 {count} / {CONSTELLATIONS.length}
+        </div>
+      </div>
+      <div className="star-progress">
+        <i style={{ width: `${(count / CONSTELLATIONS.length) * 100}%` }} />
+      </div>
+      <div className="star-grid">
+        {CONSTELLATIONS.map((constellation) => {
+          if (!recorded.has(constellation.id)) {
+            return (
+              <div className="star-card off" key={constellation.id}>
+                <span className="star-empty">尚未记录</span>
+              </div>
+            )
+          }
+          return (
+            <div className="star-card on" key={constellation.id}>
+              <div className="star-head">
+                <span className="star-season">{SEASON_LABEL[constellation.season]}</span>
+                <span className="star-state">已记录</span>
+              </div>
+              <div className="star-name">{constellation.name}</div>
+              <svg className="star-sky" viewBox="0 0 100 58" aria-hidden="true">
+                {constellation.lines.map(([a, b], index) => (
+                  <line
+                    key={`l${index}`}
+                    x1={constellation.stars[a][0]}
+                    y1={constellation.stars[a][1]}
+                    x2={constellation.stars[b][0]}
+                    y2={constellation.stars[b][1]}
+                    stroke="#c9a227"
+                    strokeWidth="1"
+                    opacity=".55"
+                  />
+                ))}
+                {constellation.stars.map(([x, y], index) => (
+                  <circle key={`s${index}`} cx={x} cy={y} r={index === 0 ? 2.6 : 2.2} fill="#c9a227" />
+                ))}
+              </svg>
+              <p className="star-lore">{constellation.lore}</p>
+            </div>
+          )
+        })}
+      </div>
+      <p className="hint">星图会跟着季节变化。已记录的星座不会消失。</p>
+    </ModalShell>
+  )
+}
+
+function CalendarModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  const info = calendarInfo(data.day, data.minutes, data.starChart)
+  const rows: Array<[string, string]> = [
+    ['今天', info.date],
+    ['季节', info.season],
+    ['下一次换季', info.nextSeason],
+    ['本月星象', info.constellation],
+    ['下一次考试', info.exam],
+    ['明天天气', info.tomorrowWeather],
+  ]
+  return (
+    <ModalShell title="节令" onClose={() => setModal(null)}>
+      <div className="calendar-list">
+        {rows.map(([label, value]) => (
+          <div className="calendar-row" key={label}>
+            <span className="calendar-label">{label}</span>
+            <span className="calendar-value">{value}</span>
+          </div>
+        ))}
+      </div>
+      <p className="hint">伊芙只记日子，不解释吉凶。</p>
     </ModalShell>
   )
 }

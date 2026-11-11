@@ -231,6 +231,13 @@ export const LOCATIONS: Location[] = [
     desc: '两扇厚重的木门嵌在石墙里，门洞上方刻着褪色的纹章。几名骑士守在两侧。',
   },
   {
+    id: 'observatory',
+    name: '星象台',
+    parent: 'gate',
+    kind: 'room',
+    desc: '城门旁的城墙上有截窄塔，石阶盘旋向上，尽头是一间开着天窗的小屋。黄铜望远镜架在窗边，桌上摊着星图和一支冷掉的茶。',
+  },
+  {
     id: 'outside',
     name: '城外',
     kind: 'wild',
