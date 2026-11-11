@@ -5,7 +5,7 @@ import type {
   Skill,
   SkillKey,
   WestProjectKey,
-} from './types'
+} from '../types'
 
 export const TIER_REQ = [200, 1000, 3000, 7500, 20000]
 
