@@ -134,6 +134,7 @@ import {
   attackDamageRange,
   clamp,
   classSegmentAt,
+  classScene,
   courseById,
   courseExamLocationOn,
   recipeById,
@@ -2612,6 +2613,7 @@ export const useGame = create<Store>((set, get) => {
       const gains = [`${SKILL_LABEL[segment.skill]}经验 +${formatGain(skillGain)}`]
       if (physical) gains.push(`体质经验 +${formatGain(physiqueGain)}`)
       const gainText = gains.join('，')
+      const scene = classScene(segment, data.location)
       mutate((d) => {
         advanceTime(d, remaining)
         if (physical) {
@@ -2622,7 +2624,8 @@ export const useGame = create<Store>((set, get) => {
         addExp(d, segment.skill, skillGain)
         if (physical) addExp(d, 'physique', physiqueGain)
         d.courseMastery[segment.courseId] = (d.courseMastery[segment.courseId] ?? 0) + masteryGain
-        const text = `你${physical ? '练' : '听'}了 ${remaining} 分钟${segment.label}。${gainText}。`
+        const summary = `你${physical ? '练' : '听'}了 ${remaining} 分钟${segment.label}。${gainText}。`
+        const text = scene ? `${scene}\n${summary}` : summary
         pushLog(d, text)
         return text
       })
