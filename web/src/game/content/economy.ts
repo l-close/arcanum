@@ -1,6 +1,7 @@
 // arcanum: economy
 
 import type { Skill } from '../types'
+import { GREENHOUSE_HERB_PRICES, GREENHOUSE_HERB_STOCK } from './greenhouse'
 import { ITEMS } from './items'
 import { TIER_REQ } from './skills'
 
@@ -35,11 +36,13 @@ export const SHOP_STOCKS: Record<string, Record<string, number>> = {
     stone_draught: 2,
     swift_draught: 2,
   },
+  greenhouse: GREENHOUSE_HERB_STOCK,
 }
 
 /** 西镇集市价格：阶段 0 更贵，阶段 1 回落。 */
 export function shopPriceAt(location: string, id: string, westStage = 0): number {
   const base = ITEMS[id]?.price ?? 0
+  if (location === 'greenhouse') return GREENHOUSE_HERB_PRICES[id] ?? base
   if (location !== 'westMarket') return base
   if (id === 'healing_potion') return westStage >= 1 ? 15 : 18
   if (id === 'tonic') return westStage >= 1 ? 10 : 12

@@ -4,12 +4,15 @@ import {
   COURSES,
   ENEMIES,
   EQUIPMENT_SLOTS,
+  GREENHOUSE_HERB_PRICES,
+  GREENHOUSE_HERB_STOCK,
   GUILD_ESCORTS,
   GUILD_JOB_DEFS,
   ITEMS,
   LOCATIONS,
   NPCS,
   RECIPES,
+  RUNES,
   SHOP_STOCKS,
   SPELLS,
   WEST_COMMISSIONS,
@@ -58,6 +61,22 @@ export function validateContent(): ContentIssue[] {
   checkUnique('recipes', RECIPES.map((r) => r.id))
   checkUnique('events', EVENTS.map((e) => e.id))
   checkUnique('story', STORY.map((s) => s.id))
+  checkUnique('runes', RUNES.map((r) => r.id))
+
+  for (const rune of RUNES) {
+    if (rune.price < 0) error('runes', `${rune.id}: price 为负`)
+    if (rune.slots.length === 0) error('runes', `${rune.id}: 没有可用部位`)
+    if (!rune.desc) error('runes', `${rune.id}: 缺少说明`)
+  }
+
+  for (const [id, price] of Object.entries(GREENHOUSE_HERB_PRICES)) {
+    if (!itemIds.has(id)) error('greenhouse', `${id}: 药草价格对应的物品不存在`)
+    if (price < 0) error('greenhouse', `${id}: 价格为负`)
+  }
+  for (const [id, qty] of Object.entries(GREENHOUSE_HERB_STOCK)) {
+    if (!itemIds.has(id)) error('greenhouse', `${id}: 库存对应的物品不存在`)
+    if (qty <= 0) error('greenhouse', `${id}: 库存不大于 0`)
+  }
 
   for (const loc of LOCATIONS) {
     if (loc.parent && !locationIds.has(loc.parent)) {
@@ -87,6 +106,9 @@ export function validateContent(): ContentIssue[] {
     }
     if (item.spellPower !== undefined && !nonNegative(item.spellPower)) {
       error('items', `${item.id}: spellPower 为负`)
+    }
+    if (item.engravingSlots !== undefined && item.engravingSlots < 0) {
+      error('items', `${item.id}: engravingSlots 为负`)
     }
     if (item.effect) {
       for (const key of ['hp', 'mana', 'stamina'] as const) {

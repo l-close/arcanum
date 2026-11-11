@@ -104,6 +104,13 @@ export const LOCATIONS: Location[] = [
     desc: '门口挂着铜釜招牌，熟客都叫这里铜釜工坊。里面是一排排药架和冒着热气的铜锅，学徒抱着货箱进出，空气里有苦味和炭火气。',
   },
   {
+    id: 'greenhouse',
+    name: '魔法植物温室',
+    parent: 'craftDistrict',
+    kind: 'room',
+    desc: '药剂工坊后墙接出一间玻璃温室。矮砖墙托着铁架，斜玻璃顶伸到屋檐下，玻璃内侧刻着一圈保温的细符文。门口挂着手刻的木牌。',
+  },
+  {
     id: 'orphanage',
     name: '孤儿院正厅',
     parent: 'orphanStreet',
@@ -180,6 +187,13 @@ export const LOCATIONS: Location[] = [
     parent: 'commercial',
     kind: 'room',
     desc: '旧书铺里堆着高低不齐的书堆，空气里有纸和灰尘的味道。柜台边摆着几本翻旧了的册子。',
+  },
+  {
+    id: 'runeShop',
+    name: '符文刻印铺',
+    parent: 'commercial',
+    kind: 'room',
+    desc: '商业区靠里的一间窄铺子，门总是半开着。屋里更像工坊，不像店铺：厚木工作台占了半边，台面上摊着刻刀、铜粉和半成品的护符。',
   },
   {
     id: 'church',

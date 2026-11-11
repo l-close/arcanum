@@ -14,6 +14,12 @@ import {
   DRINKS,
   ENEMIES,
   EQUIPMENT_SLOTS,
+  GREENHOUSE_OPEN_END,
+  GREENHOUSE_OPEN_START,
+  RUNE_SHOP_OPEN_END,
+  RUNE_SHOP_OPEN_START,
+  RUNES,
+  runeApplicable,
   FOREST_WALK_MINUTES,
   FOREST_WALK_MOOD,
   FOREST_WALK_STAMINA,
@@ -512,6 +518,7 @@ function GameScreen() {
       {modal === 'shop' && <ShopModal />}
       {modal === 'brew' && <BrewModal />}
       {modal === 'workshop' && <WorkshopModal />}
+      {modal === 'engrave' && <EngraveModal />}
       {modal === 'drinks' && <DrinkModal />}
       {modal === 'save' && <SavesModal />}
       {modal === 'export' && <ExportModal />}
@@ -642,6 +649,11 @@ function BattleView() {
                 ? '战斗结束'
                 : '练习结束'
               : '行动条充能中'
+  const burnText = battle.enemyBurn
+    ? `烧伤 ×${battle.enemyBurn.stacks} · ${(battle.enemyBurn.ticksLeft / 10).toFixed(1)} 秒`
+    : ''
+  const enemyStatus =
+    [burnText, battle.enemyGauge >= 100 ? '行动就绪' : ''].filter(Boolean).join(' · ') || '—'
 
   return (
     <div className="battle-screen">
@@ -665,7 +677,7 @@ function BattleView() {
           kind="gauge"
           ready={battle.enemyGauge >= 100}
         />
-        <div className="battle-status">状态　{battle.enemyGauge >= 100 ? '行动就绪' : '—'}</div>
+        <div className="battle-status">状态　{enemyStatus}</div>
       </div>
 
       <div className="battle-log" ref={logRef}>
@@ -1101,6 +1113,9 @@ function Actions({
   const attendClass = useGame((s) => s.attendClass)
   const slackClass = useGame((s) => s.slackClass)
   const previewClass = useGame((s) => s.previewClass)
+  const visitGreenhouse = useGame((s) => s.visitGreenhouse)
+  const identifyHerbs = useGame((s) => s.identifyHerbs)
+  const lookAtRunes = useGame((s) => s.lookAtRunes)
   const eat = useGame((s) => s.eat)
   const rest = useGame((s) => s.rest)
   const workShop = useGame((s) => s.workShop)
@@ -1445,6 +1460,25 @@ function Actions({
           <ActionBtn onClick={workShop} label="打工" cost="2 小时 · 体力 -10" />
         </>
       )}
+      {loc === 'greenhouse' &&
+        (isTimeWindow(data.minutes, GREENHOUSE_OPEN_START, GREENHOUSE_OPEN_END) ? (
+          <>
+            <ActionBtn onClick={visitGreenhouse} label="参观" cost="15 分钟" />
+            <ActionBtn onClick={identifyHerbs} label="辨认药草" cost="30 分钟 · 精神 -3" />
+            <ActionBtn onClick={() => setModal('shop')} label="买药草" cost="—" />
+          </>
+        ) : (
+          <div className="hint">温室已经锁门了。</div>
+        ))}
+      {loc === 'runeShop' &&
+        (isTimeWindow(data.minutes, RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END) ? (
+          <>
+            <ActionBtn onClick={lookAtRunes} label="看符文" cost="15 分钟" />
+            <ActionBtn onClick={() => setModal('engrave')} label="装备刻印" cost="30 分钟 · 按刻印收费" />
+          </>
+        ) : (
+          <div className="hint">铺子已经上板了。</div>
+        ))}
       {loc === 'potionWorkshop' &&
         (isTimeWindow(data.minutes, WORKSHOP_OPEN_START, WORKSHOP_OPEN_END) ? (
           <>
@@ -3083,9 +3117,10 @@ function ShopModal() {
   const sellable = Object.entries(data.inventory).filter(
     ([id, qty]) => qty > 0 && canSellAt(data.location, id),
   )
+  const title = data.location === 'greenhouse' ? '药草柜台' : getLocation(data.location).name
 
   return (
-    <ModalShell title={getLocation(data.location).name} onClose={() => setModal(null)}>
+    <ModalShell title={title} onClose={() => setModal(null)}>
       <div className={`shop-money${data.money < 0 ? ' debt' : ''}`}>持有：{formatMoney(data.money)}</div>
       <div className="shop-list">
         {Object.entries(stock).length === 0 && <div className="hint">这里今天没有货。</div>}
@@ -3141,6 +3176,77 @@ function ShopModal() {
                   <button className="mini-btn" onClick={() => sellItem(id, true)}>全部卖出</button>
                 </div>
                 <div className="item-desc">全部卖出可得 {price * qty} 铜</div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </ModalShell>
+  )
+}
+
+function EngraveModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  const engraveRune = useGame((s) => s.engraveRune)
+  const equipped = new Set(Object.values(data.equipment).filter(Boolean) as string[])
+  const ids = new Set<string>()
+  for (const [id, qty] of Object.entries(data.inventory)) {
+    if (qty > 0 && ITEMS[id]?.type === 'equipment') ids.add(id)
+  }
+  for (const id of equipped) ids.add(id)
+  const items = [...ids].sort((a, b) => {
+    const ea = equipped.has(a) ? 0 : 1
+    const eb = equipped.has(b) ? 0 : 1
+    if (ea !== eb) return ea - eb
+    return (ITEMS[a]?.name ?? a).localeCompare(ITEMS[b]?.name ?? b, 'zh-CN')
+  })
+
+  return (
+    <ModalShell title="装备刻印" wide onClose={() => setModal(null)}>
+      <div className={`shop-money${data.money < 0 ? ' debt' : ''}`}>持有：{formatMoney(data.money)}</div>
+      <p className="hint">
+        锋刃：近战伤害 +1 · 聚魔：法术伤害 +1 · 坚固：受伤 -1 · 速行：行动条 +5% · 灼燃：40% 概率烧伤
+      </p>
+      <p className="hint">同一物品的刻印共享；重刻会覆盖当前刻印。</p>
+      {items.length === 0 ? (
+        <div className="hint">你身上没有可以刻印的装备。</div>
+      ) : (
+        <div className="engrave-list">
+          {items.map((id) => {
+            const def = ITEMS[id]
+            if (!def) return null
+            const qty = data.inventory[id] ?? 0
+            const currentId = data.engravings[id]?.[0]
+            const current = currentId ? RUNES.find((r) => r.id === currentId) : null
+            const slots = def.engravingSlots ?? 1
+            const applicable = RUNES.filter((rune) => runeApplicable(def, rune))
+            const slotLabel = EQUIPMENT_SLOTS.find((s) => s.key === def.slot)?.label ?? def.slot ?? '装备'
+            return (
+              <div className="engrave-item" key={id}>
+                <div className="engrave-head">
+                  <ItemIcon id={id} size={24} />
+                  <span className="item-name">{def.name}</span>
+                  {equipped.has(id) && <span className="shop-stock">已装备</span>}
+                  {qty > 1 && <span className="shop-stock">×{qty}</span>}
+                  <span className="shop-stock">{slotLabel}</span>
+                </div>
+                <div className="item-desc">
+                  {current ? `刻印：${current.name}` : '未刻印'} · 刻印槽 {current ? 1 : 0}/{slots}
+                </div>
+                <div className="engrave-runes">
+                  {applicable.map((rune) => (
+                    <button
+                      key={rune.id}
+                      className="mini-btn"
+                      disabled={data.money < rune.price || current?.id === rune.id}
+                      onClick={() => engraveRune(id, rune.id)}
+                    >
+                      {rune.name} · {rune.price} 铜
+                    </button>
+                  ))}
+                </div>
+                {current && <div className="hint">重刻会覆盖当前刻印。</div>}
               </div>
             )
           })}

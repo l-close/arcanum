@@ -176,6 +176,23 @@ import {
   exitsOf,
   ENTER_MINUTES,
   weekday,
+  GREENHOUSE_IDENTIFY_EXP,
+  GREENHOUSE_IDENTIFY_MINUTES,
+  GREENHOUSE_IDENTIFY_SPIRIT,
+  GREENHOUSE_IDENTIFY_TEXTS,
+  GREENHOUSE_VISIT_MINUTES,
+  GREENHOUSE_VISIT_MOOD,
+  GREENHOUSE_VISIT_TEXTS,
+  greenhouseOpenAt,
+  RUNE_ENGRAVE_MINUTES,
+  RUNE_LOOK_MINUTES,
+  RUNE_LOOK_MOOD,
+  RUNE_LOOK_TEXTS,
+  RUNE_SHOP_OPEN_END,
+  RUNE_SHOP_OPEN_START,
+  RUNES,
+  runeApplicable,
+  runeById,
 } from './content'
 import {
   EVENTS,
@@ -257,6 +274,9 @@ export function freshData(): GameData {
     meals: { day: 0, breakfast: false, lunch: false, dinner: false },
     relief: { day: 0, cared: false, treated: false, volunteered: false },
     workshop: { brewKitUntilDay: 0, lessonDay: -1 },
+    greenhouse: { day: -1, visited: false },
+    runeShop: { day: -1, looked: false },
+    engravings: {},
     combatBuffs: { sharpUntil: 0, stoneUntil: 0, swiftUntil: 0 },
     events: { day: 0, count: 0, today: [], lastSeen: {}, lastAt: -9999, seen: [] },
     examPackages: [],
@@ -451,6 +471,20 @@ export function normalizeData(raw: GameData): GameData {
       brewKitUntilDay: raw.workshop?.brewKitUntilDay ?? 0,
       lessonDay: raw.workshop?.lessonDay ?? -1,
     },
+    greenhouse: {
+      day: raw.greenhouse?.day ?? -1,
+      visited: !!raw.greenhouse?.visited,
+    },
+    runeShop: {
+      day: raw.runeShop?.day ?? -1,
+      looked: !!raw.runeShop?.looked,
+    },
+    engravings: Object.fromEntries(
+      Object.entries(raw.engravings ?? {}).map(([id, runes]) => [
+        id,
+        Array.isArray(runes) ? runes.filter((r) => typeof r === 'string') : [],
+      ]),
+    ),
     combatBuffs: {
       sharpUntil: raw.combatBuffs?.sharpUntil ?? 0,
       stoneUntil: raw.combatBuffs?.stoneUntil ?? 0,
@@ -515,6 +549,32 @@ function maybeUnlockFireballReading(d: GameData): string | null {
 
 function formatGain(value: number): string {
   return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100)
+}
+
+function itemHasRune(d: GameData, itemId: string | null | undefined, runeId: string): boolean {
+  if (!itemId) return false
+  return (d.engravings[itemId] ?? []).includes(runeId)
+}
+
+function slotHasRune(d: GameData, slot: EquipmentSlot, runeId: string): boolean {
+  return itemHasRune(d, d.equipment[slot], runeId)
+}
+
+function anySlotHasRune(d: GameData, slots: EquipmentSlot[], runeId: string): boolean {
+  return slots.some((slot) => slotHasRune(d, slot, runeId))
+}
+
+function closeTimedLocation(d: GameData): void {
+  if (d.location === 'greenhouse' && !greenhouseOpenAt(d.minutes)) {
+    d.location = 'craftDistrict'
+    pushLog(d, '苔丝把温室的门锁上，你回到工坊区。')
+  } else if (
+    d.location === 'runeShop' &&
+    !isTimeWindow(d.minutes, RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END)
+  ) {
+    d.location = 'commercial'
+    pushLog(d, '赛拉斯把铺子的门板上好，你回到商业区。')
+  }
 }
 
 function combatBuffActive(buffs: CombatBuffs, key: CombatBuffKey, now: number): boolean {
@@ -746,7 +806,7 @@ function applyStoryEffects(d: GameData, e?: StoryEffects): void {
   if (e.location) d.location = e.location
 }
 
-type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'brew' | 'workshop' | null
+type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'brew' | 'workshop' | 'engrave' | null
 
 type TitlePanel = 'saves' | 'export' | 'import' | null
 
@@ -836,6 +896,10 @@ type Store = {
   study: (key: SkillKey) => void
   previewClass: () => void
   practice: (key: SkillKey) => void
+  visitGreenhouse: () => void
+  identifyHerbs: () => void
+  lookAtRunes: () => void
+  engraveRune: (itemId: string, runeId: string) => void
   helpBackyard: () => void
   helpOrphanKids: () => void
   joinRite: () => void
@@ -1435,9 +1499,29 @@ export const useGame = create<Store>((set, get) => {
       if (b.phase === 'filling') {
         const now = absoluteMinutes(data.day, data.minutes)
         const swift = combatBuffActive(data.combatBuffs, 'swift', now)
-        b.playerGauge = Math.min(100, b.playerGauge + (swift ? 4.2 : 4))
+        const swiftRune = anySlotHasRune(data, ['armor', 'offHand', 'accessory'], 'swift')
+        const speedBonus = (swift ? 0.05 : 0) + (swiftRune ? 0.05 : 0)
+        b.playerGauge = Math.min(100, b.playerGauge + 4 * (1 + speedBonus))
       }
       if (enemy.speed > 0) b.enemyGauge = Math.min(100, b.enemyGauge + enemy.speed)
+
+      if (b.enemyBurn && b.enemyBurn.ticksLeft > 0) {
+        if (b.elapsedTicks % 10 === 0) {
+          const burnDmg = b.enemyBurn.stacks * 2
+          b.enemyHp = Math.max(0, b.enemyHp - burnDmg)
+          battleLog(b, `烧伤造成 ${burnDmg} 点伤害。 -${burnDmg}`)
+          if (b.enemyHp <= 0) {
+            b.phase = 'victory'
+            b.submenu = null
+            b.result = `${enemy.defeatLine}${b.kind === 'wild' ? '' : ' 你结束了练习。'}`
+            battleLog(b, enemy.defeatLine)
+            set({ battle: b, data: nextData })
+            return
+          }
+        }
+        b.enemyBurn.ticksLeft -= 1
+        if (b.enemyBurn.ticksLeft <= 0) b.enemyBurn = null
+      }
 
       let castReady = false
       if (b.casting) {
@@ -1480,7 +1564,8 @@ export const useGame = create<Store>((set, get) => {
             spell,
             nextData.skills.nature.tier,
             enemy.defense,
-            ITEMS[nextData.equipment.mainHand ?? '']?.spellPower ?? 0,
+            (ITEMS[nextData.equipment.mainHand ?? '']?.spellPower ?? 0) +
+              (anySlotHasRune(nextData, ['mainHand', 'accessory'], 'spell') ? 1 : 0),
           )
           const dmg = randInt(min, max)
           b.enemyHp = Math.max(0, b.enemyHp - dmg)
@@ -1514,7 +1599,8 @@ export const useGame = create<Store>((set, get) => {
         const reduction =
           Math.floor(nextData.skills.physique.tier / 2) +
           (nextData.flags.book_defense_notes ? 1 : 0) +
-          stone
+          stone +
+          (anySlotHasRune(nextData, ['armor', 'offHand'], 'guard') ? 1 : 0)
         const dmg = Math.max(1, enemy.attack + randInt(0, 2) - reduction)
         b.playerHp = Math.max(0, b.playerHp - dmg)
         const line = enemy.attackLines.length
@@ -1579,7 +1665,8 @@ export const useGame = create<Store>((set, get) => {
       )
         ? 1
         : 0
-      const dmg = randInt(min, max) + sharp
+      const edge = kind === 'sword' && slotHasRune(data, 'mainHand', 'edge') ? 1 : 0
+      const dmg = randInt(min, max) + sharp + edge
       const next = structuredClone(data)
 
       const b: BattleState = { ...battle, log: [...battle.log] }
@@ -1596,6 +1683,17 @@ export const useGame = create<Store>((set, get) => {
         b.result = `${enemy.defeatLine}${b.kind === 'wild' ? '' : ' 你结束了练习。'}`
         battleLog(b, enemy.defeatLine)
       } else {
+        if (
+          kind === 'sword' &&
+          weapon &&
+          !weapon.medium &&
+          slotHasRune(data, 'mainHand', 'burn') &&
+          Math.random() < 0.4
+        ) {
+          const stacks = Math.min(3, (b.enemyBurn?.stacks ?? 0) + 1)
+          b.enemyBurn = { stacks, ticksLeft: 40 }
+          battleLog(b, `灼燃生效：${enemy.name}烧伤 ${stacks} 层。`)
+        }
         b.phase = 'filling'
       }
       set({ battle: b, data: next })
@@ -1798,6 +1896,14 @@ export const useGame = create<Store>((set, get) => {
       }
       if (data.location === 'gate' && id === 'outside' && !isGateOpen(data.minutes)) {
         set({ message: '城门已经关了。' })
+        return
+      }
+      if (id === 'greenhouse' && !greenhouseOpenAt(data.minutes)) {
+        set({ message: '温室已经锁门了。' })
+        return
+      }
+      if (id === 'runeShop' && !isTimeWindow(data.minutes, RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END)) {
+        set({ message: '符文刻印铺已经上板了。' })
         return
       }
       const cost = edge.minutes
@@ -2743,6 +2849,129 @@ export const useGame = create<Store>((set, get) => {
       maybeEvent({ type: 'after', action: 'practice' })
     },
 
+    visitGreenhouse: () => {
+      const { data } = get()
+      if (data.location !== 'greenhouse') {
+        set({ message: '这里不是温室。' })
+        return
+      }
+      if (!greenhouseOpenAt(data.minutes)) {
+        set({ message: '温室已经锁门了。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, GREENHOUSE_VISIT_MINUTES)
+        const first = d.greenhouse.day !== d.day || !d.greenhouse.visited
+        if (first) {
+          d.mood = clamp(d.mood + GREENHOUSE_VISIT_MOOD, 0, 100)
+          d.greenhouse = { day: d.day, visited: true }
+        }
+        const text = GREENHOUSE_VISIT_TEXTS[(d.day + Math.floor(d.minutes / 60)) % GREENHOUSE_VISIT_TEXTS.length]
+        closeTimedLocation(d)
+        const result = first ? `${text} 心情 +${GREENHOUSE_VISIT_MOOD}。` : text
+        pushLog(d, result)
+        return result
+      })
+    },
+
+    identifyHerbs: () => {
+      const { data } = get()
+      if (data.location !== 'greenhouse') {
+        set({ message: '这里不是温室。' })
+        return
+      }
+      if (!greenhouseOpenAt(data.minutes)) {
+        set({ message: '温室已经锁门了。' })
+        return
+      }
+      if (data.spirit <= GREENHOUSE_IDENTIFY_SPIRIT) {
+        set({ message: '精神不足，没法集中注意力。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, GREENHOUSE_IDENTIFY_MINUTES)
+        d.spirit = clamp(d.spirit - GREENHOUSE_IDENTIFY_SPIRIT, 0, maxSpirit(d.skills.will.tier))
+        addExp(d, 'cultivation', GREENHOUSE_IDENTIFY_EXP)
+        const text = GREENHOUSE_IDENTIFY_TEXTS[(d.day + Math.floor(d.minutes / 30)) % GREENHOUSE_IDENTIFY_TEXTS.length]
+        closeTimedLocation(d)
+        const result = `${text} 种植经验 +${GREENHOUSE_IDENTIFY_EXP}。`
+        pushLog(d, result)
+        return result
+      })
+    },
+
+    lookAtRunes: () => {
+      const { data } = get()
+      if (data.location !== 'runeShop') {
+        set({ message: '这里不是符文刻印铺。' })
+        return
+      }
+      if (!isTimeWindow(data.minutes, RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END)) {
+        set({ message: '铺子已经上板了。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, RUNE_LOOK_MINUTES)
+        const first = d.runeShop.day !== d.day || !d.runeShop.looked
+        if (first) {
+          d.mood = clamp(d.mood + RUNE_LOOK_MOOD, 0, 100)
+          d.runeShop = { day: d.day, looked: true }
+        }
+        const text = RUNE_LOOK_TEXTS[(d.day + Math.floor(d.minutes / 15)) % RUNE_LOOK_TEXTS.length]
+        closeTimedLocation(d)
+        const result = first ? `${text} 心情 +${RUNE_LOOK_MOOD}。` : text
+        pushLog(d, result)
+        return result
+      })
+    },
+
+    engraveRune: (itemId, runeId) => {
+      const { data } = get()
+      if (data.location !== 'runeShop') {
+        set({ message: '这里不是符文刻印铺。' })
+        return
+      }
+      if (!isTimeWindow(data.minutes, RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END)) {
+        set({ message: '铺子已经上板了。' })
+        return
+      }
+      const item = ITEMS[itemId]
+      if (!item || item.type !== 'equipment') {
+        set({ message: '这件东西不能刻印。' })
+        return
+      }
+      const rune = runeById(runeId)
+      if (!rune || !runeApplicable(item, rune)) {
+        set({ message: '这件装备刻不了这道符文。' })
+        return
+      }
+      const owned =
+        (data.inventory[itemId] ?? 0) > 0 ||
+        Object.values(data.equipment).includes(itemId)
+      if (!owned) {
+        set({ message: '你身上没有这件装备。' })
+        return
+      }
+      if ((item.engravingSlots ?? 1) <= 0) {
+        set({ message: '这件装备没有刻印槽。' })
+        return
+      }
+      if (data.money < rune.price) {
+        set({ message: '钱不够。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, RUNE_ENGRAVE_MINUTES)
+        d.money -= rune.price
+        d.engravings[itemId] = [runeId]
+        const text = `赛拉斯在${item.name}上刻下了${rune.name}。花费 ${rune.price} 铜。`
+        closeTimedLocation(d)
+        pushLog(d, text)
+        return text
+      })
+      if (get().data.location !== 'runeShop') set({ modal: null })
+    },
+
     helpBackyard: () => {
       const { data } = get()
       if (data.location !== 'backyard') {
@@ -3085,7 +3314,10 @@ export const useGame = create<Store>((set, get) => {
         const current = isFamiliarity ? d.familiarity[id] ?? 0 : d.affinity[id] ?? 0
         const lines = npc.lines[socialTier(current)]
         const line = lines[count % lines.length]
+        const beforeLocation = d.location
         advanceTime(d, SOCIAL_MINUTES)
+        closeTimedLocation(d)
+        const closed = d.location !== beforeLocation
         d.social.counts[id] = count + 1
         if (count < 1) {
           if (isFamiliarity) {
@@ -3097,9 +3329,13 @@ export const useGame = create<Store>((set, get) => {
         } else {
           pushLog(d, `你和${npc.short}又聊了一会儿。`)
         }
-        stillHere = npcLocationAt(npc, d.day, d.minutes) === d.location
-        if (!stillHere) pushLog(d, `${npc.short}先走了。`)
-        return stillHere ? `“${line}”` : `“${line}” ${npc.short}看了看钟，先走了。`
+        stillHere = !closed && npcLocationAt(npc, d.day, d.minutes) === d.location
+        if (!stillHere && !closed) pushLog(d, `${npc.short}先走了。`)
+        return closed
+          ? `“${line}” ${npc.short}把门锁上。`
+          : stillHere
+            ? `“${line}”`
+            : `“${line}” ${npc.short}看了看钟，先走了。`
       })
       return stillHere
     },
@@ -3107,6 +3343,7 @@ export const useGame = create<Store>((set, get) => {
     wait: (minutes) => {
       mutate((d) => {
         advanceTime(d, minutes)
+        closeTimedLocation(d)
         return minutes >= 60 ? `你等了 ${minutes / 60} 小时。` : `你等了 ${minutes} 分钟。`
       })
       set({ modal: null })
@@ -3362,6 +3599,9 @@ export const useGame = create<Store>((set, get) => {
       mutate((d) => {
         d.inventory[id] = Math.max(0, (d.inventory[id] ?? 0) - count)
         d.money += price * count
+        if ((d.inventory[id] ?? 0) <= 0 && !Object.values(d.equipment).includes(id)) {
+          delete d.engravings[id]
+        }
         const text = `你卖出${def.name} ×${count}，得到 ${price * count} 枚铜币。`
         pushLog(d, text)
         return text

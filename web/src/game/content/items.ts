@@ -33,6 +33,7 @@ export type ItemDef = {
   weapon?: 'staff' | 'sword'
   power?: number
   spellPower?: number
+  engravingSlots?: number
   effect?: { stamina?: number; mana?: number; hp?: number; combatBuff?: CombatBuffKey }
 }
 

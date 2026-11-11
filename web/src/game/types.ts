@@ -61,6 +61,16 @@ export type WorkshopState = {
   lessonDay: number
 }
 
+export type GreenhouseState = {
+  day: number
+  visited: boolean
+}
+
+export type RuneShopState = {
+  day: number
+  looked: boolean
+}
+
 export type ExamResult = 'pass' | 'fail' | 'absent'
 
 export type ExamPackage = {
@@ -111,6 +121,9 @@ export type GameData = {
   meals: { day: number; breakfast: boolean; lunch: boolean; dinner: boolean }
   relief: { day: number; cared: boolean; treated: boolean; volunteered: boolean }
   workshop: WorkshopState
+  greenhouse: GreenhouseState
+  runeShop: RuneShopState
+  engravings: Record<string, string[]>
   combatBuffs: CombatBuffs
   events: {
     day: number
@@ -162,6 +175,7 @@ export type BattleState = {
   submenu: BattleSubmenu
   result: string
   usedSkills: SkillKey[]
+  enemyBurn?: { stacks: number; ticksLeft: number } | null
 }
 
 export type Screen = 'title' | 'create' | 'game'
