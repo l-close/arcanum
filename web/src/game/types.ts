@@ -76,6 +76,23 @@ export type StarWatchState = {
   watched: boolean
 }
 
+export type CommissionSource = 'guild' | 'workshop'
+
+export type AcceptedCommission = {
+  id: string
+  acceptedDay: number
+  expiresDay: number
+  lastHuntDay?: number
+}
+
+export type CommissionState = {
+  week: number
+  board: string[]
+  accepted: AcceptedCommission[]
+  done: string[]
+  abandoned: Record<string, number>
+}
+
 export type ExamResult = 'pass' | 'fail' | 'absent'
 
 export type ExamPackage = {
@@ -138,6 +155,8 @@ export type GameData = {
   engravings: Record<string, string[]>
   starChart: string[]
   starWatch: StarWatchState
+  reputation: number
+  commissions: CommissionState
   combatBuffs: CombatBuffs
   events: {
     day: number

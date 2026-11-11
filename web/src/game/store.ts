@@ -4,6 +4,7 @@ import type {
   BattleSubmenu,
   CombatBuffKey,
   CombatBuffs,
+  CommissionState,
   EquipmentSlot,
   ExamPackage,
   ExamResult,
@@ -210,6 +211,12 @@ import {
   craftRecipeById,
   weaponShopOpenAt,
   applyDefense,
+  buildCommissionBoard,
+  commissionById,
+  commissionPay,
+  commissionSourceLocation,
+  MAX_ACTIVE_COMMISSIONS,
+  REPUTATION_MAX,
 } from './content'
 import type { BookReward } from './content'
 import {
@@ -297,6 +304,14 @@ export function freshData(): GameData {
     engravings: {},
     starChart: [],
     starWatch: { night: -1, watched: false },
+    reputation: 0,
+    commissions: {
+      week: 0,
+      board: buildCommissionBoard(0, 0),
+      accepted: [],
+      done: [],
+      abandoned: {},
+    },
     combatBuffs: { sharpUntil: 0, stoneUntil: 0, swiftUntil: 0 },
     events: { day: 0, count: 0, today: [], lastSeen: {}, lastAt: -9999, seen: [] },
     examPackages: [],
@@ -535,6 +550,42 @@ export function normalizeData(raw: GameData): GameData {
       night: raw.starWatch?.night ?? -1,
       watched: !!raw.starWatch?.watched,
     },
+    reputation: (() => {
+      const value = Number(raw.reputation ?? 0)
+      if (!Number.isFinite(value)) return 0
+      return clamp(Math.floor(value), 0, REPUTATION_MAX)
+    })(),
+    commissions: (() => {
+      const week = guildWeek(raw.day ?? 0)
+      const rep = Number.isFinite(Number(raw.reputation)) ? Number(raw.reputation) : 0
+      const reputation = clamp(Math.floor(rep), 0, REPUTATION_MAX)
+      const stored = raw.commissions
+      const sameWeek = stored?.week === week
+      const board = sameWeek && Array.isArray(stored?.board) && stored.board.length > 0
+        ? stored.board.filter((id) => !!commissionById(id))
+        : buildCommissionBoard(week, reputation)
+      const accepted = Array.isArray(stored?.accepted)
+        ? stored.accepted
+            .filter((entry) => !!commissionById(entry.id))
+            .map((entry) => ({
+              id: entry.id,
+              acceptedDay: Number(entry.acceptedDay ?? 0),
+              expiresDay: Number(entry.expiresDay ?? 0),
+              lastHuntDay:
+                entry.lastHuntDay === undefined ? undefined : Number(entry.lastHuntDay),
+            }))
+        : []
+      const done = sameWeek && Array.isArray(stored?.done)
+        ? stored.done.filter((id) => !!commissionById(id))
+        : []
+      const abandoned: Record<string, number> = {}
+      if (sameWeek && stored?.abandoned) {
+        for (const [id, day] of Object.entries(stored.abandoned)) {
+          if (commissionById(id) && day === raw.day) abandoned[id] = day
+        }
+      }
+      return { week, board, accepted, done, abandoned }
+    })(),
     combatBuffs: {
       sharpUntil: raw.combatBuffs?.sharpUntil ?? 0,
       stoneUntil: raw.combatBuffs?.stoneUntil ?? 0,
@@ -809,6 +860,44 @@ function applyFaint(d: GameData, place?: string): void {
   pushLog(d, text)
 }
 
+function settleExpiredCommissions(d: GameData): void {
+  const commissions = d.commissions
+  if (!commissions || commissions.accepted.length === 0) return
+  const expired = commissions.accepted.filter((entry) => d.day >= entry.expiresDay)
+  if (expired.length === 0) return
+  commissions.accepted = commissions.accepted.filter((entry) => d.day < entry.expiresDay)
+  const loss = Math.min(d.reputation, expired.length)
+  d.reputation = Math.max(0, d.reputation - expired.length)
+  const text =
+    loss > 0
+      ? `有 ${expired.length} 个委托到期，名誉 -${loss}。`
+      : `有 ${expired.length} 个委托到期，名誉已经见底。`
+  d.notice = d.notice ? `${d.notice} ${text}` : text
+  pushLog(d, text)
+}
+
+function refreshCommissionWeek(d: GameData): void {
+  const week = guildWeek(d.day)
+  if (!d.commissions) {
+    d.commissions = {
+      week,
+      board: buildCommissionBoard(week, d.reputation),
+      accepted: [],
+      done: [],
+      abandoned: {},
+    }
+    return
+  }
+  if (d.commissions.week === week) return
+  d.commissions = {
+    week,
+    board: buildCommissionBoard(week, d.reputation),
+    accepted: d.commissions.accepted,
+    done: [],
+    abandoned: {},
+  }
+}
+
 function advanceTime(d: GameData, minutes: number): boolean {
   const beforeTotal = d.day * 1440 + d.minutes
   const beforeDay = Math.floor(beforeTotal / 1440)
@@ -822,6 +911,8 @@ function advanceTime(d: GameData, minutes: number): boolean {
   if (d.meals.day !== d.day) {
     d.meals = { day: d.day, breakfast: false, lunch: false, dinner: false }
   }
+  settleExpiredCommissions(d)
+  refreshCommissionWeek(d)
 
   const firstWeekBoundary = Math.floor(beforeTotal / 10080) * 10080 + 6 * 1440 + 22 * 60
   for (let b = firstWeekBoundary; b <= afterTotal; b += 10080) {
@@ -925,7 +1016,7 @@ function applyStoryEffects(d: GameData, e?: StoryEffects): void {
   if (e.location) d.location = e.location
 }
 
-type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'brew' | 'workshop' | 'engrave' | 'starChart' | 'calendar' | null
+type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'brew' | 'workshop' | 'engrave' | 'starChart' | 'calendar' | 'commissions' | 'workshopOrders' | null
 
 type TitlePanel = 'saves' | 'export' | 'import' | null
 
@@ -1000,6 +1091,10 @@ type Store = {
   westPatrol: () => void
   acceptGuildJob: (id: string) => void
   doGuildJob: (id: string) => void
+  acceptCommission: (id: string) => void
+  deliverCommission: (id: string) => void
+  abandonCommission: (id: string) => void
+  trackElite: (id: string) => void
   startEscort: () => void
   escortContinue: () => void
   escortArrive: () => void
@@ -1977,6 +2072,14 @@ export const useGame = create<Store>((set, get) => {
             addDrop('boar_tusk', '你撬下一根野猪牙。')
           }
         }
+        if (enemy.id === 'gray_wolf_alpha') {
+          addDrop('wolf_fang', '你从灰狼首领嘴里撬下一根牙。')
+          addDrop('beast_hide', '你从灰狼首领身上剥下一张兽皮。')
+        }
+        if (enemy.id === 'boar_king') {
+          addDrop('boar_king_tusk', '你锯下野猪王的一根獠牙。')
+          addDrop('boar_tusk', '你从野猪王身上又取下一根野猪牙。')
+        }
       }
       const report = semesterEndFor(data.day, next.day)
       if (report) {
@@ -2526,6 +2629,165 @@ export const useGame = create<Store>((set, get) => {
         pushLog(d, text)
         return `${text} 你得到了 ${def.money} 铜。`
       })
+    },
+
+    acceptCommission: (id) => {
+      const { data } = get()
+      const def = commissionById(id)
+      if (!def) return
+      if (data.location !== commissionSourceLocation(def.source)) {
+        set({ message: '这里接不了这条委托。' })
+        return
+      }
+      if (!data.commissions.board.includes(id)) {
+        set({ message: '这周没有这条委托。' })
+        return
+      }
+      if (data.commissions.accepted.some((entry) => entry.id === id)) {
+        set({ message: '你已经接下这条委托了。' })
+        return
+      }
+      if (data.commissions.done.includes(id)) {
+        set({ message: '这条委托已经完成了。' })
+        return
+      }
+      if (data.commissions.abandoned[id] === data.day) {
+        set({ message: '今天刚放弃过这条委托，明天再来吧。' })
+        return
+      }
+      if ((def.minReputation ?? 0) > data.reputation) {
+        set({ message: '对方还在观望你，暂时不放心把这条交给你。' })
+        return
+      }
+      if (data.commissions.accepted.length >= MAX_ACTIVE_COMMISSIONS) {
+        set({ message: '手上的委托已经够多了。' })
+        return
+      }
+      mutate((d) => {
+        d.commissions.accepted.push({
+          id,
+          acceptedDay: d.day,
+          expiresDay: d.day + def.days,
+        })
+        const text = `你接下了委托《${def.name}》。`
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    deliverCommission: (id) => {
+      const { data } = get()
+      const def = commissionById(id)
+      if (!def) return
+      const entry = data.commissions.accepted.find((item) => item.id === id)
+      if (!entry) {
+        set({ message: '你没有接这条委托。' })
+        return
+      }
+      if (data.location !== commissionSourceLocation(def.source)) {
+        set({ message: '需要回到接委托的地方交付。' })
+        return
+      }
+      if (data.day >= entry.expiresDay) {
+        set({ message: '这条委托已经过期了。' })
+        return
+      }
+      if (def.objective.kind === 'items') {
+        for (const [itemId, qty] of Object.entries(def.objective.items)) {
+          if ((data.inventory[itemId] ?? 0) < qty) {
+            set({ message: `还差${ITEMS[itemId]?.name ?? itemId}。` })
+            return
+          }
+        }
+      } else if ((data.inventory[def.objective.proof] ?? 0) < 1) {
+        set({ message: `还需要${ITEMS[def.objective.proof]?.name ?? '凭证'}。` })
+        return
+      }
+      mutate((d) => {
+        const current = d.commissions.accepted.find((item) => item.id === id)
+        if (!current) return '你没有接这条委托。'
+        if (def.objective.kind === 'items') {
+          for (const [itemId, qty] of Object.entries(def.objective.items)) {
+            d.inventory[itemId] = Math.max(0, (d.inventory[itemId] ?? 0) - qty)
+            if ((d.inventory[itemId] ?? 0) <= 0) delete d.inventory[itemId]
+          }
+        } else {
+          const proof = def.objective.proof
+          d.inventory[proof] = Math.max(0, (d.inventory[proof] ?? 0) - 1)
+          if ((d.inventory[proof] ?? 0) <= 0) delete d.inventory[proof]
+        }
+        const pay = commissionPay(def, d.reputation)
+        d.money += pay
+        const gain = Math.min(REPUTATION_MAX, d.reputation + def.reputation)
+        const repGain = gain - d.reputation
+        d.reputation = gain
+        d.commissions.accepted = d.commissions.accepted.filter((item) => item.id !== id)
+        if (!d.commissions.done.includes(id)) d.commissions.done.push(id)
+        delete d.commissions.abandoned[id]
+        const text = `你交付了《${def.name}》，得到 ${pay} 铜${repGain > 0 ? `，名誉 +${repGain}` : ''}。`
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    abandonCommission: (id) => {
+      const { data } = get()
+      const def = commissionById(id)
+      if (!def) return
+      const entry = data.commissions.accepted.find((item) => item.id === id)
+      if (!entry) return
+      if (data.location !== commissionSourceLocation(def.source)) {
+        set({ message: '需要回到接委托的地方。' })
+        return
+      }
+      mutate((d) => {
+        d.commissions.accepted = d.commissions.accepted.filter((item) => item.id !== id)
+        const penalty = entry.acceptedDay === d.day ? 0 : 1
+        if (penalty > 0) d.reputation = Math.max(0, d.reputation - penalty)
+        d.commissions.abandoned[id] = d.day
+        const text =
+          penalty > 0
+            ? `你放弃了《${def.name}》，名誉 -${penalty}。`
+            : `你放弃了《${def.name}》。`
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    trackElite: (id) => {
+      const { data } = get()
+      if (data.location !== 'forestDeep') {
+        set({ message: '要追到森林深处才行。' })
+        return
+      }
+      const def = commissionById(id)
+      if (!def || def.objective.kind !== 'hunt') return
+      const entry = data.commissions.accepted.find((item) => item.id === id)
+      if (!entry) {
+        set({ message: '你没有接这条讨伐。' })
+        return
+      }
+      if (entry.lastHuntDay === data.day) {
+        set({ message: '今天已经追过一次了，明天再来。' })
+        return
+      }
+      if (data.stamina < 3) {
+        set({ message: '体力不够，追不动了。' })
+        return
+      }
+      let expired = false
+      mutate((d) => {
+        advanceTime(d, 30)
+        d.stamina = clamp(d.stamina - 3, 0, maxStamina(d.skills.physique.tier))
+        const current = d.commissions.accepted.find((item) => item.id === id)
+        if (!current || d.day >= current.expiresDay) {
+          expired = true
+          return '追到一半，委托已经过期了。'
+        }
+        current.lastHuntDay = d.day
+        return '你循着痕迹追了上去。'
+      })
+      if (!expired) get().startWildBattle(def.objective.enemyId, 0)
     },
 
     startEscort: () => {

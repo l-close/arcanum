@@ -1,6 +1,8 @@
 import {
   BOOKS,
   BOOK_CATEGORY_LABEL,
+  COMMISSIONS,
+  COMMISSION_BOARD_SIZE,
   COMBAT_BUFF_LABEL,
   CONSTELLATIONS,
   COURSES,
@@ -15,12 +17,15 @@ import {
   LOCATIONS,
   NPCS,
   RECIPES,
+  REPUTATION_BANDS,
+  REPUTATION_MAX,
   RUNES,
   SHOP_STOCKS,
   SKILL_ORDER,
   SPELLS,
   WEST_COMMISSIONS,
   WEST_GENERICS,
+  commissionSourceLocation,
   courseLocationOn,
   exitsOf,
 } from './index'
@@ -217,6 +222,70 @@ export function validateContent(): ContentIssue[] {
     for (const [id, qty] of Object.entries(recipe.materials)) {
       if (!itemIds.has(id)) error('craft', `${recipe.id}: 材料 ${id} 不存在`)
       if (qty <= 0) error('craft', `${recipe.id}: 材料 ${id} 数量不大于 0`)
+    }
+  }
+
+  checkUnique('commissions', COMMISSIONS.map((c) => c.id))
+
+  for (const band of REPUTATION_BANDS) {
+    if (band.min < 0 || band.min > REPUTATION_MAX) {
+      error('reputation', `档位 ${band.min} 超出 0–${REPUTATION_MAX}`)
+    }
+    if (!band.text) error('reputation', `档位 ${band.min} 缺少描述`)
+  }
+  if (REPUTATION_BANDS[0]?.min !== 0) {
+    error('reputation', '第一档必须从 0 开始')
+  }
+  if (REPUTATION_BANDS.some((band, i) => i > 0 && band.min <= REPUTATION_BANDS[i - 1].min)) {
+    error('reputation', '档位阈值必须递增')
+  }
+
+  for (const commission of COMMISSIONS) {
+    const location = commissionSourceLocation(commission.source)
+    if (!locationIds.has(location)) {
+      error('commissions', `${commission.id}: 来源地点 ${location} 不存在`)
+    }
+    if (commission.days <= 0) error('commissions', `${commission.id}: 天数必须大于 0`)
+    if (!nonNegative(commission.money)) error('commissions', `${commission.id}: 报酬为负`)
+    if (!nonNegative(commission.reputation)) {
+      error('commissions', `${commission.id}: 名誉奖励为负`)
+    }
+    if (
+      commission.minReputation !== undefined &&
+      (!Number.isFinite(commission.minReputation) ||
+        commission.minReputation < 0 ||
+        commission.minReputation > REPUTATION_MAX)
+    ) {
+      error('commissions', `${commission.id}: 名誉门槛无效`)
+    }
+    if (!commission.desc) error('commissions', `${commission.id}: 缺少说明`)
+    if (commission.objective.kind === 'items') {
+      if (Object.keys(commission.objective.items).length === 0) {
+        error('commissions', `${commission.id}: 没有需求物品`)
+      }
+      for (const [id, qty] of Object.entries(commission.objective.items)) {
+        if (!itemIds.has(id)) error('commissions', `${commission.id}: 物品 ${id} 不存在`)
+        if (qty <= 0) error('commissions', `${commission.id}: 物品 ${id} 数量不大于 0`)
+      }
+    } else {
+      if (!enemyIds.has(commission.objective.enemyId)) {
+        error('commissions', `${commission.id}: 敌人 ${commission.objective.enemyId} 不存在`)
+      }
+      if (!itemIds.has(commission.objective.proof)) {
+        error('commissions', `${commission.id}: 凭证 ${commission.objective.proof} 不存在`)
+      }
+    }
+  }
+
+  for (const source of ['guild', 'workshop'] as const) {
+    const pool = COMMISSIONS.filter(
+      (commission) => commission.source === source && (commission.minReputation ?? 0) === 0,
+    )
+    if (pool.length < COMMISSION_BOARD_SIZE[source]) {
+      error(
+        'commissions',
+        `${source}: 名誉 0 时可选委托不足 ${COMMISSION_BOARD_SIZE[source]} 条`,
+      )
     }
   }
 

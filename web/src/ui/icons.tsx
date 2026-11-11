@@ -327,6 +327,8 @@ export function ItemIcon({ id, size = 32 }: { id: string; size?: number }) {
     case 'beast_hide':
       return <BeastHideIcon size={size} />
     case 'boar_tusk':
+    case 'wolf_fang':
+    case 'boar_king_tusk':
       return <BoarTuskIcon size={size} />
     case 'bloodherb':
       return <BloodHerbIcon size={size} />

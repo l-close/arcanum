@@ -244,4 +244,42 @@ export const ENEMIES: Record<string, EnemyDef> = {
     ],
     defeatLine: '野猪退了两步，转身撞进灌木里，很快没了声音。',
   },
+  gray_wolf_alpha: {
+    id: 'gray_wolf_alpha',
+    name: '灰狼首领',
+    desc: '一只比寻常灰狼大一圈的狼。左耳缺了一块，颈毛上挂着旧伤。',
+    hp: 100,
+    attack: 13,
+    defense: 1,
+    resist: 0,
+    speed: 3.8,
+    expValue: 2.5,
+    intro:
+      '灌木深处传来低沉的呼吸。\n一只比寻常灰狼大一圈的狼从树影里走出来，左耳缺了一块，颈毛上挂着旧伤。\n它没有急着扑上来，只是慢慢压低身子。',
+    attackLines: [
+      '它从侧面切进来，牙齿擦过你的手臂。',
+      '它低吼一声，肩骨撞在你胸口。',
+      '它绕了半圈，突然加速扑上来。',
+    ],
+    defeatLine: '它退了两步，前腿一软，倒在落叶里。',
+  },
+  boar_king: {
+    id: 'boar_king',
+    name: '野猪王',
+    desc: '一头肩高到腰的野猪，獠牙上留着旧裂口，背上结着厚厚的痂。',
+    hp: 140,
+    attack: 15,
+    defense: 3,
+    resist: 0,
+    speed: 2.2,
+    expValue: 3,
+    intro:
+      '地面在震。\n一头肩高到腰的野猪从树后撞出来，獠牙上留着旧裂口，背上结着厚厚的痂。\n它低下头，把獠牙对准你。',
+    attackLines: [
+      '它低头撞过来，整片地面都在响。',
+      '獠牙挑过你的腿侧，带起一蓬土。',
+      '它喷着白气，又撞了一次。',
+    ],
+    defeatLine: '它又冲了两步，膝盖一弯，重重跪在地上。',
+  },
 }

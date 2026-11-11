@@ -859,6 +859,34 @@ button:disabled {
 .board-line .muted { color: var(--muted); margin-left: auto; }
 .guild-list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
 .guild-job { border: 1px solid var(--line); background: var(--panel-2); padding: 9px; }
+
+.commission-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.commission-group { margin-bottom: 16px; }
+.commission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+.commission-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.mini-btn.danger {
+  border-color: #8a4a42;
+  color: #d99a8f;
+}
 .escort-view { padding: 18px; }
 .escort-view .package-text { margin-bottom: 6px; }
 

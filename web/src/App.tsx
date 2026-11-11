@@ -25,6 +25,12 @@ import {
   runeApplicable,
   CRAFT_RECIPES,
   weaponShopOpenAt,
+  COMMISSION_SOURCE_LABEL,
+  MAX_ACTIVE_COMMISSIONS,
+  commissionById,
+  commissionPay,
+  commissionSourceLocation,
+  reputationText,
   observatoryOpenAt,
   CONSTELLATIONS,
   SEASON_LABEL,
@@ -524,6 +530,8 @@ function GameScreen() {
       {modal === 'westRecord' && <WestRecordModal />}
       {modal === 'academyBoard' && <AcademyBoardModal />}
       {modal === 'guildBoard' && <GuildBoardModal />}
+      {modal === 'workshopOrders' && <WorkshopOrdersModal />}
+      {modal === 'commissions' && <CommissionsModal />}
       {modal === 'shop' && <ShopModal />}
       {modal === 'brew' && <BrewModal />}
       {modal === 'workshop' && <WorkshopModal />}
@@ -676,10 +684,16 @@ function BattleView() {
   const enemyStatus =
     [burnText, battle.enemyGauge >= 100 ? '行动就绪' : ''].filter(Boolean).join(' · ') || '—'
 
+  const tracking =
+    battle.enemyId === 'gray_wolf_alpha' || battle.enemyId === 'boar_king'
   return (
     <div className="battle-screen">
       <div className="battle-head">
-        <span className="battle-title">{battle.kind === 'wild' ? `${data.guild.escort ? '护送途中' : locName} · 遭遇` : '演武场 · 切磋'}</span>
+        <span className="battle-title">
+          {battle.kind === 'wild'
+            ? `${data.guild.escort ? '护送途中' : locName} · ${tracking ? '追踪' : '遭遇'}`
+            : '演武场 · 切磋'}
+        </span>
         <span className="battle-round">战斗时间 {formatBattleTime(battle.elapsedTicks)} · {phaseLabel}</span>
       </div>
 
@@ -1059,6 +1073,7 @@ function StatusRail() {
       <div className="side-menu">
         <button className="side-menu-btn full" onClick={() => setModal('stats')}>属性</button>
         <button className="side-menu-btn full" onClick={() => setModal('relations')}>关系</button>
+        <button className="side-menu-btn full" onClick={() => setModal('commissions')}>委托</button>
         <button className="side-menu-btn" onClick={() => setModal('inventory')}>物品</button>
         <button className="side-menu-btn" onClick={() => setModal('log')}>日志</button>
         <button className="side-menu-btn" onClick={() => setModal('save')}>存档</button>
@@ -1172,6 +1187,7 @@ function Actions({
   const walkForest = useGame((s) => s.walkForest)
   const exploreForestDeep = useGame((s) => s.exploreForestDeep)
   const gatherHerbs = useGame((s) => s.gatherHerbs)
+  const trackElite = useGame((s) => s.trackElite)
   const careHerbs = useGame((s) => s.careHerbs)
   const tidyDonations = useGame((s) => s.tidyDonations)
   const careForPatients = useGame((s) => s.careForPatients)
@@ -1518,6 +1534,7 @@ function Actions({
         (isTimeWindow(data.minutes, WORKSHOP_OPEN_START, WORKSHOP_OPEN_END) ? (
           <>
             <ActionBtn onClick={() => setModal('shop')} label="买卖药剂" cost="—" />
+            <ActionBtn onClick={() => setModal('workshopOrders')} label="委托订单" cost="—" />
             <ActionBtn onClick={() => setModal('workshop')} label="租借与请教" cost="—" />
             <ActionBtn
               onClick={workPotionWorkshop}
@@ -1707,6 +1724,26 @@ function Actions({
         <>
           <ActionBtn onClick={exploreForestDeep} label="探索" cost="30 分钟 · 体力 -6" />
           <ActionBtn onClick={gatherHerbs} label="采药" cost="30 分钟 · 体力 -3 · 种植 +1" />
+          {data.commissions.accepted.map((entry) => {
+            const def = commissionById(entry.id)
+            if (!def || def.objective.kind !== 'hunt') return null
+            const name = ENEMIES[def.objective.enemyId]?.name ?? '目标'
+            if (entry.lastHuntDay === data.day) {
+              return (
+                <div className="hint" key={entry.id}>
+                  今天已经追过{name}了，明天再来。
+                </div>
+              )
+            }
+            return (
+              <ActionBtn
+                key={entry.id}
+                onClick={() => trackElite(def.id)}
+                label={`追踪${name}`}
+                cost="30 分钟 · 体力 -3"
+              />
+            )
+          })}
         </>
       )}
       {loc === 'herbGarden' && !segment && (
@@ -2916,6 +2953,17 @@ function StatsModal() {
       </div>
 
       <div className="stat-section">
+        <div className="stat-section-title">名誉</div>
+        <div className="stat-card">
+          <div className="stat-card-head">
+            <span className="stat-name">名誉</span>
+            <span className="stat-pct">{data.reputation}</span>
+          </div>
+          <div className="stat-desc">{reputationText(data.reputation)}</div>
+        </div>
+      </div>
+
+      <div className="stat-section">
         <div className="stat-section-title">学校课程</div>
         {courses.length === 0 ? (
           <div className="hint">本学年课程尚未配置。</div>
@@ -3657,11 +3705,159 @@ function DrinkModal() {
   )
 }
 
+function CommissionSection({ source }: { source: 'guild' | 'workshop' }) {
+  const data = useGame((s) => s.data)
+  const acceptCommission = useGame((s) => s.acceptCommission)
+  const deliverCommission = useGame((s) => s.deliverCommission)
+  const abandonCommission = useGame((s) => s.abandonCommission)
+  const [confirmId, setConfirmId] = useState<string | null>(null)
+  const accepted = data.commissions.accepted
+    .map((entry) => ({ entry, def: commissionById(entry.id) }))
+    .filter((row) => row.def?.source === source)
+  const acceptedIds = new Set(accepted.map((row) => row.entry.id))
+  const board = data.commissions.board
+    .map((id) => commissionById(id))
+    .filter((def): def is NonNullable<typeof def> => !!def && def.source === source)
+  const full = data.commissions.accepted.length >= MAX_ACTIVE_COMMISSIONS
+
+  const requirements = (def: NonNullable<ReturnType<typeof commissionById>>) => {
+    if (def.objective.kind === 'hunt') {
+      const enemy = ENEMIES[def.objective.enemyId]?.name ?? '目标'
+      const have = data.inventory[def.objective.proof] ?? 0
+      return (
+        <>
+          <span>讨伐 {enemy}</span>
+          <span className={have >= 1 ? 'ok' : 'lack'}>
+            {ITEMS[def.objective.proof]?.name ?? '凭证'} {have} / 1
+          </span>
+        </>
+      )
+    }
+    return Object.entries(def.objective.items).map(([id, qty]) => {
+      const have = data.inventory[id] ?? 0
+      return (
+        <span className={have >= qty ? 'ok' : 'lack'} key={id}>
+          {ITEMS[id]?.name ?? id} {have} / {qty}
+        </span>
+      )
+    })
+  }
+
+  const missing = (def: NonNullable<ReturnType<typeof commissionById>>) => {
+    if (def.objective.kind === 'hunt') return (data.inventory[def.objective.proof] ?? 0) < 1
+    return Object.entries(def.objective.items).some(
+      ([id, qty]) => (data.inventory[id] ?? 0) < qty,
+    )
+  }
+
+  return (
+    <>
+      <div className="commission-head">
+        <span>已接 {data.commissions.accepted.length} / {MAX_ACTIVE_COMMISSIONS}</span>
+        <span>下周一刷新</span>
+      </div>
+
+      {accepted.length > 0 && (
+        <div className="commission-group">
+          <div className="section-title">已接取</div>
+          {accepted.map(({ entry, def }) => {
+            if (!def) return null
+            const remaining = Math.max(0, entry.expiresDay - data.day)
+            const penalty = entry.acceptedDay === data.day ? 0 : 1
+            return (
+              <div className="shop-row" key={`accepted-${def.id}`}>
+                <div className="row-head">
+                  <span className="item-name">{def.name}</span>
+                  <span className="shop-stock">剩余 {remaining} 天</span>
+                </div>
+                <div className="item-desc">{def.desc}</div>
+                <div className="craft-mats">{requirements(def)}</div>
+                {def.objective.kind === 'hunt' && (
+                  <div className="hint">接取后到森林深处追踪目标。</div>
+                )}
+                <div className="commission-actions">
+                  <button
+                    className="mini-btn"
+                    disabled={missing(def)}
+                    onClick={() => deliverCommission(def.id)}
+                  >
+                    交付
+                  </button>
+                  {confirmId === def.id ? (
+                    <>
+                      <button
+                        className="mini-btn danger"
+                        onClick={() => {
+                          abandonCommission(def.id)
+                          setConfirmId(null)
+                        }}
+                      >
+                        {penalty > 0 ? '确认放弃，名誉 -1' : '确认放弃'}
+                      </button>
+                      <button className="mini-btn" onClick={() => setConfirmId(null)}>
+                        取消
+                      </button>
+                    </>
+                  ) : (
+                    <button className="mini-btn" onClick={() => setConfirmId(def.id)}>
+                      放弃
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      <div className="commission-group">
+        <div className="section-title">本周委托</div>
+        {board.length === 0 && <p className="hint">这周没有新的委托。</p>}
+        {board.map((def) => {
+          if (acceptedIds.has(def.id)) return null
+          const done = data.commissions.done.includes(def.id)
+          const abandonedToday = data.commissions.abandoned[def.id] === data.day
+          return (
+            <div className="shop-row" key={def.id}>
+              <div className="row-head">
+                <span className="item-name">{def.name}</span>
+                <span className="shop-price">{commissionPay(def, data.reputation)} 铜</span>
+                <span className="shop-stock">名誉 +{def.reputation}</span>
+                <span className="shop-stock">{def.days} 天</span>
+              </div>
+              <div className="item-desc">{def.desc}</div>
+              <div className="craft-mats">{requirements(def)}</div>
+              {def.elite && <div className="hint">精英讨伐，目标只在森林深处出没。</div>}
+              {done ? (
+                <div className="hint">本周已完成。</div>
+              ) : abandonedToday ? (
+                <div className="hint">今天刚放弃过，明天可以再接。</div>
+              ) : (
+                <div className="commission-actions">
+                  <button
+                    className="mini-btn"
+                    disabled={full}
+                    onClick={() => acceptCommission(def.id)}
+                  >
+                    接取
+                  </button>
+                  {full && <span className="hint">手上的委托已经够多了。</span>}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </>
+  )
+}
+
 function GuildBoardModal() {
   const data = useGame((s) => s.data)
   const setModal = useGame((s) => s.setModal)
   const acceptGuildJob = useGame((s) => s.acceptGuildJob)
-  const jobs = guildJobsForDay(data.day)
+  const [tab, setTab] = useState<'commission' | 'job' | 'escort'>('commission')
+  const jobs = guildJobsForDay(data.day).filter((id) => id !== 'escort')
   const escort = guildEscortForDay(data.day)
   const allDone = jobs.every((id) => data.guild.done.includes(id))
 
@@ -3700,13 +3896,72 @@ function GuildBoardModal() {
   }
 
   return (
-    <ModalShell title="商会委托板" onClose={() => setModal(null)}>
-      <p className="hint">每周一刷新，每个委托只能接一次。</p>
-      {allDone ? (
-        <p className="package-text">本周委托已经全部完成。</p>
+    <ModalShell title="商会委托板" wide onClose={() => setModal(null)}>
+      <div className="shop-tabs">
+        <button className={tab === 'commission' ? 'on' : ''} onClick={() => setTab('commission')}>
+          悬赏
+        </button>
+        <button className={tab === 'job' ? 'on' : ''} onClick={() => setTab('job')}>
+          帮工
+        </button>
+        <button className={tab === 'escort' ? 'on' : ''} onClick={() => setTab('escort')}>
+          护送
+        </button>
+      </div>
+      {tab === 'commission' && <CommissionSection source="guild" />}
+      {tab === 'job' &&
+        (allDone ? (
+          <p className="package-text">本周帮工已经全部完成。</p>
+        ) : (
+          <div className="guild-list">{jobs.map(jobRow)}</div>
+        ))}
+      {tab === 'escort' && <div className="guild-list">{jobRow('escort')}</div>}
+    </ModalShell>
+  )
+}
+
+function WorkshopOrdersModal() {
+  const setModal = useGame((s) => s.setModal)
+  return (
+    <ModalShell title="药剂工坊 · 订单" wide onClose={() => setModal(null)}>
+      <CommissionSection source="workshop" />
+    </ModalShell>
+  )
+}
+
+function CommissionsModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  const accepted = data.commissions.accepted
+    .map((entry) => ({ entry, def: commissionById(entry.id) }))
+    .sort((a, b) => a.entry.expiresDay - b.entry.expiresDay)
+
+  return (
+    <ModalShell title="委托" wide onClose={() => setModal(null)}>
+      {accepted.length === 0 ? (
+        <p className="hint">现在没有在手的委托。</p>
       ) : (
-        <div className="guild-list">{jobs.map(jobRow)}</div>
+        <div className="commission-list">
+          {accepted.map(({ entry, def }) => {
+            if (!def) return null
+            const remaining = Math.max(0, entry.expiresDay - data.day)
+            return (
+              <div className="shop-row" key={def.id}>
+                <div className="row-head">
+                  <span className="item-name">{def.name}</span>
+                  <span className="shop-stock">{COMMISSION_SOURCE_LABEL[def.source]}</span>
+                  <span className="shop-stock">剩余 {remaining} 天</span>
+                </div>
+                <div className="item-desc">{def.desc}</div>
+                <div className="hint">
+                  交付地点：{getLocation(commissionSourceLocation(def.source)).name}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       )}
+      <p className="hint">委托详情请在对应地点查看和交付。</p>
     </ModalShell>
   )
 }
