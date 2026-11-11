@@ -386,15 +386,6 @@ export const ITEMS: Record<string, ItemDef> = {
     medium: false,
     desc: '一本记着近身格斗要点的旧札记。页边画着不少受力方向的小图。',
   },
-  defense_notes: {
-    id: 'defense_notes',
-    name: '防身笔记',
-    type: 'book',
-    quality: 'uncommon',
-    price: 45,
-    medium: false,
-    desc: '一本讲怎么挨打、怎么卸力的笔记。字迹很密，边角被翻得发软。',
-  },
   old_city_stories: {
     id: 'old_city_stories',
     name: '旧城故事集',
@@ -413,7 +404,65 @@ export const ITEMS: Record<string, ItemDef> = {
     medium: false,
     desc: '一本讲银月城旧街、节令和日常规矩的杂记。字不深，读起来很慢。',
   },
+  hundred_crafts: {
+    id: 'hundred_crafts',
+    name: '百工拾遗',
+    type: 'book',
+    quality: 'uncommon',
+    price: 45,
+    medium: false,
+    desc: '一本记着城里各行手艺的册子。打铁、炼药、刻符、种药，每样都留了几页。',
+  },
+  frontier_notes: {
+    id: 'frontier_notes',
+    name: '边地行记',
+    type: 'book',
+    quality: 'rare',
+    price: 80,
+    medium: false,
+    desc: '一个旅人沿边墙走访时写的笔记。纸页上沾着泥和风沙，字迹很稳。',
+  },
+  star_primer: {
+    id: 'star_primer',
+    name: '星图入门',
+    type: 'book',
+    quality: 'uncommon',
+    price: 0,
+    medium: false,
+    desc: '一本教人认星的薄册子。星图是手绘的，线画得很细。',
+  },
+  hearth_tales: {
+    id: 'hearth_tales',
+    name: '炉边杂谈',
+    type: 'book',
+    quality: 'common',
+    price: 15,
+    medium: false,
+    desc: '酒馆里传抄的闲话集。字迹潦草，故事都不长。',
+  },
+  old_letters: {
+    id: 'old_letters',
+    name: '旧信集',
+    type: 'book',
+    quality: 'common',
+    price: 25,
+    medium: false,
+    desc: '一叠没有寄出的旧信。字迹深浅不一，纸角发脆。',
+  },
 }
+
+export type BookCategory = 'growth' | 'spell' | 'leisure' | 'knowledge'
+
+export const BOOK_CATEGORY_LABEL: Record<BookCategory, string> = {
+  growth: '成长',
+  spell: '法术',
+  leisure: '休闲',
+  knowledge: '知识',
+}
+
+export const BOOK_CATEGORY_ORDER: BookCategory[] = ['growth', 'spell', 'leisure', 'knowledge']
+
+export const BOOKSHELF_SIZE = 12
 
 export type BookReward = {
   mood?: number
@@ -427,12 +476,18 @@ export type BookReward = {
 export type BookDef = {
   id: string
   name: string
+  category: BookCategory
   desc: string
   progressPerRead: number
   repeatable: boolean
+  /** 可重复书中，每轮完成是否都给完成奖励。 */
+  repeatCompletion?: boolean
   spiritCost?: number
+  /** 每次阅读都会结算的收益。 */
+  perRead?: BookReward
   foundText?: string
   requiresFlag?: string
+  requiresSkill?: { key: SkillKey; tier: number }
   requirementText?: string
   reward: BookReward
 }
@@ -441,14 +496,18 @@ export const BOOKS: Record<string, BookDef> = {
   picture_book: {
     id: 'picture_book',
     name: '绘本',
+    category: 'leisure',
     desc: '颜色已经有些发暗的旧绘本。翻起来很慢，但会让人安静下来。',
     progressPerRead: 25,
     repeatable: true,
-    reward: { mood: 8 },
+    repeatCompletion: true,
+    perRead: { mood: 1, text: '心情 +1' },
+    reward: { mood: 3, text: '心情 +3' },
   },
   sword_manual: {
     id: 'sword_manual',
     name: '基础剑术图解',
+    category: 'growth',
     desc: '一本被压在旧书堆里的剑术图解。封面磨白，页边留着前一个主人的批注。',
     progressPerRead: 20,
     repeatable: false,
@@ -460,6 +519,7 @@ export const BOOKS: Record<string, BookDef> = {
   fireball_book: {
     id: 'fireball_book',
     name: '火球术',
+    category: 'spell',
     desc: '一本薄薄的手抄本。前面的段落讲吟唱，后面的段落讲怎么把魔力压成火球。',
     progressPerRead: 25,
     repeatable: false,
@@ -473,38 +533,95 @@ export const BOOKS: Record<string, BookDef> = {
   brawl_manual: {
     id: 'brawl_manual',
     name: '格斗札记',
+    category: 'growth',
     desc: '一本记着近身格斗要点的旧札记。页边画着不少受力方向的小图。',
     progressPerRead: 20,
     repeatable: false,
     spiritCost: 1,
     reward: { flag: 'book_brawl_manual', text: '格斗攻击伤害永久 +1' },
   },
-  defense_notes: {
-    id: 'defense_notes',
-    name: '防身笔记',
-    desc: '一本讲怎么挨打、怎么卸力的笔记。字迹很密，边角被翻得发软。',
-    progressPerRead: 17,
-    repeatable: false,
-    spiritCost: 1,
-    reward: { exp: { physique: 20 }, text: '体质经验 +20' },
-  },
   old_city_stories: {
     id: 'old_city_stories',
     name: '旧城故事集',
+    category: 'leisure',
     desc: '一本收着银月城旧街传闻和短故事的小册子。纸页发黄，读起来不费力。',
     progressPerRead: 34,
     repeatable: true,
-    reward: { mood: 6 },
+    repeatCompletion: true,
+    perRead: { mood: 1, text: '心情 +1' },
+    reward: { mood: 2, text: '心情 +2' },
   },
   silver_moon_lore: {
     id: 'silver_moon_lore',
     name: '银月风土记',
+    category: 'knowledge',
     desc: '一本讲银月城旧街、节令和日常规矩的杂记。字不深，读起来很慢。',
     progressPerRead: 50,
     repeatable: true,
+    spiritCost: 1,
+    perRead: { exp: { knowledge: 1 }, text: '学识经验 +1' },
+    reward: { exp: { knowledge: 6 }, text: '学识经验 +6' },
+  },
+  hundred_crafts: {
+    id: 'hundred_crafts',
+    name: '百工拾遗',
+    category: 'knowledge',
+    desc: '一本记着城里各行手艺的册子。打铁、炼药、刻符、种药，每样都留了几页。',
+    progressPerRead: 34,
+    repeatable: true,
+    spiritCost: 1,
+    requiresSkill: { key: 'knowledge', tier: 1 },
+    requirementText: '学识·启蒙',
+    perRead: { exp: { knowledge: 2 }, text: '学识经验 +2' },
+    reward: { exp: { knowledge: 12 }, text: '学识经验 +12' },
+  },
+  frontier_notes: {
+    id: 'frontier_notes',
+    name: '边地行记',
+    category: 'knowledge',
+    desc: '一个旅人沿边墙走访时写的笔记。纸页上沾着泥和风沙，字迹很稳。',
+    progressPerRead: 25,
+    repeatable: true,
     spiritCost: 2,
-    reward: { exp: { knowledge: 5 }, text: '学识经验 +5' },
+    requiresSkill: { key: 'knowledge', tier: 2 },
+    requirementText: '学识·博闻',
+    perRead: { exp: { knowledge: 3 }, text: '学识经验 +3' },
+    reward: { exp: { knowledge: 20 }, text: '学识经验 +20' },
+  },
+  star_primer: {
+    id: 'star_primer',
+    name: '星图入门',
+    category: 'knowledge',
+    desc: '一本教人认星的薄册子。星图是手绘的，线画得很细。',
+    progressPerRead: 34,
+    repeatable: true,
+    spiritCost: 1,
+    foundText: '你在一摞旧星图下面，翻到一本教人认星的薄册子。',
+    perRead: { exp: { knowledge: 1 }, text: '学识经验 +1' },
+    reward: { exp: { knowledge: 6 }, text: '学识经验 +6' },
+  },
+  hearth_tales: {
+    id: 'hearth_tales',
+    name: '炉边杂谈',
+    category: 'leisure',
+    desc: '酒馆里传抄的闲话集。字迹潦草，故事都不长。',
+    progressPerRead: 34,
+    repeatable: true,
+    repeatCompletion: true,
+    perRead: { mood: 1, text: '心情 +1' },
+    reward: { mood: 2, text: '心情 +2' },
+  },
+  old_letters: {
+    id: 'old_letters',
+    name: '旧信集',
+    category: 'leisure',
+    desc: '一叠没有寄出的旧信。字迹深浅不一，纸角发脆。',
+    progressPerRead: 20,
+    repeatable: true,
+    repeatCompletion: true,
+    perRead: { mood: 1, text: '心情 +1' },
+    reward: { mood: 3, text: '心情 +3' },
   },
 }
 
-export const SEARCHABLE_BOOKS = ['sword_manual', 'fireball_book']
+export const SEARCHABLE_BOOKS = ['sword_manual', 'fireball_book', 'star_primer']

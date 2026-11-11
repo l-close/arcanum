@@ -339,9 +339,13 @@ export function ItemIcon({ id, size = 32 }: { id: string; size?: number }) {
     case 'fireball_book':
       return <BookIcon size={size} />
     case 'brawl_manual':
-    case 'defense_notes':
     case 'old_city_stories':
     case 'silver_moon_lore':
+    case 'hundred_crafts':
+    case 'frontier_notes':
+    case 'star_primer':
+    case 'hearth_tales':
+    case 'old_letters':
       return <BookIcon size={size} />
     default:
       return (

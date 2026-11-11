@@ -1023,6 +1023,14 @@ button:disabled {
 .book-row-btn:disabled { opacity: 0.4; }
 
 .reading-list { display: flex; flex-direction: column; gap: 14px; }
+.reading-group { display: flex; flex-direction: column; gap: 10px; }
+.reading-category {
+  color: var(--gold);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 5px;
+}
 .reading-item { border: 1px solid var(--line); background: var(--panel-2); padding: 10px; }
 .reading-head { display: flex; justify-content: space-between; align-items: baseline; }
 .reading-name { color: var(--gold); font-size: 14px; }
@@ -1031,6 +1039,15 @@ button:disabled {
 .reading-bar { height: 5px; background: var(--bg); margin-bottom: 6px; }
 .reading-bar > div { height: 100%; background: var(--gold); }
 .reading-meta { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; margin-bottom: 8px; }
+.reading-rewards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  color: var(--text);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.reading-rewards span { color: var(--gold); }
 
 .mini-btn {
   background: transparent;

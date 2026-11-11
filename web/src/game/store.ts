@@ -26,6 +26,7 @@ import {
   ENEMIES,
   ITEMS,
   BOOKS,
+  BOOKSHELF_SIZE,
   SEARCHABLE_BOOKS,
   WEST_COMMISSIONS,
   WEST_GENERICS,
@@ -210,6 +211,7 @@ import {
   weaponShopOpenAt,
   applyDefense,
 } from './content'
+import type { BookReward } from './content'
 import {
   EVENTS,
   EVENT_CHANCE,
@@ -434,7 +436,16 @@ export function normalizeData(raw: GameData): GameData {
       Object.entries(raw.courseMastery ?? {}).filter(([id]) => courseById(id)),
     ),
     classBonus: raw.classBonus ?? null,
-    inventory: { basic_wand: 1, ...(raw.inventory ?? {}) },
+    inventory: (() => {
+      const merged: Record<string, number> = { basic_wand: 1, ...(raw.inventory ?? {}) }
+      const out: Record<string, number> = {}
+      for (const [id, qty] of Object.entries(merged)) {
+        if (id === 'defense_notes') continue
+        if (!Number.isFinite(qty) || qty <= 0) continue
+        out[id] = qty
+      }
+      return out
+    })(),
     equipment: (() => {
       const e = (raw.equipment ?? {}) as Record<string, string | null | undefined>
       return {
@@ -453,8 +464,21 @@ export function normalizeData(raw: GameData): GameData {
       }
       return { day: shop.day, sold }
     })(),
-    books: raw.books ?? {},
-    bookshelf: raw.bookshelf ?? ['picture_book'],
+    books: (() => {
+      const out: GameData['books'] = {}
+      for (const [id, state] of Object.entries(raw.books ?? {})) {
+        if (!BOOKS[id]) continue
+        out[id] = {
+          progress: clamp(Number(state?.progress ?? 0), 0, 100),
+          completed: !!state?.completed,
+          bonusClaimed: !!state?.bonusClaimed,
+        }
+      }
+      return out
+    })(),
+    bookshelf: (raw.bookshelf ?? ['picture_book'])
+      .filter((id) => !!BOOKS[id])
+      .slice(0, BOOKSHELF_SIZE),
     west: {
       stage: raw.west?.stage === 1 ? 1 : 0,
       construction: clamp(raw.west?.construction ?? 0, 0, WEST_CONSTRUCTION_MAX),
@@ -684,8 +708,39 @@ function addExp(d: GameData, key: SkillKey, amount: number): void {
   }
 }
 
-function decaySkill(d: GameData, key: SkillKey): boolean {
-  const s = d.skills[key]
+/**
+ * 结算一次书籍收益。返回可直接拼进文本的片段。
+ */
+function grantBookReward(d: GameData, reward: BookReward): string[] {
+  const parts: string[] = []
+  if (reward.mood) {
+    d.mood = clamp(d.mood + reward.mood, 0, 100)
+    parts.push(`心情 +${reward.mood}`)
+  }
+  if (reward.spirit) {
+    d.spirit = clamp(d.spirit + reward.spirit, 0, maxSpirit(d.skills.will.tier))
+    parts.push(`精神 +${reward.spirit}`)
+  }
+  if (reward.exp) {
+    for (const [key, value] of Object.entries(reward.exp)) {
+      const gain = value ?? 0
+      if (gain <= 0) continue
+      addExp(d, key as SkillKey, gain)
+      parts.push(`${SKILL_LABEL[key as SkillKey]}经验 +${gain}`)
+    }
+  }
+  if (reward.spell && !d.spells.includes(reward.spell)) {
+    d.spells.push(reward.spell)
+    parts.push(`学会${SPELLS[reward.spell]?.name ?? '新法术'}`)
+  }
+  if (reward.flag) {
+    d.flags[reward.flag] = true
+    parts.push(reward.text ?? '记下了一些东西')
+  }
+  return parts
+}
+
+function decaySkill(d: GameData, key: SkillKey): boolean {  const s = d.skills[key]
   if (s.tier >= 5) return false
   const beforeTier = s.tier
   const beforeExp = s.exp
@@ -2075,7 +2130,7 @@ export const useGame = create<Store>((set, get) => {
         set({ message: '书柜里已经有这本书了。' })
         return
       }
-      if (data.bookshelf.length >= 10) {
+      if (data.bookshelf.length >= BOOKSHELF_SIZE) {
         set({ message: '书柜放不下了。' })
         return
       }
@@ -2104,7 +2159,7 @@ export const useGame = create<Store>((set, get) => {
 
     readBook: (id) => {
       const { data } = get()
-      if (data.location !== 'library') {
+      if (data.location !== 'library' && data.location !== 'dorm') {
         set({ message: '这里不是读书的地方。' })
         return
       }
@@ -2115,6 +2170,15 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (book.requiresFlag && !data.flags[book.requiresFlag]) {
+        set({
+          message: `你还看不懂这本书。需要${book.requirementText ?? '更高的学识'}。`,
+        })
+        return
+      }
+      if (
+        book.requiresSkill &&
+        data.skills[book.requiresSkill.key].tier < book.requiresSkill.tier
+      ) {
         set({
           message: `你还看不懂这本书。需要${book.requirementText ?? '更高的学识'}。`,
         })
@@ -2131,6 +2195,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       const reread = !book.repeatable && state.completed
+      const place = data.location === 'dorm' ? '寝室' : '藏书阁'
       mutate((d) => {
         advanceTime(d, 30)
         if (cost > 0) d.spirit = clamp(d.spirit - cost, 0, maxSpirit(d.skills.will.tier))
@@ -2142,40 +2207,32 @@ export const useGame = create<Store>((set, get) => {
         const current = d.books[id] ?? { progress: 0, completed: false }
         let progress = current.progress + book.progressPerRead
         let completed = current.completed
-        let text = `你在藏书阁读了半小时《${book.name}》。阅读进度 ${Math.min(100, progress)}%。`
+        let bonusClaimed = current.bonusClaimed ?? false
+        const parts = book.perRead ? grantBookReward(d, book.perRead) : []
+        let text: string
         if (progress >= 100) {
-          const reward = book.reward
-          if (reward.mood) d.mood = clamp(d.mood + reward.mood, 0, 100)
-          if (reward.spirit) {
-            d.spirit = clamp(d.spirit + reward.spirit, 0, maxSpirit(d.skills.will.tier))
-          }
-          if (reward.exp) {
-            for (const [key, value] of Object.entries(reward.exp)) {
-              addExp(d, key as SkillKey, value ?? 0)
-            }
-          }
-          if (reward.spell && !d.spells.includes(reward.spell)) {
-            d.spells.push(reward.spell)
-            pushLog(d, `你学会了${SPELLS[reward.spell]?.name ?? '新法术'}。`)
-          }
-          if (reward.flag) d.flags[reward.flag] = true
-          const parts: string[] = []
-          if (reward.mood) parts.push(`心情 +${reward.mood}`)
-          if (reward.spirit) parts.push(`精神 +${reward.spirit}`)
-          if (reward.exp) parts.push(reward.text ?? '经验提升')
-          if (reward.spell) parts.push(reward.text ?? '学会了新法术')
-          if (reward.flag) parts.push(reward.text ?? '记下了一些东西')
-          const rewardText = parts.length ? `${parts.join('，')}。` : ''
           if (book.repeatable) {
+            const giveCompletion = book.repeatCompletion || !bonusClaimed
+            if (giveCompletion) {
+              parts.push(...grantBookReward(d, book.reward))
+              if (!book.repeatCompletion) bonusClaimed = true
+            } else {
+              parts.push('首次完成奖励已领取')
+            }
             progress = 0
-            text = `你读完了《${book.name}》。${rewardText}`
+            text = `你读完了《${book.name}》。${parts.length ? `${parts.join('，')}。` : ''}`
           } else {
+            if (!completed) {
+              parts.push(...grantBookReward(d, book.reward))
+              completed = true
+            }
             progress = 100
-            completed = true
-            text = `你读完了《${book.name}》。${rewardText}`
+            text = `你读完了《${book.name}》。${parts.length ? `${parts.join('，')}。` : ''}`
           }
+        } else {
+          text = `你在${place}读了半小时《${book.name}》。${parts.length ? `${parts.join('，')}。` : ''}阅读进度 ${progress}%。`
         }
-        d.books[id] = { progress, completed }
+        d.books[id] = { progress, completed, bonusClaimed }
         pushLog(d, text)
         return text
       })

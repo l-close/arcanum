@@ -7,6 +7,9 @@ import {
   BELL_TOWER_OPEN_START,
   BELL_TOWER_STAMINA,
   BOOKS,
+  BOOK_CATEGORY_LABEL,
+  BOOK_CATEGORY_ORDER,
+  BOOKSHELF_SIZE,
   ACADEMY_MEAL_FEE,
   CEMETERY_SWEEP_MINUTES,
   CEMETERY_SWEEP_MOOD,
@@ -1457,6 +1460,7 @@ function Actions({
       )}
       {loc === 'dorm' && <ActionBtn onClick={meditate} label="冥想" cost="1 小时" />}
       {loc === 'dorm' && <ActionBtn onClick={() => setModal('bookshelf')} label="书柜" cost="—" />}
+      {loc === 'dorm' && <ActionBtn onClick={() => setModal('reading')} label="阅读" cost="0.5 小时" />}
       {loc === 'dorm' && data.workshop.brewKitUntilDay > data.day && (
         <ActionBtn
           onClick={() => setModal('brew')}
@@ -2283,7 +2287,7 @@ function BookshelfModal() {
   const setModal = useGame((s) => s.setModal)
   const takeBook = useGame((s) => s.takeBook)
   const storeBook = useGame((s) => s.storeBook)
-  const shelf = Array.from({ length: 10 }, (_, i) => data.bookshelf[i] ?? null)
+  const shelf = Array.from({ length: BOOKSHELF_SIZE }, (_, i) => data.bookshelf[i] ?? null)
   const bagBooks = Object.entries(data.inventory).filter(
     ([id, qty]) => qty > 0 && !!BOOKS[id],
   )
@@ -2292,7 +2296,7 @@ function BookshelfModal() {
   return (
     <ModalShell title="书柜" wide onClose={() => setModal(null)}>
       <div className="book-section">
-        <div className="inv-section-title">书柜（{data.bookshelf.length} / 10）</div>
+        <div className="inv-section-title">书柜（{data.bookshelf.length} / {BOOKSHELF_SIZE}）</div>
         <div className="book-grid">
           {shelf.map((id, i) =>
             id ? (
@@ -2324,7 +2328,7 @@ function BookshelfModal() {
               <button
                 key={id}
                 className="book-row-btn"
-                disabled={data.bookshelf.length >= 10}
+                disabled={data.bookshelf.length >= BOOKSHELF_SIZE}
                 onClick={() => storeBook(id)}
               >
                 <ItemIcon id={id} size={26} />
@@ -2346,52 +2350,79 @@ function ReadingModal() {
   const books = Object.entries(data.inventory).filter(
     ([id, qty]) => qty > 0 && !!BOOKS[id],
   )
+  const groups = BOOK_CATEGORY_ORDER.map((category) => ({
+    category,
+    label: BOOK_CATEGORY_LABEL[category],
+    books: books.filter(([id]) => BOOKS[id].category === category),
+  })).filter((group) => group.books.length > 0)
 
   return (
     <ModalShell title="阅读" onClose={() => setModal(null)}>
       {books.length === 0 ? (
-        <p className="hint">你身上没有书。先回寝室书柜取一本。</p>
+        <p className="hint">
+          {data.location === 'dorm'
+            ? '背包里没有书。可以从书柜取一本。'
+            : '你身上没有书。先回寝室书柜取一本。'}
+        </p>
       ) : (
         <div className="reading-list">
-          {books.map(([id]) => {
-            const book = BOOKS[id]
-            const state = data.books[id]
-            const progress = state?.progress ?? 0
-            const completed = !!state?.completed && !book.repeatable
-            const locked = !!book.requiresFlag && !data.flags[book.requiresFlag]
-            return (
-              <div className="reading-item" key={id}>
-                <div className="reading-head">
-                  <span className="reading-name">{book.name}</span>
-                  <span className="reading-progress">
-                    {locked ? '看不懂' : completed ? '已读完' : `${progress}%`}
-                  </span>
-                </div>
-                <div className="reading-desc">{book.desc}</div>
-                <div className="reading-bar">
-                  <div style={{ width: `${locked ? 0 : completed ? 100 : progress}%` }} />
-                </div>
-                <div className="reading-meta">
-                  <span>30 分钟</span>
-                  <span>{book.spiritCost ? `精神 -${book.spiritCost}` : '不耗精神'}</span>
-                  <span>{book.repeatable ? '可重复阅读' : '一次性'}</span>
-                </div>
-                {locked && (
-                  <div className="hint">
-                    需要{book.requirementText ?? '更高的学识'}才能读懂。
+          {groups.map((group) => (
+            <div className="reading-group" key={group.category}>
+              <div className="reading-category">{group.label}</div>
+              {group.books.map(([id]) => {
+                const book = BOOKS[id]
+                const state = data.books[id]
+                const progress = state?.progress ?? 0
+                const completed = !!state?.completed && !book.repeatable
+                const bonusClaimed = !!state?.bonusClaimed
+                const locked =
+                  (!!book.requiresFlag && !data.flags[book.requiresFlag]) ||
+                  (!!book.requiresSkill &&
+                    data.skills[book.requiresSkill.key].tier < book.requiresSkill.tier)
+                const completionLabel = book.repeatable
+                  ? book.repeatCompletion
+                    ? `每轮完成 ${book.reward.text ?? '获得收益'}`
+                    : `首次完成 ${book.reward.text ?? '获得收益'}${bonusClaimed ? '（已领取）' : ''}`
+                  : `读完 ${book.reward.text ?? '获得收益'}`
+                return (
+                  <div className="reading-item" key={id}>
+                    <div className="reading-head">
+                      <span className="reading-name">{book.name}</span>
+                      <span className="reading-progress">
+                        {locked ? '看不懂' : completed ? '已读完' : `${progress}%`}
+                      </span>
+                    </div>
+                    <div className="reading-desc">{book.desc}</div>
+                    <div className="reading-bar">
+                      <div style={{ width: `${locked ? 0 : completed ? 100 : progress}%` }} />
+                    </div>
+                    <div className="reading-meta">
+                      <span>30 分钟</span>
+                      <span>{book.spiritCost ? `精神 -${book.spiritCost}` : '不耗精神'}</span>
+                      <span>{book.repeatable ? '可重复阅读' : '一次性'}</span>
+                    </div>
+                    <div className="reading-rewards">
+                      {book.perRead?.text && <span>每次 {book.perRead.text}</span>}
+                      <span>{completionLabel}</span>
+                    </div>
+                    {locked && (
+                      <div className="hint">
+                        需要{book.requirementText ?? '更高的学识'}才能读懂。
+                      </div>
+                    )}
+                    {completed && <div className="hint">已读完，重读没有收益。</div>}
+                    <button
+                      className="primary-btn"
+                      disabled={locked || completed}
+                      onClick={() => readBook(id)}
+                    >
+                      {locked ? '看不懂' : completed ? '重读 30 分钟' : '阅读 30 分钟'}
+                    </button>
                   </div>
-                )}
-                {completed && <div className="hint">已读完，重读没有收益。</div>}
-                <button
-                  className="primary-btn"
-                  disabled={locked || completed}
-                  onClick={() => readBook(id)}
-                >
-                  {locked ? '看不懂' : completed ? '重读 30 分钟' : '阅读 30 分钟'}
-                </button>
-              </div>
-            )
-          })}
+                )
+              })}
+            </div>
+          ))}
         </div>
       )}
       <p className="hint">阅读会推进这本书的进度，达到 100% 时获得收益。</p>
@@ -3127,21 +3158,48 @@ function InventoryModal() {
               >
                 {selectedBuffActive ? '已生效' : '使用'}
               </button>
-            ) : selectedDef.type === 'book' ? (
-              <>
-                <div className="hint">
-                  阅读进度 {data.books[selectedDef.id]?.progress ?? 0}%。在藏书阁阅读。
-                </div>
-                <button
-                  className="primary-btn detail-action"
-                  disabled={data.location !== 'dorm' || data.bookshelf.length >= 10}
-                  onClick={() => storeBook(selectedDef.id)}
-                >
-                  放入书柜
-                </button>
-                {data.location !== 'dorm' && <div className="hint">书柜在寝室。</div>}
-              </>
-            ) : (
+            ) : selectedDef.type === 'book' ? (() => {
+              const book = BOOKS[selectedDef.id]
+              if (!book) return <div className="hint">这本书已经下架了。</div>
+              const state = data.books[selectedDef.id]
+              const progress = state?.progress ?? 0
+              const completed = !!state?.completed && !book.repeatable
+              const bonusClaimed = !!state?.bonusClaimed
+              const locked =
+                (!!book.requiresFlag && !data.flags[book.requiresFlag]) ||
+                (!!book.requiresSkill &&
+                  data.skills[book.requiresSkill.key].tier < book.requiresSkill.tier)
+              const completionLabel = book.repeatable
+                ? book.repeatCompletion
+                  ? `每轮完成 ${book.reward.text ?? '获得收益'}`
+                  : `首次完成 ${book.reward.text ?? '获得收益'}${bonusClaimed ? '（已领取）' : ''}`
+                : `读完 ${book.reward.text ?? '获得收益'}`
+              return (
+                <>
+                  <div className="detail-stats">
+                    <span>{BOOK_CATEGORY_LABEL[book.category]}</span>
+                    {book.perRead?.text ? <span>每次 {book.perRead.text}</span> : null}
+                    <span>{completionLabel}</span>
+                  </div>
+                  <div className="hint">
+                    {locked
+                      ? `需要${book.requirementText ?? '更高的学识'}才能读懂。`
+                      : completed
+                        ? '已读完，重读没有收益。'
+                        : `阅读进度 ${progress}%。可在藏书阁或寝室阅读。`}
+                    {bonusClaimed ? ' 首次完成奖励已领取。' : ''}
+                  </div>
+                  <button
+                    className="primary-btn detail-action"
+                    disabled={data.location !== 'dorm' || data.bookshelf.length >= BOOKSHELF_SIZE}
+                    onClick={() => storeBook(selectedDef.id)}
+                  >
+                    放入书柜
+                  </button>
+                  {data.location !== 'dorm' && <div className="hint">书柜在寝室。</div>}
+                </>
+              )
+            })() : (
               <div className="hint">材料，可在杂货店出售。</div>
             )}
           </>

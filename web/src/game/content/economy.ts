@@ -33,9 +33,12 @@ export const SHOP_STOCKS: Record<string, Record<string, number>> = {
   },
   bookshop: {
     brawl_manual: 1,
-    defense_notes: 1,
     old_city_stories: 1,
     silver_moon_lore: 1,
+    hundred_crafts: 1,
+    frontier_notes: 1,
+    hearth_tales: 1,
+    old_letters: 1,
   },
   potionWorkshop: {
     sharp_draught: 2,

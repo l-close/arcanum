@@ -1,5 +1,6 @@
 import {
   BOOKS,
+  BOOK_CATEGORY_LABEL,
   COMBAT_BUFF_LABEL,
   CONSTELLATIONS,
   COURSES,
@@ -16,6 +17,7 @@ import {
   RECIPES,
   RUNES,
   SHOP_STOCKS,
+  SKILL_ORDER,
   SPELLS,
   WEST_COMMISSIONS,
   WEST_GENERICS,
@@ -155,14 +157,38 @@ export function validateContent(): ContentIssue[] {
 
   for (const [id, book] of Object.entries(BOOKS)) {
     if (!itemIds.has(id)) error('books', `${id}: 对应物品不存在`)
+    if (!(book.category in BOOK_CATEGORY_LABEL)) {
+      error('books', `${id}: 分类 ${book.category} 无效`)
+    }
     if (book.reward.spell && !spellIds.has(book.reward.spell)) {
       error('books', `${id}: 奖励法术 ${book.reward.spell} 不存在`)
+    }
+    if (book.perRead?.spell && !spellIds.has(book.perRead.spell)) {
+      error('books', `${id}: 单次奖励法术 ${book.perRead.spell} 不存在`)
+    }
+    for (const reward of [book.reward, book.perRead]) {
+      for (const key of Object.keys(reward?.exp ?? {})) {
+        if (!(SKILL_ORDER as readonly string[]).includes(key)) {
+          error('books', `${id}: 经验类型 ${key} 无效`)
+        }
+      }
+    }
+    if (book.requiresSkill) {
+      if (!SKILL_ORDER.includes(book.requiresSkill.key)) {
+        error('books', `${id}: 门槛技能 ${book.requiresSkill.key} 无效`)
+      }
+      if (book.requiresSkill.tier < 0 || book.requiresSkill.tier > 5) {
+        error('books', `${id}: 门槛档位超出 0–5`)
+      }
     }
     if (book.progressPerRead <= 0) {
       error('books', `${id}: progressPerRead 必须大于 0`)
     }
     if (book.spiritCost !== undefined && !nonNegative(book.spiritCost)) {
       error('books', `${id}: spiritCost 为负`)
+    }
+    if (book.repeatCompletion && !book.repeatable) {
+      warn('books', `${id}: 一次性书设置了每轮完成奖励`)
     }
   }
 

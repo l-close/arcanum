@@ -90,6 +90,13 @@ export type ExamPackage = {
   opened: boolean
 }
 
+export type BookState = {
+  progress: number
+  completed: boolean
+  /** 一次性完成奖励是否已领取（可重复的知识书使用）。 */
+  bonusClaimed?: boolean
+}
+
 export type GameData = {
   version: number
   day: number
@@ -117,7 +124,7 @@ export type GameData = {
   inventory: Record<string, number>
   equipment: Equipment
   shop: { day: number; sold: Record<string, number> }
-  books: Record<string, { progress: number; completed: boolean }>
+  books: Record<string, BookState>
   bookshelf: string[]
   west: WestState
   guild: GuildState
