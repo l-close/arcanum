@@ -28,13 +28,13 @@ export const COMMISSION_BOARD_SIZE: Record<CommissionSource, number> = {
   workshop: 2,
 }
 
-export const REPUTATION_MAX = 30
+export const REPUTATION_MAX = 50
 
 export const REPUTATION_BANDS: Array<{ min: number; text: string }> = [
   { min: 0, text: '城里很少有人认得你。' },
-  { min: 5, text: '常去的几家店开始记得你的脸。' },
-  { min: 10, text: '商会、工坊和教会都愿意把活交给你。' },
-  { min: 20, text: '在银月城，你的名字已经能当一层担保。' },
+  { min: 15, text: '常去的几家店开始记得你的脸。' },
+  { min: 30, text: '商会、工坊和教会都愿意把活交给你。' },
+  { min: 50, text: '在银月城，你的名字已经能当一层担保。' },
 ]
 
 export function reputationText(reputation: number): string {
@@ -47,14 +47,14 @@ export function reputationText(reputation: number): string {
 
 /** 交付时的报酬加成：0 / 5% / 10% / 15%。 */
 export function reputationPayBonus(reputation: number): number {
-  if (reputation >= 30) return 0.15
-  if (reputation >= 20) return 0.1
-  if (reputation >= 10) return 0.05
+  if (reputation >= 50) return 0.15
+  if (reputation >= 30) return 0.1
+  if (reputation >= 15) return 0.05
   return 0
 }
 
 export function commissionPay(def: CommissionDef, reputation: number): number {
-  return Math.floor(def.money * (1 + reputationPayBonus(reputation)))
+  return Math.round(def.money * (1 + reputationPayBonus(reputation)))
 }
 
 export function commissionSourceLocation(source: CommissionSource): string {
@@ -106,7 +106,7 @@ export const COMMISSIONS: CommissionDef[] = [
     days: 3,
     money: 40,
     reputation: 1,
-    minReputation: 5,
+    minReputation: 15,
   },
   {
     id: 'guild_wolf',
@@ -117,7 +117,7 @@ export const COMMISSIONS: CommissionDef[] = [
     days: 5,
     money: 60,
     reputation: 2,
-    minReputation: 5,
+    minReputation: 15,
     elite: true,
   },
   {
@@ -129,7 +129,7 @@ export const COMMISSIONS: CommissionDef[] = [
     days: 6,
     money: 80,
     reputation: 2,
-    minReputation: 10,
+    minReputation: 30,
     elite: true,
   },
   {
@@ -161,7 +161,7 @@ export const COMMISSIONS: CommissionDef[] = [
     days: 4,
     money: 42,
     reputation: 1,
-    minReputation: 5,
+    minReputation: 15,
   },
   {
     id: 'ws_stim_fine',
@@ -172,7 +172,7 @@ export const COMMISSIONS: CommissionDef[] = [
     days: 4,
     money: 40,
     reputation: 1,
-    minReputation: 5,
+    minReputation: 15,
   },
   {
     id: 'ws_mixed',
@@ -183,7 +183,7 @@ export const COMMISSIONS: CommissionDef[] = [
     days: 3,
     money: 36,
     reputation: 1,
-    minReputation: 10,
+    minReputation: 30,
   },
 ]
 
@@ -200,21 +200,42 @@ function seedOf(text: string): number {
   return hash >>> 0
 }
 
-/** 按周和名誉生成板子；同一周结果固定。 */
+/** 高级委托出现概率。 */
+export const ADVANCED_COMMISSION_CHANCE = 0.5
+
+/**
+ * 按周和名誉生成板子。
+ * 商会 3 条、工坊 2 条；高级命中时随机顶掉 1 条低级。
+ * 同一周结果固定。
+ */
 export function buildCommissionBoard(week: number, reputation: number): string[] {
   const board: string[] = []
   const sources: CommissionSource[] = ['guild', 'workshop']
   for (const source of sources) {
-    const pool = COMMISSIONS.filter(
+    const size = COMMISSION_BOARD_SIZE[source]
+    const byHash = (prefix: string, a: CommissionDef, b: CommissionDef) =>
+      hash01(seedOf(`${week}:${source}:${prefix}:${a.id}`)) -
+      hash01(seedOf(`${week}:${source}:${prefix}:${b.id}`))
+    const base = COMMISSIONS.filter(
+      (commission) =>
+        commission.source === source && (commission.minReputation ?? 0) === 0,
+    ).sort((a, b) => byHash('base', a, b))
+    const advanced = COMMISSIONS.filter(
       (commission) =>
         commission.source === source &&
+        (commission.minReputation ?? 0) > 0 &&
         (commission.minReputation ?? 0) <= reputation,
-    ).sort(
-      (a, b) =>
-        hash01(seedOf(`${week}:${source}:${a.id}`)) -
-        hash01(seedOf(`${week}:${source}:${b.id}`)),
-    )
-    board.push(...pool.slice(0, COMMISSION_BOARD_SIZE[source]).map((c) => c.id))
+    ).sort((a, b) => byHash('advanced', a, b))
+    const roll = hash01(seedOf(`${week}:${source}:advanced-roll`))
+    if (advanced.length > 0 && roll < ADVANCED_COMMISSION_CHANCE) {
+      const pick = Math.floor(
+        hash01(seedOf(`${week}:${source}:advanced-pick`)) * advanced.length,
+      )
+      const chosen = advanced[Math.min(pick, advanced.length - 1)]
+      board.push(...base.slice(0, Math.max(0, size - 1)).map((c) => c.id), chosen.id)
+    } else {
+      board.push(...base.slice(0, size).map((c) => c.id))
+    }
   }
   return board
 }

@@ -217,6 +217,7 @@ import {
   commissionSourceLocation,
   MAX_ACTIVE_COMMISSIONS,
   REPUTATION_MAX,
+  COMMISSION_BOARD_SIZE,
 } from './content'
 import type { BookReward } from './content'
 import {
@@ -561,9 +562,18 @@ export function normalizeData(raw: GameData): GameData {
       const reputation = clamp(Math.floor(rep), 0, REPUTATION_MAX)
       const stored = raw.commissions
       const sameWeek = stored?.week === week
-      const board = sameWeek && Array.isArray(stored?.board) && stored.board.length > 0
-        ? stored.board.filter((id) => !!commissionById(id))
-        : buildCommissionBoard(week, reputation)
+      const expectedBoardSize =
+        COMMISSION_BOARD_SIZE.guild + COMMISSION_BOARD_SIZE.workshop
+      const storedBoard = sameWeek && Array.isArray(stored?.board)
+        ? stored.board.filter((id) => {
+            const def = commissionById(id)
+            return !!def && (def.minReputation ?? 0) <= reputation
+          })
+        : []
+      const board =
+        storedBoard.length === expectedBoardSize
+          ? storedBoard
+          : buildCommissionBoard(week, reputation)
       const accepted = Array.isArray(stored?.accepted)
         ? stored.accepted
             .filter((entry) => !!commissionById(entry.id))
