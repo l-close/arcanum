@@ -6,6 +6,7 @@ import type {
   SkillKey,
   WestProjectKey,
 } from '../types'
+import { hash01 } from './rng'
 
 export const TIER_REQ = [200, 1000, 3000, 7500, 20000]
 
@@ -2209,13 +2210,6 @@ export function seasonOf(day: number): Season {
   const month = Math.floor(day / 28) + 1
   const index = Math.floor((((month - 1) % 8) + 8) % 8 / 2)
   return (['spring', 'summer', 'autumn', 'winter'] as const)[index]
-}
-
-function hash01(n: number): number {
-  let x = (n | 0) + 0x6d2b79f5
-  x = Math.imul(x ^ (x >>> 15), x | 1)
-  x ^= x + Math.imul(x ^ (x >>> 7), x | 61)
-  return ((x ^ (x >>> 14)) >>> 0) / 4294967296
 }
 
 const WEATHER_TABLE: Record<Season, Array<[WeatherKind, number]>> = {
