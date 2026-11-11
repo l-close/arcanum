@@ -2819,7 +2819,8 @@ export const useGame = create<Store>((set, get) => {
         }
         return
       }
-      const physical = courseById(segment.courseId)?.kind === 'physical'
+      const course = courseById(segment.courseId)
+      const physical = course?.kind === 'physical'
       const cost = physical ? 3 : spiritCost(2, data.mood)
       if (physical && data.stamina < cost) {
         set({ message: '你太累了，先休息一下再上课。' })
@@ -2833,13 +2834,8 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       const masteryGain = remaining >= 30 ? 0.5 : 0.25
-      const skillGain = physical
-        ? remaining >= 30
-          ? 0.5
-          : 0.25
-        : remaining >= 30
-          ? 1
-          : 0.5
+      const baseSkillGain = course?.expPerSegment ?? (physical ? 0.5 : 1)
+      const skillGain = remaining >= 30 ? baseSkillGain : baseSkillGain / 2
       const physiqueGain = physical ? (remaining >= 30 ? 1 : 0.5) : 0
       const gains = [`${SKILL_LABEL[segment.skill]}经验 +${formatGain(skillGain)}`]
       if (physical) gains.push(`体质经验 +${formatGain(physiqueGain)}`)

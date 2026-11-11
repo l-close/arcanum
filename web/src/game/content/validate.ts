@@ -317,6 +317,13 @@ export function validateContent(): ContentIssue[] {
     if (course.skillByWeekday && course.skillByWeekday.length !== 5) {
       warn('courses', `${course.id}: skillByWeekday 不是 5 天`)
     }
+    if (course.expPerSegment !== undefined) {
+      if (!Number.isFinite(course.expPerSegment) || course.expPerSegment <= 0) {
+        error('courses', `${course.id}: expPerSegment 必须大于 0`)
+      } else if (course.expPerSegment > 5) {
+        warn('courses', `${course.id}: expPerSegment 超过 5`)
+      }
+    }
   }
 
   for (const year of new Set(COURSES.map((c) => c.year))) {

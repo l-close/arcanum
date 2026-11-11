@@ -16,6 +16,8 @@ export type CourseDef = {
   start: number
   end: number
   teacher: string
+  /** 每 30 分钟的技能经验；体术课默认 0.5，其他课默认 1。 */
+  expPerSegment?: number
   /** 考试地点；不填则跟随当天的上课地点 */
   examLocation?: string
   /** 按星期指定上课地点，索引 0 = 周一 */
@@ -65,6 +67,7 @@ export const COURSES: CourseDef[] = [
     teacher: '格里高利·索恩',
     rotate: true,
     rotateWeekly: true,
+    expPerSegment: 1.0,
   },
   {
     id: 'y2_history',
@@ -76,6 +79,7 @@ export const COURSES: CourseDef[] = [
     start: 8 * 60,
     end: 9 * 60 + 30,
     teacher: '伊莲娜',
+    expPerSegment: 2,
   },
   {
     id: 'y2_advanced_nature',
@@ -87,6 +91,7 @@ export const COURSES: CourseDef[] = [
     start: 10 * 60,
     end: 11 * 60 + 30,
     teacher: '阿尔文·莱特',
+    expPerSegment: 2,
   },
   {
     id: 'y2_sword',
@@ -98,6 +103,7 @@ export const COURSES: CourseDef[] = [
     start: 13 * 60,
     end: 14 * 60 + 30,
     teacher: '格里高利·索恩',
+    expPerSegment: 2,
   },
   {
     id: 'y2_course_4',
@@ -112,6 +118,7 @@ export const COURSES: CourseDef[] = [
     examLocation: 'lecture',
     locationByWeekday: ['brewery', 'brewery', 'brewery', 'herbGarden', 'herbGarden'],
     skillByWeekday: ['alchemy', 'alchemy', 'alchemy', 'cultivation', 'cultivation'],
+    expPerSegment: 2,
   },
 ]
 
