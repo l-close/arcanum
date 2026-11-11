@@ -90,7 +90,7 @@ export const ITEMS: Record<string, ItemDef> = {
     medium: true,
     weapon: 'staff',
     power: 1,
-    desc: '学院发放的基础施法媒介。杖击威力很低。',
+    desc: '学院统一发的练习魔杖，杖身有细小的划痕。杖击威力很低。',
   },
   advanced_wand: {
     id: 'advanced_wand',
@@ -103,7 +103,7 @@ export const ITEMS: Record<string, ItemDef> = {
     weapon: 'staff',
     power: 1,
     spellPower: 2,
-    desc: '做工更好的施法媒介。法术伤害 +2。',
+    desc: '杖头镶着一小块打磨过的晶石。法术伤害 +2。',
   },
   practice_sword: {
     id: 'practice_sword',
@@ -136,7 +136,7 @@ export const ITEMS: Record<string, ItemDef> = {
     quality: 'rare',
     price: 12,
     medium: false,
-    desc: '恢复 20 点魔力。',
+    desc: '瓶身冰凉，液面泛着淡蓝。恢复 20 点魔力。',
     effect: { mana: 20 },
   },
   tonic: {
@@ -146,7 +146,7 @@ export const ITEMS: Record<string, ItemDef> = {
     quality: 'rare',
     price: 10,
     medium: false,
-    desc: '恢复 15 点体力。',
+    desc: '一股辛辣的草药味。恢复 15 点体力。',
     effect: { stamina: 15 },
   },
   healing_potion: {
@@ -156,7 +156,7 @@ export const ITEMS: Record<string, ItemDef> = {
     quality: 'rare',
     price: 15,
     medium: false,
-    desc: '恢复 20 点生命。',
+    desc: '灰白色的药粉，闻起来发苦。恢复 20 点生命。',
     effect: { hp: 20 },
   },
   salve: {
@@ -206,7 +206,7 @@ export const ITEMS: Record<string, ItemDef> = {
     quality: 'rare',
     price: 18,
     medium: false,
-    desc: '战前或战中饮用。24 小时内近战伤害 +1。同种药剂不可叠加。',
+    desc: '喝下去喉咙发热，握兵器的手更稳。24 小时内近战伤害 +1。同种药剂不可叠加。',
     effect: { combatBuff: 'sharp' },
   },
   stone_draught: {
@@ -216,7 +216,7 @@ export const ITEMS: Record<string, ItemDef> = {
     quality: 'rare',
     price: 18,
     medium: false,
-    desc: '战前或战中饮用。24 小时内受到的伤害 -1，最低 1。同种药剂不可叠加。',
+    desc: '皮肤会短暂发紧，像裹了一层薄壳。24 小时内受到的伤害 -1，最低 1。同种药剂不可叠加。',
     effect: { combatBuff: 'stone' },
   },
   swift_draught: {
@@ -226,7 +226,7 @@ export const ITEMS: Record<string, ItemDef> = {
     quality: 'rare',
     price: 22,
     medium: false,
-    desc: '战前或战中饮用。24 小时内行动条充能 +5%。同种药剂不可叠加。',
+    desc: '心跳加快，脚步变轻。24 小时内行动条充能 +5%。同种药剂不可叠加。',
     effect: { combatBuff: 'swift' },
   },
   dry_ration: {
@@ -603,7 +603,7 @@ export const RECIPES: RecipeDef[] = [
     fine: 'salve_fine',
     successBase: 105,
     fineBase: 30,
-    desc: '把止血草熬成膏。基础配方，适合练手。',
+    desc: '止血草熬成的膏，颜色发暗，带一点草腥味。',
   },
   {
     id: 'stimulant',
@@ -615,7 +615,7 @@ export const RECIPES: RecipeDef[] = [
     fine: 'stimulant_fine',
     successBase: 105,
     fineBase: 20,
-    desc: '苦叶煎出的提神剂。比止血膏难出精制品。',
+    desc: '苦叶煎出的提神剂，苦味很重，喝下去身上会暖起来。',
   },
 ]
 
@@ -1466,7 +1466,7 @@ export const LOCATIONS: Location[] = [
     name: '钟楼',
     parent: 'church',
     kind: 'room',
-    desc: '木楼梯很窄，越往上越冷。塔下有一条空长凳，守钟人奥托白天常坐在这里。',
+    desc: '木楼梯很窄，越往上越冷。塔下有一条长凳，凳脚边放着一只旧水壶。',
   },
   {
     id: 'gate',
@@ -1669,7 +1669,7 @@ const DESC_BY_TIME: Record<string, [string, string, string]> = {
   ],
   church: [
     '钟声从高处落下来。石阶被扫得很干净，神像脚下放着几束刚采的花。',
-    '钟声从高处落下来。石阶被扫得很干净，门口站着一尊女性形象的神像。',
+    '钟声从高处落下来。石阶被扫得很干净，母神的神像立在门口，肩头落着一点灰。',
     '教堂的窗还亮着暖光，钟楼沉在夜色里，石阶上只有风声。',
   ],
   chapel: [
@@ -1679,12 +1679,12 @@ const DESC_BY_TIME: Record<string, [string, string, string]> = {
   ],
   relief: [
     '救济院里堆着旧衣、面粉和几捆柴。玛尔塔在桌边登记名单，头也没抬。',
-    '救济院里堆着旧衣、面粉和几捆柴。玛尔塔在桌边登记名单，头也没抬。',
+    '救济院里有人在低声说话。玛尔塔把一叠名单压在桌角，起身去了里间。',
     '救济院熄了大半的灯，旧衣和面粉堆在墙角，玛尔塔还在核对最后几行名单。',
   ],
   bellTower: [
     '木楼梯很窄，越往上越冷。塔下有一条空长凳，守钟人奥托正坐在那里晒太阳。',
-    '木楼梯很窄，越往上越冷。塔下有一条空长凳，奥托白天常坐在这里。',
+    '木楼梯很窄，越往上越冷。塔下有一条长凳，奥托的水壶还放在凳脚边。',
     '木楼梯很窄，越往上越冷。塔下空无一人，风从钟口灌下来，带着低低的鸣响。',
   ],
   gate: [
@@ -1735,17 +1735,17 @@ const DESC_BY_TIME: Record<string, [string, string, string]> = {
   westEdge: [
     '雾贴着地面，看不清更远的地方。',
     '风从田野那边吹过来，带着土腥味。',
-    '没有人愿意往那边看。',
+    '路上没有脚印，草一直长到拒马边。',
   ],
   westMarket: [
     '集市口的木棚歪着，几个摊位空了很久。地上有烂菜叶和被风吹来的灰。',
-    '集市口的木棚歪着，几个摊位空了很久。地上有烂菜叶和被风吹来的灰。',
-    '集市口的木棚歪着，几个摊位空了很久。地上有烂菜叶和被风吹来的灰。',
+    '集市里只有两个摊子开着，卖些蔫掉的菜。风把棚布吹得一下一下响。',
+    '集市收了，地上只剩几片烂菜叶。木棚在暗处歪着。',
   ],
   westTower: [
     '哨塔的木梯断了一级，塔顶的棚布被风吹开。上面很久没人上去了。',
-    '哨塔的木梯断了一级，塔顶的棚布被风吹开。上面很久没人上去了。',
-    '哨塔的木梯断了一级，塔顶的棚布被风吹开。上面很久没人上去了。',
+    '塔顶的棚布被风吹得鼓起来。楼梯口的灰里没有脚印。',
+    '哨塔沉在暗处，断掉的木梯只剩一个轮廓。',
   ],
 }
 
@@ -1767,13 +1767,13 @@ const WEST_STAGE1_DESC: Record<string, [string, string, string]> = {
   ],
   westChapel: [
     '晨雾里，封条上的印记有些模糊。石阶被扫干净了，边上放着一小束枯花。',
-    '日光照在石阶上，门里仍然没有声音。台阶上没有人。',
+    '日光照在石阶上，门里没有声音。',
     '礼拜堂沉在暗处，封条被风吹得轻轻响。门口的灰没有积起来。',
   ],
   westEdge: [
     '雾贴着地面，拒马修好了，木牌上的字还是看不清。',
     '风从田野那边吹过来，带着土腥味。路边的草被踩出一条窄路。',
-    '没有人愿意往那边看。拒马旁边多了一盏灯。',
+    '拒马旁边多了一盏灯，路上还是没有脚印。',
   ],
   westMarket: [
     '两三个摊位重新开张，卖热食的锅刚架上。',
@@ -1862,24 +1862,24 @@ const SEASON_DESC: Record<string, SeasonDesc> = {
   },
   orphanStreet: {
     spring: [
-      '这一带很窄，墙根冒出新草。孤儿院的屋顶在前头。',
+      '巷子很窄，墙根冒出新草。孤儿院的屋顶在前头。',
       '有人把洗好的衣服晾在窗外，水滴在石板上。',
-      '这一带只剩几盏灯，孤儿院的窗还亮着。',
+      '街口只剩几盏灯，孤儿院的窗还亮着。',
     ],
     summer: [
-      '这一带很安静，墙上的藤蔓被晒得发亮。',
+      '巷子里很安静，墙上的藤蔓被晒得发亮。',
       '孩子们在街口跑来跑去，笑声传得很远。',
-      '这一带闷热，有人坐在门口乘凉。',
+      '墙根下闷热，有人坐在门口乘凉。',
     ],
     autumn: [
       '落叶堆在墙根，风一吹就散开。',
-      '这一带上有股柴火味，谁家在准备晚饭。',
-      '风穿过这一带，把晾衣绳吹得轻轻响。',
+      '巷子里有股柴火味，谁家在准备晚饭。',
+      '风穿过巷子，把晾衣绳吹得轻轻响。',
     ],
     winter: [
-      '这一带的雪没扫干净，脚印一直通到孤儿院门口。',
+      '巷子里的雪没扫干净，脚印一直通到孤儿院门口。',
       '屋檐下挂着冰棱，孩子们缩着脖子跑过。',
-      '这一带很黑，只有孤儿院门口的灯亮着。',
+      '巷子里很黑，只有孤儿院门口的灯亮着。',
     ],
   },
   churchStreet: {
@@ -1895,7 +1895,7 @@ const SEASON_DESC: Record<string, SeasonDesc> = {
     ],
     autumn: [
       '风把落叶扫到教堂石阶下。',
-      '钟声在秋日的街上显得格外清楚。',
+      '钟声在秋日的街上传得很远。',
       '教堂的窗还亮着，街上的灯一盏盏熄灭。',
     ],
     winter: [
@@ -1907,7 +1907,7 @@ const SEASON_DESC: Record<string, SeasonDesc> = {
   academy: {
     spring: [
       '藤蔓上新叶挂着露水，庭院里已经有学生走动。',
-      '庭院里人来人往。',
+      '几个学生抱着书从门廊下穿过，鞋底在石板上敲得很响。',
       '门房亮着一盏灯，藤蔓的影子落在墙上。',
     ],
     summer: [
@@ -1917,7 +1917,7 @@ const SEASON_DESC: Record<string, SeasonDesc> = {
     ],
     autumn: [
       '藤叶开始泛黄，晨风把几片叶子吹到石板上。',
-      '庭院显得比夏天空。',
+      '藤叶落了大半，庭院里只剩几串脚印。',
       '风穿过藤蔓，庭院里只剩门房那点光。',
     ],
     winter: [
@@ -1929,7 +1929,7 @@ const SEASON_DESC: Record<string, SeasonDesc> = {
   orphanage: {
     spring: [
       '厨房的烟囱冒起白烟，门口菜地还湿着。',
-      '孩子们在门口跑来跑去。',
+      '孩子们在门口追来追去，鞋底带起一层土。',
       '屋里的灯一盏盏灭了，只剩厨房还亮着。',
     ],
     summer: [
@@ -1951,7 +1951,7 @@ const SEASON_DESC: Record<string, SeasonDesc> = {
   commercial: {
     spring: [
       '店铺陆续卸下门板，街边多了卖花和旧货的小摊。',
-      '摊主的叫卖声一直没停。',
+      '卖热食的摊子前围了几个人，摊主一边收钱一边吆喝。',
       '店铺一间间上门板，只剩酒馆还亮着。',
     ],
     summer: [
@@ -1961,8 +1961,8 @@ const SEASON_DESC: Record<string, SeasonDesc> = {
     ],
     autumn: [
       '晨风把落叶扫到摊子边，店主正一块块擦招牌。',
-      '街上的摊子摆得比夏天满。',
-      '风把遮棚吹得直响，店铺关得比平时早。',
+      '街上的摊子一直摆到路口。',
+      '风把遮棚吹得直响，店铺早早上了门板。',
     ],
     winter: [
       '街上还积着雪，只有几家店卸了门板。',
@@ -1973,17 +1973,17 @@ const SEASON_DESC: Record<string, SeasonDesc> = {
   church: {
     spring: [
       '石阶刚扫过，神像脚下放着几束新采的花。',
-      '进出教堂的人比冬天多。',
+      '进出教堂的人一直没断。',
       '教堂的窗透出暖光，钟楼沉在夜色里。',
     ],
     summer: [
       '天亮得早，石阶上已经有来祷告的人。',
-      '教堂的门一直开着。',
+      '教堂的门开着，门口有人在石阶上歇脚。',
       '窗里的光一直亮到很晚。',
     ],
     autumn: [
       '晨风把落叶吹到石阶边，有人正拿着扫帚。',
-      '石阶显得干净而冷。',
+      '石阶扫得干净，风从钟楼下来，石缝里透着凉。',
       '教堂的窗透出一点暖光，风从钟楼下来。',
     ],
     winter: [
@@ -2005,12 +2005,12 @@ const SEASON_DESC: Record<string, SeasonDesc> = {
     ],
     autumn: [
       '晨风卷起一层薄土，木桩上落着几片叶子。',
-      '场地上练习的人比夏天多。',
+      '场地上练习的人还没散。',
       '风穿过木桩，场地上只剩一点脚步声。',
     ],
     winter: [
       '木桩上结着薄冰，场地上只有几行脚印。',
-      '演武场空得没什么声音。',
+      '演武场空着，只有风吹过木桩的声音。',
       '雪把场地盖住，木桩只剩一排黑影子。',
     ],
   },
@@ -2022,7 +2022,7 @@ const SEASON_DESC: Record<string, SeasonDesc> = {
     ],
     summer: [
       '天亮得早，菜地里的水已经浇过一遍。',
-      '叶子有些打蔫。',
+      '菜叶被晒得发软，土面裂开细缝。',
       '热气闷在墙里，虫声很响。',
     ],
     autumn: [
@@ -2061,13 +2061,13 @@ const SEASON_DESC: Record<string, SeasonDesc> = {
   gate: {
     spring: [
       '城门刚开，骑士换过岗，门洞里还残着夜里的凉气。',
-      '进出城的人多了起来。',
+      '一辆运菜的车卡在门洞里，后面的人排了一小串。',
       '城门关了，门洞里只点着一盏灯。',
     ],
     summer: [
       '天刚亮，门洞里就已经闷热。',
-      '进出城的人不断。',
-      '城门关得比平时晚，门洞里还留着白天的热气。',
+      '门洞里的脚步声一直没停。',
+      '城门关得晚，门洞里还留着白天的热气。',
     ],
     autumn: [
       '晨风从门洞穿过，石墙上落着几片叶子。',
@@ -2083,7 +2083,7 @@ const SEASON_DESC: Record<string, SeasonDesc> = {
   outside: {
     spring: [
       '土路还湿着，草叶上挂着露水。',
-      '路上偶尔有商队经过。',
+      '远处有一队货车慢慢过来，车夫走在马旁边。',
       '城外黑得很快，远处林子只剩轮廓。',
     ],
     summer: [
@@ -2105,7 +2105,7 @@ const SEASON_DESC: Record<string, SeasonDesc> = {
   cemetery: {
     spring: [
       '草叶上挂着露水，守墓人正沿着石墙走。',
-      '墓园里比冬天多些人。',
+      '墓园里有人来扫墓。',
       '墓园沉进夜色，守墓人屋里的灯还亮着。',
     ],
     summer: [
@@ -2115,7 +2115,7 @@ const SEASON_DESC: Record<string, SeasonDesc> = {
     ],
     autumn: [
       '晨风很凉，守墓人正沿着石墙走。',
-      '墓园显得很空。',
+      '墓园里没有风，草叶一动不动。',
       '风穿过草丛，墓碑一排排暗下去。',
     ],
     winter: [
@@ -2288,7 +2288,7 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     spring: {
       sunny: '阳光落在坡道上，新叶的影子一晃一晃。',
       cloudy: '云从学院门楼上空滑过，坡道忽明忽暗。',
-      overcast: '天色发灰，坡道上的学生走得比平时快。',
+      overcast: '天色发灰，坡道上的学生低着头快步走。',
       rain: '细雨打在坡道上，石板有些滑。',
     },
     summer: {
@@ -2300,7 +2300,7 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     autumn: {
       sunny: '阳光穿过黄叶，坡道上落着碎金一样的光。',
       cloudy: '风卷着落叶从坡道上滚下去。',
-      overcast: '天阴得早，学院门楼看上去灰蒙蒙的。',
+      overcast: '天阴得早，学院门楼陷进灰里。',
       rain: '冷雨打湿了坡道，落叶贴在石板上。',
     },
     winter: {
@@ -2312,48 +2312,48 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
   },
   orphanStreet: {
     spring: {
-      sunny: '阳光落在这一带的墙上，新草从石缝里钻出来。',
-      cloudy: '云影扫过这一带，晾着的衣服轻轻晃。',
-      overcast: '天色发灰，这一带上的门都关着。',
-      rain: '细雨落在这一带上，墙根积起小水洼。',
+      sunny: '阳光落在巷子的墙上，新草从石缝里钻出来。',
+      cloudy: '云影扫过街口，晾着的衣服轻轻晃。',
+      overcast: '天色发灰，沿街的门都关着。',
+      rain: '细雨落在巷子里，墙根积起小水洼。',
     },
     summer: {
-      sunny: '这一带被晒得发白，孩子们躲在屋檐下。',
-      cloudy: '云把太阳挡住，这一带还是闷得很。',
+      sunny: '巷子被晒得发白，孩子们躲在屋檐下。',
+      cloudy: '云把太阳挡住，墙根下还是闷得很。',
       overcast: '天色暗下来，远处的雷声滚过。',
-      rain: '雨点砸在这一带上，孩子们笑着往屋里跑。',
+      rain: '雨点砸在屋檐上，孩子们笑着往屋里跑。',
     },
     autumn: {
-      sunny: '阳光照在落叶上，这一带一片暖黄。',
+      sunny: '阳光照在落叶上，巷子一片暖黄。',
       cloudy: '风把落叶吹到墙根，堆成一小堆。',
-      overcast: '这一带阴沉沉的，谁家的烟囱冒着烟。',
-      rain: '冷雨打湿了这一带，柴火味更重了。',
+      overcast: '巷子阴沉沉的，谁家的烟囱冒着烟。',
+      rain: '冷雨打湿了石阶，柴火味更重了。',
     },
     winter: {
-      sunny: '雪光映着这一带，屋檐下挂着一排冰棱。',
-      cloudy: '云压得很低，这一带的雪没有化。',
-      overcast: '天光很淡，这一带上的脚印很少。',
-      snow: '雪落在这一带上，孤儿院的灯显得很暖。',
+      sunny: '雪光映着屋檐，冰棱挂了一排。',
+      cloudy: '云压得很低，巷子里的雪没有化。',
+      overcast: '天光很淡，街口的脚印很少。',
+      snow: '雪落在巷子里，孤儿院的窗透出暖光。',
     },
   },
   churchStreet: {
     spring: {
       sunny: '阳光落在教堂的石墙上，钟楼的影子拉得很长。',
       cloudy: '云从钟楼后面飘过，街上的光暗了一下。',
-      overcast: '天色发灰，教堂的尖顶看上去更冷。',
+      overcast: '天色发灰，教堂的尖顶压着一层薄雾。',
       rain: '细雨落在石阶上，教堂门口有人在收伞。',
     },
     summer: {
       sunny: '钟楼被晒得发白，石阶烫脚。',
       cloudy: '云挡住太阳，教堂外安静下来。',
       overcast: '天色闷沉，钟声传得很远。',
-      rain: '骤雨落在教堂外上，石阶很快湿透。',
+      rain: '骤雨落在教堂门前，石阶很快湿透。',
     },
     autumn: {
       sunny: '阳光穿过落叶，教堂的窗映出暖光。',
       cloudy: '风把落叶扫到石阶下，钟声照常响。',
       overcast: '天阴得早，教堂的窗更亮了。',
-      rain: '冷雨打在教堂外上，石阶一片湿滑。',
+      rain: '冷雨打在教堂门前，石阶一片湿滑。',
     },
     winter: {
       sunny: '雪落在教堂的尖顶上，钟楼在阳光里发亮。',
@@ -2366,7 +2366,7 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     spring: {
       sunny: '阳光把庭院的石板晒暖，藤蔓的新叶亮得发绿。',
       cloudy: '云影从石墙上滑过，庭院里忽明忽暗。',
-      overcast: '天色发灰，石墙上的藤蔓显得格外深。',
+      overcast: '天色发灰，石墙上的藤蔓一动不动。',
       rain: '雨顺着屋檐往下淌，庭院里积起一片片水洼。',
     },
     summer: {
@@ -2430,7 +2430,7 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     autumn: {
       sunny: '阳光落在干爽的街面上，风把落叶吹到摊子边。',
       cloudy: '云影扫过招牌，摊主忙着压住被风吹起的布。',
-      overcast: '天色阴沉，街上的人比平时少。',
+      overcast: '天色阴沉，几个摊主已经在收布棚。',
       rain: '冷雨打湿招牌，行人把货摊往屋里挪。',
     },
     winter: {
@@ -2444,18 +2444,18 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     spring: {
       sunny: '阳光落在神像的肩头，石阶缝里冒出细草。',
       cloudy: '云影从钟楼上滑过，石阶的光暗了下来。',
-      overcast: '天色发灰，教堂的窗透出的光显得格外暖。',
+      overcast: '天色发灰，教堂的窗亮着，光落在湿石阶上。',
       rain: '细雨顺着檐角往下滴，石阶被打得发亮。',
     },
     summer: {
       sunny: '日头照着石阶，神像脚下摆着新采的花。',
       cloudy: '云影掠过钟楼，石阶上的热气散得慢。',
-      overcast: '天色闷沉，教堂的门一直开着。',
+      overcast: '天色闷沉，教堂的门开着，里面传出很轻的诵声。',
       rain: '骤雨打在石阶上，水从台阶一级级往下流。',
     },
     autumn: {
       sunny: '阳光落在神像上，风把落叶吹到石阶边。',
-      cloudy: '云影从钟楼上滑过去，石阶显得更冷。',
+      cloudy: '云影从钟楼上滑过去，石阶上的光暗下来。',
       overcast: '天色阴沉，教堂的窗透出一点暖光。',
       rain: '冷雨打湿石阶，落叶贴在台阶上。',
     },
@@ -2482,21 +2482,21 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     autumn: {
       sunny: '阳光落在干硬的黄土上，木桩的影子拉得很长。',
       cloudy: '云影扫过场地，风卷起一层薄土。',
-      overcast: '天色阴沉，木桩看上去比平时更旧。',
+      overcast: '天色阴沉，木桩上的旧刻痕被雨水泡得发黑。',
       rain: '冷雨打湿黄土，脚印陷得很深。',
     },
     winter: {
       sunny: '阳光照在薄雪上，黄土从雪里露出几块。',
       cloudy: '云层压着场地，木桩上结了一层薄冰。',
       overcast: '天光很淡，演武场空得没什么声音。',
-      snow: '雪落在木桩和地面上，演武场安静得不像平时。',
+      snow: '雪落在木桩和地面上，演武场没有一点声音。',
     },
   },
   backyard: {
     spring: {
       sunny: '阳光落在菜地的新叶上，墙边的柴堆还带着潮气。',
       cloudy: '云影盖过院子，菜叶上的光暗了下来。',
-      overcast: '天色发灰，院子里的东西都失了颜色。',
+      overcast: '天色发灰，菜叶和柴堆都褪成了暗色。',
       rain: '细雨打在菜叶和柴堆上，院子里一片湿冷。',
     },
     summer: {
@@ -2508,7 +2508,7 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     autumn: {
       sunny: '阳光落在收过菜的土垄上，风把枯叶吹到墙根。',
       cloudy: '云影扫过院子，柴堆边的光忽明忽暗。',
-      overcast: '天色阴沉，后院看上去比平时更窄。',
+      overcast: '天色阴沉，柴堆占了半边院子，剩下的路只够一个人走。',
       rain: '冷雨打湿柴堆，土垄里积起一洼洼水。',
     },
     winter: {
@@ -2522,7 +2522,7 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     spring: {
       sunny: '阳光从钟口斜照进来，灰尘在光柱里浮动。',
       cloudy: '云影掠过钟楼，钟口的光忽明忽暗。',
-      overcast: '天色发灰，钟楼里比平时更冷。',
+      overcast: '天色发灰，钟楼里灌着风，木楼梯凉得透手。',
       rain: '细雨从钟口飘进来，木楼梯被打湿了一片。',
     },
     summer: {
@@ -2560,7 +2560,7 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     autumn: {
       sunny: '阳光落在干爽的石墙上，风把落叶吹进门洞。',
       cloudy: '云影扫过城墙，门洞里的光晃了晃。',
-      overcast: '天色阴沉，城门上的纹章显得更旧。',
+      overcast: '天色阴沉，城门上的纹章被雨水冲得发白。',
       rain: '冷雨打湿石阶，骑士把披风拢紧。',
     },
     winter: {
@@ -2574,7 +2574,7 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     spring: {
       sunny: '阳光落在土路两旁的新草上，风里带着土腥味。',
       cloudy: '云影从坡地上滑过去，土路一时亮一时暗。',
-      overcast: '天色发灰，远处的林子看上去发青。',
+      overcast: '天色发灰，远处的林子压着一层青灰色的雾。',
       rain: '细雨把土路打得发软，草叶上全是水。',
     },
     summer: {
@@ -2586,7 +2586,7 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     autumn: {
       sunny: '阳光落在干黄的草坡上，风把落叶吹上土路。',
       cloudy: '云影扫过坡地，土路上的光忽明忽暗。',
-      overcast: '天色阴沉，远处的林子看上去发黑。',
+      overcast: '天色阴沉，远处的林子只剩一道黑边。',
       rain: '冷雨打湿土路，草叶贴在泥里。',
     },
     winter: {
@@ -2600,7 +2600,7 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     spring: {
       sunny: '阳光落在新返青的草地上，墓碑的影子很清楚。',
       cloudy: '云影慢慢掠过坡地，草叶上的光暗了下来。',
-      overcast: '天色发灰，墓园比平时更安静。',
+      overcast: '天色发灰，墓园里没有风，连草都不动。',
       rain: '细雨打在石碑上，草里积起一片片水洼。',
     },
     summer: {
@@ -2626,7 +2626,7 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     spring: {
       sunny: '阳光从新叶间漏下来，地上落着一小块一小块的光。',
       cloudy: '云影从枝叶间滑过，林子里忽明忽暗。',
-      overcast: '天色发灰，树干看上去比平时更深。',
+      overcast: '天色发灰，树干的颜色深得像刚淋过雨。',
       rain: '细雨打在叶子上，整片林子都是细密的响声。',
     },
     summer: {
@@ -2643,7 +2643,7 @@ const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     },
     winter: {
       sunny: '雪压着枝头，阳光一照，树干上的雪簌簌往下掉。',
-      cloudy: '云层压着林梢，枝上的雪看上去发灰。',
+      cloudy: '云层压着林梢，枝头的雪化了一半，露出深色的树皮。',
       overcast: '天光很淡，林子里静得只剩风声。',
       snow: '雪落在枝头和小路上，偶尔有一小团从高处掉下来。',
     },

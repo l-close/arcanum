@@ -1,4 +1,4 @@
-# arcanum（v2.21.4）
+# arcanum（v2.21.5）
 
 文字驱动的沙盒生活模拟 RPG。当前已包含生活循环、学校、社交、事件、学期、演武场切磋与商业区扩展，用 Vite + React + TypeScript + Zustand 构建。
 
