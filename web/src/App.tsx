@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useGame } from './game/store'
+import type { ContentIssue } from './game/content/validate'
 import {
   BELL_TOWER_MINUTES,
   BELL_TOWER_OPEN_END,
@@ -3854,6 +3855,19 @@ function DebugModal() {
   const spell = useGame((s) => s.debugSpell)
   const heal = useGame((s) => s.debugHeal)
   const reset = useGame((s) => s.resetGame)
+  const [contentIssues, setContentIssues] = useState<ContentIssue[] | null>(null)
+  const [checking, setChecking] = useState(false)
+  const errors = contentIssues?.filter((i) => i.level === 'error').length ?? 0
+  const warnings = contentIssues?.filter((i) => i.level === 'warning').length ?? 0
+  const runContentCheck = async () => {
+    setChecking(true)
+    try {
+      const { validateContent } = await import('./game/content/validate')
+      setContentIssues(validateContent())
+    } finally {
+      setChecking(false)
+    }
+  }
   return (
     <ModalShell title="调试" onClose={() => setModal(null)}>
       <p className="hint">“选择事件…”会忽略地点、时间、好感与一次性记录。</p>
@@ -3865,8 +3879,25 @@ function DebugModal() {
         <button className="choice-btn" onClick={spell}>学会火球术</button>
         <button className="choice-btn" onClick={heal}>生命回满</button>
         <button className="choice-btn" onClick={() => setModal('eventPicker')}>选择事件…</button>
+        <button className="choice-btn" onClick={runContentCheck} disabled={checking}>
+          {checking ? '内容检查中…' : '内容自检（开发）'}
+        </button>
         <button className="choice-btn danger" onClick={reset}>回到标题</button>
       </div>
+      {contentIssues && (
+        <div className="content-check">
+          <p className="hint">
+            {contentIssues.length === 0
+              ? '内容自检通过：0 错误 / 0 警告'
+              : `内容自检：${errors} 错误 / ${warnings} 警告`}
+          </p>
+          {contentIssues.map((issue, index) => (
+            <div key={`${issue.area}-${index}`} className={`content-issue ${issue.level}`}>
+              <span>{issue.level === 'error' ? 'ERROR' : 'WARN'}</span> [{issue.area}] {issue.message}
+            </div>
+          ))}
+        </div>
+      )}
     </ModalShell>
   )
 }

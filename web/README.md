@@ -110,7 +110,7 @@ npm.cmd run preview
 npm.cmd run validate:content
 ```
 
-检查地点、NPC 作息、商店库存、配方、课程、事件与剧情的地点 / 物品 / NPC 引用；内容层拆分后新增。
+检查地点、NPC 作息、商店库存、配方、课程、事件与剧情的地点 / 物品 / NPC 引用，以及时间窗、价格、库存和基础数值。`npm.cmd run build` 会通过 `prebuild` 自动先跑一次；确认校验器误报时可用 `npm.cmd run build --ignore-scripts` 临时跳过。
 
 ## 已实现
 
@@ -439,6 +439,7 @@ web/
 │  │  │  ├─ notices.ts        告示板
 │  │  │  ├─ time.ts           日期、时间、格式化
 │  │  │  ├─ rng.ts            确定性哈希
+│  │  │  ├─ validate.ts       内容校验
 │  │  │  └─ text*.ts          纯文本表（时段、季节、天气、课堂）
 │  │  ├─ events.ts    23 个事件与触发判定
 │  │  ├─ save.ts      localStorage 存读档

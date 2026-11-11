@@ -835,6 +835,21 @@ button:disabled {
 .choice-btn:hover { border-color: var(--gold); color: var(--gold); }
 .choice-btn.danger { color: var(--red); }
 .choice-btn:disabled { opacity: 0.4; }
+.content-check {
+  margin-top: 12px;
+  max-height: 220px;
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.content-issue {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 2px 0;
+}
+.content-issue.error { color: var(--red); }
+.content-issue.warning { color: var(--amber); }
 .choice-btn small { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
 .choice-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
 .package-text { color: var(--text); font-size: 13px; line-height: 1.8; margin: 0 0 10px; }
