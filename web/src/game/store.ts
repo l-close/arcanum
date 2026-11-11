@@ -593,8 +593,8 @@ function closeTimedLocation(d: GameData): void {
     d.location === 'runeShop' &&
     !isTimeWindow(d.minutes, RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END)
   ) {
-    d.location = 'commercial'
-    pushLog(d, '赛拉斯把铺子的门板上好，你回到商业区。')
+    d.location = 'craftDistrict'
+    pushLog(d, '赛拉斯把工坊的门关上，你回到工坊区。')
   } else if (d.location === 'observatory' && !observatoryOpenAt(d.minutes)) {
     d.location = 'gate'
     pushLog(d, '伊芙把天窗合上，你回到城门。')
@@ -1930,7 +1930,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (id === 'runeShop' && !isTimeWindow(data.minutes, RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END)) {
-        set({ message: '符文刻印铺已经上板了。' })
+        set({ message: '符文工坊已经关门了。' })
         return
       }
       if (id === 'observatory' && !observatoryOpenAt(data.minutes)) {
@@ -2934,11 +2934,11 @@ export const useGame = create<Store>((set, get) => {
     lookAtRunes: () => {
       const { data } = get()
       if (data.location !== 'runeShop') {
-        set({ message: '这里不是符文刻印铺。' })
+        set({ message: '这里不是符文工坊。' })
         return
       }
       if (!isTimeWindow(data.minutes, RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END)) {
-        set({ message: '铺子已经上板了。' })
+        set({ message: '工坊已经关门了。' })
         return
       }
       mutate((d) => {
@@ -2959,11 +2959,11 @@ export const useGame = create<Store>((set, get) => {
     engraveRune: (itemId, runeId) => {
       const { data } = get()
       if (data.location !== 'runeShop') {
-        set({ message: '这里不是符文刻印铺。' })
+        set({ message: '这里不是符文工坊。' })
         return
       }
       if (!isTimeWindow(data.minutes, RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END)) {
-        set({ message: '铺子已经上板了。' })
+        set({ message: '工坊已经关门了。' })
         return
       }
       const item = ITEMS[itemId]

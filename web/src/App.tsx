@@ -1486,7 +1486,7 @@ function Actions({
             <ActionBtn onClick={() => setModal('engrave')} label="装备刻印" cost="30 分钟 · 按刻印收费" />
           </>
         ) : (
-          <div className="hint">铺子已经上板了。</div>
+          <div className="hint">工坊已经关门了。</div>
         ))}
       {loc === 'observatory' &&
         (observatoryOpenAt(data.minutes) ? (
@@ -1818,6 +1818,7 @@ function CityMap({ location }: { location: string }) {
   return (
     <div className="city-map" aria-label="银月城街区">
       {node('churchStreet', 'map-church')}
+      <span className="map-line-h map-line-h-top" />
       {node('craftDistrict', 'map-craft')}
       <span className="map-line-v map-line-v-church" />
       <span className="map-line-v map-line-v-craft" />

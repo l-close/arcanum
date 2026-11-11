@@ -190,10 +190,10 @@ export const LOCATIONS: Location[] = [
   },
   {
     id: 'runeShop',
-    name: '符文刻印铺',
-    parent: 'commercial',
+    name: '符文工坊',
+    parent: 'craftDistrict',
     kind: 'room',
-    desc: '商业区靠里的一间窄铺子，门总是半开着。屋里更像工坊，不像店铺：厚木工作台占了半边，台面上摊着刻刀、铜粉和半成品的护符。',
+    desc: '工坊区窄街靠里的一间小工坊，门总是半开着。厚木工作台占了半边，台面上摊着刻刀、铜粉和半成品的护符。',
   },
   {
     id: 'church',
@@ -361,18 +361,20 @@ const AREA_LINKS: Record<string, Exit[]> = {
     { to: 'orphanStreet', minutes: 5 },
     { to: 'academyStreet', minutes: 5 },
     { to: 'commercial', minutes: 5 },
-    { to: 'churchStreet', minutes: 5 },
     { to: 'craftDistrict', minutes: 5 },
   ],
-  craftDistrict: [{ to: 'town', minutes: 5 }],
+  craftDistrict: [
+    { to: 'town', minutes: 5 },
+    { to: 'churchStreet', minutes: 5 },
+  ],
   orphanStreet: [
     { to: 'town', minutes: 5 },
     { to: 'churchStreet', minutes: 5 },
   ],
   academyStreet: [{ to: 'town', minutes: 5 }],
   churchStreet: [
-    { to: 'town', minutes: 5 },
     { to: 'orphanStreet', minutes: 5 },
+    { to: 'craftDistrict', minutes: 5 },
   ],
   commercial: [
     { to: 'town', minutes: 5 },

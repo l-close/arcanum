@@ -400,6 +400,7 @@ button:disabled {
 .map-line-v-town { grid-column: 3; grid-row: 4; }
 .map-line-v-gate { grid-column: 3; grid-row: 6; }
 .map-line-h { width: 100%; height: 1px; background: rgba(255, 255, 255, 0.22); }
+.map-line-h-top { grid-column: 2; grid-row: 1; }
 .map-line-h-left { grid-column: 2; grid-row: 3; }
 .map-line-h-right { grid-column: 4; grid-row: 3; }
 
