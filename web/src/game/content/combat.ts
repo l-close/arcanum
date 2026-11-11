@@ -13,7 +13,7 @@ export const COMBAT_BUFF_LABEL: Record<CombatBuffKey, string> = {
 
 export const COMBAT_BUFF_EFFECT: Record<CombatBuffKey, string> = {
   sharp: '近战伤害 +1',
-  stone: '受到伤害 -1',
+  stone: '受到物理伤害 -1',
   swift: '行动条充能 +5%',
 }
 
@@ -27,6 +27,18 @@ export function combatBuffUntilKey(key: CombatBuffKey): keyof CombatBuffs {
   if (key === 'sharp') return 'sharpUntil'
   if (key === 'stone') return 'stoneUntil'
   return 'swiftUntil'
+}
+
+/** 保底伤害：至少 10%，最低 1 点，向下取整。 */
+export const DAMAGE_FLOOR_RATE = 0.1
+
+export function floorDamage(base: number): number {
+  return Math.max(1, Math.floor(base * DAMAGE_FLOOR_RATE))
+}
+
+/** 基础伤害减去防御，最多减到保底。 */
+export function applyDefense(base: number, defense: number): number {
+  return Math.max(floorDamage(base), base - Math.max(0, defense))
 }
 
 export type AttackKind = 'brawl' | 'sword'
@@ -47,7 +59,7 @@ export function attackDamageRange(
   bonus = 0,
 ): [number, number] {
   const base = 4 + tier * 2 + weaponPower(kind, mainHand) + bonus
-  return [Math.max(1, base - defense), Math.max(1, base + 2 - defense)]
+  return [applyDefense(base, defense), applyDefense(base + 2, defense)]
 }
 
 export type SpellDef = {
@@ -81,11 +93,11 @@ export const FIREBALL_READING_EXP = 60
 export function spellDamageRange(
   spell: SpellDef,
   natureTier: number,
-  defense: number,
+  resist: number,
   spellPower = 0,
 ): [number, number] {
   const base = spell.baseDamage + natureTier * spell.tierScale + spellPower
-  return [Math.max(1, base - defense), Math.max(1, base + spell.variance - defense)]
+  return [applyDefense(base, resist), applyDefense(base + spell.variance, resist)]
 }
 
 export type EnemyDef = {
@@ -95,6 +107,9 @@ export type EnemyDef = {
   hp: number
   attack: number
   defense: number
+  resist: number
+  /** 敌人攻击类型，缺省为物理。 */
+  element?: 'physical' | 'magic'
   speed: number
   expValue: number
   intro: string
@@ -110,6 +125,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     hp: 30,
     attack: 0,
     defense: 0,
+    resist: 0,
     speed: 0,
     expValue: 0.5,
     intro: '木桩立在场地中央，不会还手。',
@@ -123,6 +139,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     hp: 50,
     attack: 8,
     defense: 1,
+    resist: 0,
     speed: 2.6,
     expValue: 1,
     intro: '练习人偶抬起包着布的手臂，关节发出轻响。',
@@ -140,6 +157,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     hp: 45,
     attack: 7,
     defense: 0,
+    resist: 1,
     speed: 2.3,
     expValue: 0.8,
     intro: '灌木里传来黏腻的声响。一团半透明的史莱姆慢慢从草里滑出来。',
@@ -157,6 +175,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     hp: 80,
     attack: 11,
     defense: 1,
+    resist: 0,
     speed: 2.9,
     expValue: 1.5,
     intro:
@@ -175,6 +194,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     hp: 60,
     attack: 10,
     defense: 0,
+    resist: 0,
     speed: 3.3,
     expValue: 1.2,
     intro:
@@ -193,6 +213,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     hp: 75,
     attack: 11,
     defense: 1,
+    resist: 0,
     speed: 2.8,
     expValue: 1.3,
     intro:
@@ -211,6 +232,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     hp: 70,
     attack: 11,
     defense: 2,
+    resist: 0,
     speed: 2.4,
     expValue: 1.4,
     intro:

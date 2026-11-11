@@ -165,7 +165,7 @@ export const LOCATIONS: Location[] = [
     name: '武具店',
     parent: 'commercial',
     kind: 'room',
-    desc: '墙上挂着几把剑，柜台里放着磨刀石和皮鞘。空气里有铁锈和油的味道。',
+    desc: '墙上挂着几把剑，柜台里放着磨刀石和皮鞘。里侧还有一张厚木工作台，炉子烧着，空气里有铁锈和油的味道。',
   },
   {
     id: 'tavern',

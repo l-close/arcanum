@@ -1071,6 +1071,44 @@ button:disabled {
   border-top: 1px solid var(--line);
 }
 
+.shop-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.shop-tabs button {
+  flex: 0 0 auto;
+  padding: 5px 16px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.shop-tabs button.on {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.craft-mats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 2px;
+  font-size: 12px;
+}
+.craft-mats .ok { color: var(--green); }
+.craft-mats .lack { color: #b4675a; }
+
+.detail-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin: 0 0 10px;
+  color: var(--gold);
+  font-size: 12px;
+}
+
 .item-row,
 .shop-row {
   display: flex;

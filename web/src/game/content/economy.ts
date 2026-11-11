@@ -15,6 +15,12 @@ export const SHOP_STOCKS: Record<string, Record<string, number>> = {
   weaponShop: {
     practice_sword: 1,
     iron_sword: 1,
+    hunter_sword: 1,
+    knight_sword: 1,
+    leather_armor: 1,
+    travel_cloak: 1,
+    apprentice_charm: 1,
+    old_prayer_charm: 1,
   },
   westGate: {
     tonic: 1,

@@ -1,6 +1,7 @@
 export * from './rng'
 export * from './skills'
 export * from './items'
+export * from './crafting'
 export * from './combat'
 export * from './time'
 export * from './weather'

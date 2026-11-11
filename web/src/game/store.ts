@@ -205,6 +205,10 @@ import {
   nightKey,
   currentConstellation,
   weatherBlocksStars,
+  CRAFT_TEXTS,
+  craftRecipeById,
+  weaponShopOpenAt,
+  applyDefense,
 } from './content'
 import {
   EVENTS,
@@ -261,7 +265,7 @@ export function freshData(): GameData {
     courseMastery: {},
     classBonus: null,
     inventory: { basic_wand: 1 },
-    equipment: { mainHand: 'basic_wand', offHand: null, armor: null, accessory: null },
+    equipment: { mainHand: 'basic_wand', offHand: null, armor: null, accessory: null, feet: null },
     shop: { day: 0, sold: {} },
     books: {},
     bookshelf: ['picture_book'],
@@ -438,6 +442,7 @@ export function normalizeData(raw: GameData): GameData {
         offHand: e.offHand ?? null,
         armor: e.armor ?? null,
         accessory: e.accessory ?? null,
+        feet: e.feet ?? null,
       }
     })(),
     shop: (() => {
@@ -581,6 +586,38 @@ function slotHasRune(d: GameData, slot: EquipmentSlot, runeId: string): boolean 
   return itemHasRune(d, d.equipment[slot], runeId)
 }
 
+const GEAR_SLOTS: EquipmentSlot[] = ['mainHand', 'offHand', 'armor', 'accessory', 'feet']
+
+type GearStat = 'armor' | 'resist' | 'speedPct' | 'melee' | 'spellPower'
+
+/** 身上所有装备提供的某项数值之和。 */
+function gearStat(d: GameData, key: GearStat): number {
+  let total = 0
+  for (const slot of GEAR_SLOTS) {
+    const id = d.equipment[slot]
+    if (!id) continue
+    total += ITEMS[id]?.[key] ?? 0
+  }
+  return total
+}
+
+/** 玩家物防：护甲 + 坚固刻印 + 石肤。 */
+function playerPhysicalDefense(d: GameData): number {
+  const stone = combatBuffActive(d.combatBuffs, 'stone', absoluteMinutes(d.day, d.minutes))
+    ? 1
+    : 0
+  return (
+    gearStat(d, 'armor') +
+    stone +
+    (anySlotHasRune(d, ['armor', 'offHand'], 'guard') ? 1 : 0)
+  )
+}
+
+/** 玩家法抗：饰品 / 斗篷等装备提供的抗性。 */
+function playerMagicResist(d: GameData): number {
+  return gearStat(d, 'resist')
+}
+
 function anySlotHasRune(d: GameData, slots: EquipmentSlot[], runeId: string): boolean {
   return slots.some((slot) => slotHasRune(d, slot, runeId))
 }
@@ -598,6 +635,9 @@ function closeTimedLocation(d: GameData): void {
   } else if (d.location === 'observatory' && !observatoryOpenAt(d.minutes)) {
     d.location = 'gate'
     pushLog(d, '伊芙把天窗合上，你回到城门。')
+  } else if (d.location === 'weaponShop' && !weaponShopOpenAt(d.minutes)) {
+    d.location = 'commercial'
+    pushLog(d, '戈登把武具店的门关上，你回到商业区。')
   }
 }
 
@@ -947,6 +987,7 @@ type Store = {
   orderDrink: (id: string) => void
   listenTavern: () => void
   buyItem: (id: string) => void
+  craftItem: (recipeId: string) => void
   sellItem: (id: string, all: boolean) => void
   useItem: (id: string) => void
   equipItem: (id: string) => void
@@ -1526,9 +1567,10 @@ export const useGame = create<Store>((set, get) => {
       if (b.phase === 'filling') {
         const now = absoluteMinutes(data.day, data.minutes)
         const swift = combatBuffActive(data.combatBuffs, 'swift', now)
-        const swiftRune = anySlotHasRune(data, ['armor', 'offHand', 'accessory'], 'swift')
-        const speedBonus = (swift ? 0.05 : 0) + (swiftRune ? 0.05 : 0)
-        b.playerGauge = Math.min(100, b.playerGauge + 4 * (1 + speedBonus))
+        const swiftRune = anySlotHasRune(data, ['armor', 'offHand', 'accessory', 'feet'], 'swift')
+        const speedBonus =
+          (swift ? 0.05 : 0) + (swiftRune ? 0.05 : 0) + gearStat(data, 'speedPct') / 100
+        b.playerGauge = Math.min(100, b.playerGauge + 4 * Math.max(0.5, 1 + speedBonus))
       }
       if (enemy.speed > 0) b.enemyGauge = Math.min(100, b.enemyGauge + enemy.speed)
 
@@ -1590,8 +1632,8 @@ export const useGame = create<Store>((set, get) => {
           const [min, max] = spellDamageRange(
             spell,
             nextData.skills.nature.tier,
-            enemy.defense,
-            (ITEMS[nextData.equipment.mainHand ?? '']?.spellPower ?? 0) +
+            enemy.resist,
+            gearStat(nextData, 'spellPower') +
               (anySlotHasRune(nextData, ['mainHand', 'accessory'], 'spell') ? 1 : 0),
           )
           const dmg = randInt(min, max)
@@ -1600,7 +1642,7 @@ export const useGame = create<Store>((set, get) => {
           b.actions += 1
           b.playerGauge = 0
           b.casting = null
-          battleLog(b, `你念出咒语，${spell.name}在${enemy.name}身上炸开。 -${dmg}`)
+          battleLog(b, `你念出咒语，${spell.name}在${enemy.name}身上炸开。 -${dmg}（法术）`)
           if (b.enemyHp <= 0) {
             b.phase = 'victory'
             b.submenu = null
@@ -1616,24 +1658,15 @@ export const useGame = create<Store>((set, get) => {
       if (enemy.speed > 0 && b.enemyGauge >= 100) {
         b.enemyGauge = 0
         b.actions += 1
-        const stone = combatBuffActive(
-          nextData.combatBuffs,
-          'stone',
-          absoluteMinutes(nextData.day, nextData.minutes),
-        )
-          ? 1
-          : 0
-        const reduction =
-          Math.floor(nextData.skills.physique.tier / 2) +
-          (nextData.flags.book_defense_notes ? 1 : 0) +
-          stone +
-          (anySlotHasRune(nextData, ['armor', 'offHand'], 'guard') ? 1 : 0)
-        const dmg = Math.max(1, enemy.attack + randInt(0, 2) - reduction)
+        const magic = enemy.element === 'magic'
+        const reduction = magic ? playerMagicResist(nextData) : playerPhysicalDefense(nextData)
+        const base = enemy.attack + randInt(0, 2)
+        const dmg = applyDefense(base, reduction)
         b.playerHp = Math.max(0, b.playerHp - dmg)
         const line = enemy.attackLines.length
           ? enemy.attackLines[randInt(0, enemy.attackLines.length - 1)]
           : `${enemy.name}撞了你一下。`
-        battleLog(b, `${line} -${dmg}`)
+        battleLog(b, `${line} -${dmg}（${magic ? '法术' : '物理'}）`)
         if (b.playerHp <= 0) {
           b.phase = 'defeat'
           b.submenu = null
@@ -1683,7 +1716,7 @@ export const useGame = create<Store>((set, get) => {
         data.skills[kind].tier,
         mainHand,
         enemy.defense,
-        bookBonus,
+        bookBonus + gearStat(data, 'melee'),
       )
       const sharp = combatBuffActive(
         data.combatBuffs,
@@ -1703,7 +1736,7 @@ export const useGame = create<Store>((set, get) => {
       b.playerGauge = 0
       b.submenu = null
       const verb = kind === 'sword' ? '你挥剑斩向' : weapon?.weapon === 'staff' ? '你挥杖敲向' : '你挥拳打向'
-      battleLog(b, `${verb}${enemy.name}。 -${dmg}`)
+      battleLog(b, `${verb}${enemy.name}。 -${dmg}（物理）`)
 
       if (b.enemyHp <= 0) {
         b.phase = 'victory'
@@ -1935,6 +1968,10 @@ export const useGame = create<Store>((set, get) => {
       }
       if (id === 'observatory' && !observatoryOpenAt(data.minutes)) {
         set({ message: '星象台已经关门了。' })
+        return
+      }
+      if (id === 'weaponShop' && !weaponShopOpenAt(data.minutes)) {
+        set({ message: '武具店已经关门了。' })
         return
       }
       const cost = edge.minutes
@@ -3700,6 +3737,48 @@ export const useGame = create<Store>((set, get) => {
         pushLog(d, `你买了${def.name}。`)
         return `你买了${def.name}。`
       })
+    },
+
+    craftItem: (recipeId) => {
+      const { data } = get()
+      const recipe = craftRecipeById(recipeId)
+      if (!recipe) return
+      if (data.location !== 'weaponShop') {
+        set({ message: '这里不能打造。' })
+        return
+      }
+      if (!weaponShopOpenAt(data.minutes)) {
+        set({ message: '戈登不在店里。' })
+        return
+      }
+      for (const [id, qty] of Object.entries(recipe.materials)) {
+        if ((data.inventory[id] ?? 0) < qty) {
+          set({ message: `材料不够：${ITEMS[id]?.name ?? id}。` })
+          return
+        }
+      }
+      if (data.money < recipe.cost) {
+        set({ message: '钱不够。' })
+        return
+      }
+      mutate((d) => {
+        for (const [id, qty] of Object.entries(recipe.materials)) {
+          d.inventory[id] = Math.max(0, (d.inventory[id] ?? 0) - qty)
+          if ((d.inventory[id] ?? 0) <= 0) delete d.inventory[id]
+        }
+        d.money -= recipe.cost
+        const opened = CRAFT_TEXTS[(d.day + Math.floor(d.minutes / 60)) % CRAFT_TEXTS.length]
+        advanceTime(d, recipe.minutes)
+        d.inventory[recipe.result] = (d.inventory[recipe.result] ?? 0) + 1
+        let text = `${opened}戈登把${recipe.name}交给你。`
+        if (!weaponShopOpenAt(d.minutes)) {
+          d.location = 'commercial'
+          text += '\n武具店已经关门了，你回到商业区。'
+        }
+        pushLog(d, text)
+        return text
+      })
+      if (get().data.location !== 'weaponShop') set({ modal: null })
     },
 
     sellItem: (id, all) => {

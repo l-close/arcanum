@@ -20,6 +20,8 @@ import {
   RUNE_SHOP_OPEN_START,
   RUNES,
   runeApplicable,
+  CRAFT_RECIPES,
+  weaponShopOpenAt,
   observatoryOpenAt,
   CONSTELLATIONS,
   SEASON_LABEL,
@@ -605,25 +607,35 @@ function BattleView() {
   const fireball = SPELLS.fireball
   const knownFireball = data.spells.includes('fireball')
   const canCast = knownFireball && hasMedium && data.mana >= fireball.mana
+  const gearSum = (key: 'spellPower' | 'melee') =>
+    Object.values(data.equipment).reduce(
+      (sum, id) => sum + (id ? ITEMS[id]?.[key] ?? 0 : 0),
+      0,
+    )
+  const runeOn = (slot: 'mainHand' | 'accessory', rune: string) => {
+    const id = data.equipment[slot]
+    return !!id && (data.engravings[id] ?? []).includes(rune)
+  }
   const fireballRange = spellDamageRange(
     fireball,
     data.skills.nature.tier,
-    enemy.defense,
-    ITEMS[mainHand ?? '']?.spellPower ?? 0,
+    enemy.resist,
+    gearSum('spellPower') +
+      (runeOn('mainHand', 'spell') || runeOn('accessory', 'spell') ? 1 : 0),
   )
   const brawlRange = attackDamageRange(
     'brawl',
     data.skills.brawl.tier,
     mainHand,
     enemy.defense,
-    data.flags.book_brawl_manual ? 1 : 0,
+    (data.flags.book_brawl_manual ? 1 : 0) + gearSum('melee'),
   )
   const swordRange = attackDamageRange(
     'sword',
     data.skills.sword.tier,
     mainHand,
     enemy.defense,
-    data.flags.book_sword_manual ? 1 : 0,
+    (data.flags.book_sword_manual ? 1 : 0) + gearSum('melee'),
   )
   const battleItems = Object.entries(data.inventory).filter(([id, qty]) => {
     if (qty <= 0) return false
@@ -1517,9 +1529,12 @@ function Actions({
       {loc === 'bookshop' && (
         <ActionBtn onClick={() => setModal('shop')} label="买书" cost="—" />
       )}
-      {loc === 'weaponShop' && (
-        <ActionBtn onClick={() => setModal('shop')} label="购买" cost="—" />
-      )}
+      {loc === 'weaponShop' &&
+        (weaponShopOpenAt(data.minutes) ? (
+          <ActionBtn onClick={() => setModal('shop')} label="购买与打造" cost="—" />
+        ) : (
+          <div className="hint">武具店已经关门了。</div>
+        ))}
       {loc === 'tavern' &&
         (() => {
           if (!isTimeWindow(data.minutes, TAVERN_OPEN_START, TAVERN_OPEN_END)) {
@@ -3040,6 +3055,7 @@ function InventoryModal() {
             <div className="equip-col">
               {slotButton(EQUIPMENT_SLOTS[2])}
               {slotButton(EQUIPMENT_SLOTS[3])}
+              {slotButton(EQUIPMENT_SLOTS[4])}
             </div>
           </div>
         </div>
@@ -3087,6 +3103,16 @@ function InventoryModal() {
               {selectedDef.medium && <span className="detail-medium">可作为施法媒介</span>}
               {selectedDef.weapon === 'sword' && <span className="detail-medium">可作主手武器</span>}
             </div>
+            <div className="detail-stats">
+              {selectedDef.power ? <span>威力 {selectedDef.power}</span> : null}
+              {selectedDef.armor ? <span>物防 +{selectedDef.armor}</span> : null}
+              {selectedDef.resist ? <span>法抗 +{selectedDef.resist}</span> : null}
+              {selectedDef.melee ? <span>近战伤害 +{selectedDef.melee}</span> : null}
+              {selectedDef.spellPower ? <span>法术伤害 +{selectedDef.spellPower}</span> : null}
+              {selectedDef.speedPct ? (
+                <span>行动条 {selectedDef.speedPct > 0 ? '+' : ''}{selectedDef.speedPct}%</span>
+              ) : null}
+            </div>
             {selectedDef.type === 'equipment' && selectedSlot ? (
               equippedInSlot ? (
                 <button className="primary-btn detail-action" disabled={!!battle} onClick={() => unequipSlot(selectedSlot)}>卸下</button>
@@ -3131,7 +3157,10 @@ function ShopModal() {
   const data = useGame((s) => s.data)
   const setModal = useGame((s) => s.setModal)
   const buyItem = useGame((s) => s.buyItem)
+  const craftItem = useGame((s) => s.craftItem)
   const sellItem = useGame((s) => s.sellItem)
+  const [tab, setTab] = useState<'buy' | 'craft'>('buy')
+  const isWeaponShop = data.location === 'weaponShop'
   const stock = shopStockAt(data.location)
   const soldToday = data.shop.day === data.day ? data.shop.sold : {}
   const sellable = Object.entries(data.inventory).filter(
@@ -3142,6 +3171,17 @@ function ShopModal() {
   return (
     <ModalShell title={title} onClose={() => setModal(null)}>
       <div className={`shop-money${data.money < 0 ? ' debt' : ''}`}>持有：{formatMoney(data.money)}</div>
+      {isWeaponShop && (
+        <div className="shop-tabs">
+          <button className={tab === 'buy' ? 'on' : ''} onClick={() => setTab('buy')}>
+            购买
+          </button>
+          <button className={tab === 'craft' ? 'on' : ''} onClick={() => setTab('craft')}>
+            打造
+          </button>
+        </div>
+      )}
+      {(!isWeaponShop || tab === 'buy') && (
       <div className="shop-list">
         {Object.entries(stock).length === 0 && <div className="hint">这里今天没有货。</div>}
         {Object.entries(stock).map(([id, stockCount]) => {
@@ -3178,6 +3218,7 @@ function ShopModal() {
           )
         })}
       </div>
+      )}
       {(data.location === 'shop' ||
         data.location === 'westMarket' ||
         data.location === 'potionWorkshop') &&
@@ -3199,6 +3240,50 @@ function ShopModal() {
               </div>
             )
           })}
+        </div>
+      )}
+      {isWeaponShop && tab === 'craft' && (
+        <div className="shop-list">
+          {!weaponShopOpenAt(data.minutes) && (
+            <div className="hint">戈登不在店里，柜台锁着。</div>
+          )}
+          {CRAFT_RECIPES.map((recipe) => {
+            const enough = Object.entries(recipe.materials).every(
+              ([id, qty]) => (data.inventory[id] ?? 0) >= qty,
+            )
+            const result = ITEMS[recipe.result]
+            return (
+              <div className="shop-row" key={recipe.id}>
+                <div className="row-head">
+                  <span className="item-name">{recipe.name}</span>
+                  <span className="shop-price">{recipe.cost} 铜</span>
+                  <span className="shop-stock">{recipe.minutes} 分钟</span>
+                  <button
+                    className="mini-btn"
+                    disabled={
+                      !weaponShopOpenAt(data.minutes) || !enough || data.money < recipe.cost
+                    }
+                    onClick={() => craftItem(recipe.id)}
+                  >
+                    打造
+                  </button>
+                </div>
+                <div className="item-desc">{recipe.desc}</div>
+                <div className="craft-mats">
+                  {Object.entries(recipe.materials).map(([id, qty]) => {
+                    const have = data.inventory[id] ?? 0
+                    return (
+                      <span className={have >= qty ? 'ok' : 'lack'} key={id}>
+                        {ITEMS[id]?.name ?? id} {have} / {qty}
+                      </span>
+                    )
+                  })}
+                </div>
+                {result && <div className="item-desc">产物：{result.name}</div>}
+              </div>
+            )
+          })}
+          <p className="hint">打造不消耗体力。戈登在店时才能接活。</p>
         </div>
       )}
     </ModalShell>
@@ -3226,7 +3311,7 @@ function EngraveModal() {
     <ModalShell title="装备刻印" wide onClose={() => setModal(null)}>
       <div className={`shop-money${data.money < 0 ? ' debt' : ''}`}>持有：{formatMoney(data.money)}</div>
       <p className="hint">
-        锋刃：近战伤害 +1 · 聚魔：法术伤害 +1 · 坚固：受伤 -1 · 速行：行动条 +5% · 灼燃：40% 概率烧伤
+        锋刃：近战伤害 +1 · 聚魔：法术伤害 +1 · 坚固：物理受伤 -1 · 速行：行动条 +5% · 灼燃：40% 概率烧伤
       </p>
       <p className="hint">同一物品的刻印共享；重刻会覆盖当前刻印。</p>
       {items.length === 0 ? (

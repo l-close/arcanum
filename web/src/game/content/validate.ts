@@ -3,6 +3,7 @@ import {
   COMBAT_BUFF_LABEL,
   CONSTELLATIONS,
   COURSES,
+  CRAFT_RECIPES,
   ENEMIES,
   EQUIPMENT_SLOTS,
   GREENHOUSE_HERB_PRICES,
@@ -64,6 +65,7 @@ export function validateContent(): ContentIssue[] {
   checkUnique('story', STORY.map((s) => s.id))
   checkUnique('runes', RUNES.map((r) => r.id))
   checkUnique('constellations', CONSTELLATIONS.map((c) => c.id))
+  checkUnique('craft', CRAFT_RECIPES.map((r) => r.id))
 
   for (const constellation of CONSTELLATIONS) {
     if (!constellation.name) error('constellations', `${constellation.id}: 缺少名字`)
@@ -128,6 +130,19 @@ export function validateContent(): ContentIssue[] {
     if (item.engravingSlots !== undefined && item.engravingSlots < 0) {
       error('items', `${item.id}: engravingSlots 为负`)
     }
+    for (const key of ['armor', 'resist', 'melee'] as const) {
+      const value = item[key]
+      if (value !== undefined && !nonNegative(value)) {
+        error('items', `${item.id}: ${key} 为负`)
+      }
+    }
+    if (item.speedPct !== undefined) {
+      if (!Number.isFinite(item.speedPct)) {
+        error('items', `${item.id}: speedPct 不是数字`)
+      } else if (Math.abs(item.speedPct) > 50) {
+        warn('items', `${item.id}: speedPct 超过 50%`)
+      }
+    }
     if (item.effect) {
       for (const key of ['hp', 'mana', 'stamina'] as const) {
         const value = item.effect[key]
@@ -155,8 +170,28 @@ export function validateContent(): ContentIssue[] {
     if (enemy.hp <= 0) error('enemies', `${enemy.id}: hp 必须大于 0`)
     if (!nonNegative(enemy.attack)) error('enemies', `${enemy.id}: attack 为负`)
     if (!nonNegative(enemy.defense)) error('enemies', `${enemy.id}: defense 为负`)
+    if (!nonNegative(enemy.resist)) error('enemies', `${enemy.id}: resist 为负`)
+    if (enemy.element && enemy.element !== 'physical' && enemy.element !== 'magic') {
+      error('enemies', `${enemy.id}: element 无效`)
+    }
     if (!nonNegative(enemy.speed)) error('enemies', `${enemy.id}: speed 为负`)
     if (!nonNegative(enemy.expValue)) error('enemies', `${enemy.id}: expValue 为负`)
+  }
+
+  for (const recipe of CRAFT_RECIPES) {
+    const result = ITEMS[recipe.result]
+    if (!result) error('craft', `${recipe.id}: 产物 ${recipe.result} 不存在`)
+    else if (result.type !== 'equipment') error('craft', `${recipe.id}: 产物不是装备`)
+    if (recipe.cost < 0) error('craft', `${recipe.id}: 费用为负`)
+    if (recipe.minutes <= 0) error('craft', `${recipe.id}: 时间必须大于 0`)
+    if (!recipe.desc) error('craft', `${recipe.id}: 缺少说明`)
+    if (Object.keys(recipe.materials).length === 0) {
+      error('craft', `${recipe.id}: 没有材料`)
+    }
+    for (const [id, qty] of Object.entries(recipe.materials)) {
+      if (!itemIds.has(id)) error('craft', `${recipe.id}: 材料 ${id} 不存在`)
+      if (qty <= 0) error('craft', `${recipe.id}: 材料 ${id} 数量不大于 0`)
+    }
   }
 
   for (const spell of Object.values(SPELLS)) {

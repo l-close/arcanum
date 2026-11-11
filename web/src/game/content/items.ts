@@ -19,6 +19,7 @@ export const EQUIPMENT_SLOTS: Array<{ key: EquipmentSlot; label: string }> = [
   { key: 'offHand', label: '副手' },
   { key: 'armor', label: '护甲' },
   { key: 'accessory', label: '饰品' },
+  { key: 'feet', label: '鞋' },
 ]
 
 export type ItemDef = {
@@ -33,6 +34,10 @@ export type ItemDef = {
   weapon?: 'staff' | 'sword'
   power?: number
   spellPower?: number
+  armor?: number
+  resist?: number
+  speedPct?: number
+  melee?: number
   engravingSlots?: number
   effect?: { stamina?: number; mana?: number; hp?: number; combatBuff?: CombatBuffKey }
 }
@@ -86,6 +91,109 @@ export const ITEMS: Record<string, ItemDef> = {
     weapon: 'sword',
     power: 6,
     desc: '武具店里最普通的铁剑。比练习短剑沉，也更锋利。',
+  },
+  hunter_sword: {
+    id: 'hunter_sword',
+    name: '猎人短剑',
+    type: 'equipment',
+    quality: 'uncommon',
+    price: 45,
+    slot: 'mainHand',
+    medium: false,
+    weapon: 'sword',
+    power: 5,
+    speedPct: 5,
+    desc: '护林人用的短剑，刃短而窄，出手快。砍不深，但能抢在野兽前面。',
+  },
+  knight_sword: {
+    id: 'knight_sword',
+    name: '骑士长剑',
+    type: 'equipment',
+    quality: 'rare',
+    price: 80,
+    slot: 'mainHand',
+    medium: false,
+    weapon: 'sword',
+    power: 8,
+    speedPct: -5,
+    desc: '骑士团淘汰下来的制式长剑，剑身沉，重心靠前。挥起来慢，落在身上很重。',
+  },
+  leather_armor: {
+    id: 'leather_armor',
+    name: '皮甲',
+    type: 'equipment',
+    quality: 'common',
+    price: 30,
+    slot: 'armor',
+    medium: false,
+    armor: 1,
+    desc: '硝过的硬皮缝成的护甲，肩头加了一层衬。能挡住擦伤，挡不住重击。',
+  },
+  travel_cloak: {
+    id: 'travel_cloak',
+    name: '旅人斗篷',
+    type: 'equipment',
+    quality: 'common',
+    price: 35,
+    slot: 'armor',
+    medium: false,
+    resist: 1,
+    desc: '厚布斗篷，内衬缝着几片写过字的旧符纸。穿上不显眼，却让人安心一点。',
+  },
+  studded_leather: {
+    id: 'studded_leather',
+    name: '镶钉皮甲',
+    type: 'equipment',
+    quality: 'rare',
+    price: 70,
+    slot: 'armor',
+    medium: false,
+    armor: 2,
+    desc: '皮甲上铆了一排铁钉，肩口用野猪牙磨成的扣子扣住。沉，但挡得住。',
+  },
+  apprentice_charm: {
+    id: 'apprentice_charm',
+    name: '学徒护符',
+    type: 'equipment',
+    quality: 'uncommon',
+    price: 40,
+    slot: 'accessory',
+    medium: false,
+    spellPower: 1,
+    desc: '一小块刻着符文的铜片，用细绳系着。握着它念咒，魔力聚得更紧。',
+  },
+  old_prayer_charm: {
+    id: 'old_prayer_charm',
+    name: '旧祈祷符',
+    type: 'equipment',
+    quality: 'common',
+    price: 25,
+    slot: 'accessory',
+    medium: false,
+    resist: 1,
+    desc: '教会发剩下的旧祈祷符，边缘磨得发白。挡不住刀，挡得住一些别的东西。',
+  },
+  tusk_necklace: {
+    id: 'tusk_necklace',
+    name: '兽牙项链',
+    type: 'equipment',
+    quality: 'uncommon',
+    price: 40,
+    slot: 'accessory',
+    medium: false,
+    melee: 1,
+    desc: '一根野猪牙串在皮绳上。低头时牙尖会碰到锁骨，提醒你出手要狠。',
+  },
+  light_boots: {
+    id: 'light_boots',
+    name: '轻靴',
+    type: 'equipment',
+    quality: 'common',
+    price: 28,
+    slot: 'feet',
+    medium: false,
+    speedPct: 5,
+    desc: '薄底软靴，鞋帮里垫了一层史莱姆凝胶。走起来没什么声音。',
   },
   mana_potion: {
     id: 'mana_potion',
@@ -174,7 +282,7 @@ export const ITEMS: Record<string, ItemDef> = {
     quality: 'rare',
     price: 18,
     medium: false,
-    desc: '皮肤会短暂发紧，像裹了一层薄壳。24 小时内受到的伤害 -1，最低 1。同种药剂不可叠加。',
+    desc: '皮肤会短暂发紧，像裹了一层薄壳。24 小时内受到的物理伤害 -1，仍受保底限制。同种药剂不可叠加。',
     effect: { combatBuff: 'stone' },
   },
   swift_draught: {
@@ -378,7 +486,7 @@ export const BOOKS: Record<string, BookDef> = {
     progressPerRead: 17,
     repeatable: false,
     spiritCost: 1,
-    reward: { flag: 'book_defense_notes', text: '受到伤害永久 -1' },
+    reward: { exp: { physique: 20 }, text: '体质经验 +20' },
   },
   old_city_stories: {
     id: 'old_city_stories',

@@ -182,6 +182,102 @@ export function DryRationIcon({ size = 32 }: IconProps) {  return (
   )
 }
 
+export function ArmorIcon({ size = 32 }: IconProps) {
+  return (
+    <svg {...base(size)} aria-hidden="true">
+      <rect x="5" y="2" width="6" height="2" fill="#7a5538" />
+      <rect x="3" y="4" width="10" height="8" fill="#a8784f" />
+      <rect x="4" y="5" width="2" height="1" fill="#c9a06e" />
+      <rect x="10" y="5" width="2" height="1" fill="#c9a06e" />
+      <rect x="7" y="4" width="2" height="7" fill="#8a623f" />
+      <rect x="3" y="12" width="3" height="1" fill="#7a5538" />
+      <rect x="10" y="12" width="3" height="1" fill="#7a5538" />
+    </svg>
+  )
+}
+
+export function StuddedArmorIcon({ size = 32 }: IconProps) {
+  return (
+    <svg {...base(size)} aria-hidden="true">
+      <rect x="5" y="2" width="6" height="2" fill="#6d4a30" />
+      <rect x="3" y="4" width="10" height="8" fill="#96703f" />
+      <rect x="4" y="5" width="1" height="1" fill="#c8cdd4" />
+      <rect x="11" y="5" width="1" height="1" fill="#c8cdd4" />
+      <rect x="4" y="8" width="1" height="1" fill="#c8cdd4" />
+      <rect x="11" y="8" width="1" height="1" fill="#c8cdd4" />
+      <rect x="5" y="11" width="1" height="1" fill="#c8cdd4" />
+      <rect x="10" y="11" width="1" height="1" fill="#c8cdd4" />
+      <rect x="7" y="4" width="2" height="7" fill="#7a5538" />
+    </svg>
+  )
+}
+
+export function CloakIcon({ size = 32 }: IconProps) {
+  return (
+    <svg {...base(size)} aria-hidden="true">
+      <rect x="6" y="2" width="4" height="1" fill="#4a3d55" />
+      <rect x="5" y="3" width="6" height="2" fill="#6d5a7c" />
+      <rect x="4" y="5" width="8" height="8" fill="#5c4c69" />
+      <rect x="5" y="5" width="1" height="8" fill="#7d6a8e" />
+      <rect x="10" y="5" width="1" height="8" fill="#4a3d55" />
+      <rect x="3" y="13" width="10" height="1" fill="#3d3247" />
+    </svg>
+  )
+}
+
+export function CharmIcon({ size = 32 }: IconProps) {
+  return (
+    <svg {...base(size)} aria-hidden="true">
+      <rect x="7" y="1" width="2" height="3" fill="#8a7a4a" />
+      <rect x="5" y="4" width="6" height="1" fill="#c9a227" />
+      <rect x="4" y="5" width="8" height="6" fill="#8a6a1e" />
+      <rect x="6" y="6" width="4" height="4" fill="#d8b45a" />
+      <rect x="7" y="7" width="2" height="2" fill="#fff0b8" />
+      <rect x="7" y="11" width="2" height="2" fill="#a8873a" />
+    </svg>
+  )
+}
+
+export function PrayerCharmIcon({ size = 32 }: IconProps) {
+  return (
+    <svg {...base(size)} aria-hidden="true">
+      <rect x="7" y="1" width="2" height="3" fill="#8a8a80" />
+      <rect x="4" y="4" width="8" height="7" fill="#b8b4a2" />
+      <rect x="5" y="5" width="6" height="5" fill="#d8d2bc" />
+      <rect x="7" y="5" width="1" height="5" fill="#8a8a80" />
+      <rect x="5" y="7" width="5" height="1" fill="#8a8a80" />
+      <rect x="7" y="11" width="2" height="2" fill="#9a9684" />
+    </svg>
+  )
+}
+
+export function NecklaceIcon({ size = 32 }: IconProps) {
+  return (
+    <svg {...base(size)} aria-hidden="true">
+      <rect x="3" y="2" width="1" height="3" fill="#8a623f" />
+      <rect x="12" y="2" width="1" height="3" fill="#8a623f" />
+      <rect x="4" y="5" width="1" height="2" fill="#8a623f" />
+      <rect x="11" y="5" width="1" height="2" fill="#8a623f" />
+      <rect x="5" y="7" width="6" height="1" fill="#8a623f" />
+      <rect x="7" y="8" width="2" height="4" fill="#e8dcc0" />
+      <rect x="6" y="10" width="1" height="3" fill="#d8c9a8" />
+      <rect x="7" y="8" width="1" height="2" fill="#f7f1e0" />
+    </svg>
+  )
+}
+
+export function BootsIcon({ size = 32 }: IconProps) {
+  return (
+    <svg {...base(size)} aria-hidden="true">
+      <rect x="6" y="2" width="4" height="7" fill="#6a4a32" />
+      <rect x="6" y="4" width="4" height="1" fill="#c9a06e" />
+      <rect x="6" y="9" width="7" height="3" fill="#8a623f" />
+      <rect x="6" y="12" width="8" height="1" fill="#4a3322" />
+      <rect x="7" y="9" width="2" height="1" fill="#a8784f" />
+    </svg>
+  )
+}
+
 export function ItemIcon({ id, size = 32 }: { id: string; size?: number }) {
   switch (id) {
     case 'basic_wand':
@@ -190,7 +286,23 @@ export function ItemIcon({ id, size = 32 }: { id: string; size?: number }) {
       return <AdvancedWandIcon size={size} />
     case 'practice_sword':
     case 'iron_sword':
+    case 'hunter_sword':
+    case 'knight_sword':
       return <SwordIcon size={size} />
+    case 'leather_armor':
+      return <ArmorIcon size={size} />
+    case 'studded_leather':
+      return <StuddedArmorIcon size={size} />
+    case 'travel_cloak':
+      return <CloakIcon size={size} />
+    case 'apprentice_charm':
+      return <CharmIcon size={size} />
+    case 'old_prayer_charm':
+      return <PrayerCharmIcon size={size} />
+    case 'tusk_necklace':
+      return <NecklaceIcon size={size} />
+    case 'light_boots':
+      return <BootsIcon size={size} />
     case 'mana_potion':
       return <ManaPotionIcon size={size} />
     case 'tonic':
