@@ -1,4 +1,5 @@
 // arcanum: weather
+import type { Season, WeatherKind } from '../types'
 import { hash01 } from './rng'
 import { WEATHER_SCENES } from './textWeatherScenes'
 
@@ -22,10 +23,6 @@ const OUTDOOR = new Set([
   'forest',
   'forestDeep',
 ])
-
-export type WeatherKind = 'sunny' | 'cloudy' | 'overcast' | 'rain' | 'snow'
-
-export type Season = 'spring' | 'summer' | 'autumn' | 'winter'
 
 export const WEATHER_LABEL: Record<WeatherKind, string> = {
   sunny: '晴',

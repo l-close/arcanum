@@ -1,7 +1,6 @@
 // arcanum: desc
 import type { Location } from './locations'
 import { timePeriod } from './locations'
-import type { Season } from './weather'
 import { seasonOf } from './weather'
 import { DESC_BY_TIME } from './textDescByTime'
 import { SEASON_DESC } from './textSeasonDesc'

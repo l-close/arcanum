@@ -1,32 +1,8 @@
 // arcanum: social
-import { SUMMER_RITE_DAY, WINTER_RITE_DAY } from './life'
 import { hash01 } from './rng'
 import { isTimeWindow, semesterState, weekday } from './time'
+import type { NpcDef, NpcSlot, SocialTier } from './npcs'
 import { NPCS } from './npcs'
-
-export type SocialTier = 'far' | 'familiar' | 'close'
-
-export type NpcSlot = {
-  location: string
-  days: 'workday' | 'weekend' | 'all' | 'sunday'
-  start: number
-  end: number
-  chance?: number
-  only?: 'school' | 'vacation'
-  onlyDay?: number
-}
-
-export type NpcDef = {
-  id: string
-  name: string
-  short: string
-  title: string
-  status: string
-  relationship?: 'bond' | 'familiarity'
-  schedule: NpcSlot[]
-  impression: Record<SocialTier, string>
-  lines: Record<SocialTier, string[]>
-}
 
 export const SOCIAL_MINUTES = 15
 

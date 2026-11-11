@@ -1,7 +1,5 @@
 // arcanum: textWeatherScenes
-import type { Season, WeatherKind } from './weather'
-
-export type SeasonSceneTable = Record<Season, Partial<Record<WeatherKind, string>>>
+import type { SeasonSceneTable } from '../types'
 
 export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
   town: {

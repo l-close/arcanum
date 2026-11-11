@@ -414,7 +414,24 @@ npm.cmd run preview
 web/
 ├─ src/
 │  ├─ game/
-│  │  ├─ content.ts   地点、技能档位、课程表、物品、NPC 与社交数据
+│  │  ├─ content/
+│  │  │  ├─ index.ts          统一导出
+│  │  │  ├─ skills.ts         技能档位、标签与派生值
+│  │  │  ├─ items.ts          物品、装备、书籍
+│  │  │  ├─ combat.ts         武器、法术、敌人、战斗 buff
+│  │  │  ├─ economy.ts        商店、炼药、商会
+│  │  │  ├─ locations.ts      地点数据与地图
+│  │  │  ├─ desc.ts           地点描述逻辑
+│  │  │  ├─ weather.ts        天气逻辑
+│  │  │  ├─ social.ts         NPC 关系与作息逻辑
+│  │  │  ├─ npcs.ts           NPC 数据与台词
+│  │  │  ├─ schedule.ts       课程、学期、考试
+│  │  │  ├─ life.ts           用餐、睡眠、圣祷、酒馆、救济院
+│  │  │  ├─ world.ts          西镇、城门、墓园、森林
+│  │  │  ├─ notices.ts        告示板
+│  │  │  ├─ time.ts           日期、时间、格式化
+│  │  │  ├─ rng.ts            确定性哈希
+│  │  │  └─ text*.ts          纯文本表（时段、季节、天气、课堂）
 │  │  ├─ events.ts    23 个事件与触发判定
 │  │  ├─ save.ts      localStorage 存读档
 │  │  ├─ store.ts     游戏状态与行动

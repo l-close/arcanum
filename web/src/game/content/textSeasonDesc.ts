@@ -1,5 +1,5 @@
 // arcanum: textSeasonDesc
-import type { Season } from './weather'
+import type { Season } from '../types'
 
 export type SeasonDesc = Record<Season, [string, string, string]>
 

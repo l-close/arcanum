@@ -13,6 +13,10 @@ export type SkillKey =
 
 export type Skill = { tier: number; exp: number }
 
+export type WeatherKind = 'sunny' | 'cloudy' | 'overcast' | 'rain' | 'snow'
+export type Season = 'spring' | 'summer' | 'autumn' | 'winter'
+export type SeasonSceneTable = Record<Season, Partial<Record<WeatherKind, string>>>
+
 export type EquipmentSlot = 'mainHand' | 'offHand' | 'armor' | 'accessory'
 
 export type Equipment = Record<EquipmentSlot, string | null>
