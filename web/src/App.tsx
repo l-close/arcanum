@@ -4015,6 +4015,7 @@ function CommissionsModal() {
 
 function BestiaryModal() {
   const data = useGame((s) => s.data)
+  const player = useGame((s) => s.player)
   const setModal = useGame((s) => s.setModal)
   const seen = new Set(data.bestiarySeen ?? [])
   const count = BESTIARY_GROUPS.reduce(
@@ -4024,6 +4025,7 @@ function BestiaryModal() {
 
   return (
     <ModalShell title="图鉴" wide onClose={() => setModal(null)}>
+      <div className="bestiary-subtitle">个人记录</div>
       <div className="bestiary-count">
         已记录 {count} / {BESTIARY_TOTAL}
       </div>
@@ -4046,6 +4048,19 @@ function BestiaryModal() {
                             {enemy.element === 'magic' ? '法术' : '物理'}
                           </span>
                         </div>
+                        {enemy.bestiaryRecord && (
+                          <div className="bestiary-record">
+                            {enemy.bestiaryRecord.grade && (
+                              <span>标准分类：{enemy.bestiaryRecord.grade}</span>
+                            )}
+                            {enemy.bestiaryRecord.composition && (
+                              <span>构成：{enemy.bestiaryRecord.composition}</span>
+                            )}
+                            {enemy.bestiaryRecord.source && (
+                              <span>来源：{enemy.bestiaryRecord.source}</span>
+                            )}
+                          </div>
+                        )}
                         <div className="item-desc">{enemy.desc}</div>
                         <div className="bestiary-stats">
                           <span>生命 {enemy.hp}</span>
@@ -4080,6 +4095,9 @@ function BestiaryModal() {
             </div>
           </div>
         ))}
+      </div>
+      <div className="bestiary-footer">
+        按学院标准术语整理 · 记录者：{player.name} · 数值为交手后的估算
       </div>
     </ModalShell>
   )

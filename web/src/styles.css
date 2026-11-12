@@ -887,6 +887,12 @@ button:disabled {
   border-color: #8a4a42;
   color: #d99a8f;
 }
+.bestiary-subtitle {
+  margin: -6px 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 2px;
+}
 .bestiary-count {
   margin-bottom: 14px;
   color: var(--gold);
@@ -942,6 +948,24 @@ button:disabled {
   gap: 3px;
   color: var(--muted);
   font-size: 12px;
+}
+.bestiary-record {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 8px;
+  border-left: 2px solid rgba(214, 178, 94, 0.35);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.bestiary-footer {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px dotted rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
 }
 .escort-view { padding: 18px; }
 .escort-view .package-text { margin-bottom: 6px; }

@@ -119,7 +119,7 @@ export type EnemyRegen = {
   initial: number
   max: number
   healPer: number
-  /** 层数不会减少（侵蚀体的污秽之躯）。 */
+  /** 层数不会减少（侵蚀体 α 的污秽之躯）。 */
   persistent?: boolean
 }
 
@@ -133,6 +133,12 @@ export type EnemyDef = {
   resist: number
   /** 敌人攻击类型，缺省为物理。 */
   element?: 'physical' | 'magic'
+  /** 图鉴个人记录里的补充信息。 */
+  bestiaryRecord?: {
+    grade?: string
+    composition?: string
+    source?: string
+  }
   speed: number
   expValue: number
   intro: string
@@ -242,8 +248,8 @@ export const ENEMIES: Record<string, EnemyDef> = {
   },
   erosion_body: {
     id: 'erosion_body',
-    name: '侵蚀体',
-    desc: '它已经不太像狗了。什么东西从体内把它撑起来，动作比活着时更稳。',
+    name: '侵蚀体 α',
+    desc: '野狗的躯壳已经裂开。蚀念还依附在壳里，像借着一件不合身的衣服站起来。',
     hp: 30,
     attack: 4,
     defense: 1,
@@ -251,8 +257,13 @@ export const ENEMIES: Record<string, EnemyDef> = {
     element: 'magic',
     speed: 3.1,
     expValue: 2,
+    bestiaryRecord: {
+      grade: 'α 型蚀念',
+      composition: '蚀念（α 型）',
+      source: '躯壳（犬形）',
+    },
     intro:
-      '它的身体从里面塌下去，又有什么东西把它撑了起来。\n它抬起头。这一次，它的动作不像活物。',
+      '它的躯壳从里面塌下去，又有什么东西把它撑了起来。\n它抬起头。这一次，它的动作不像活物。',
     attackLines: [
       '它隔着一段距离撞过来，像有什么先一步碰到了你。',
       '它的影子先动，身体才跟上。',
@@ -262,7 +273,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     traits: [
       {
         name: '污秽之躯',
-        desc: '登场时获得 3 层再生，再生层数不会减少。',
+        desc: '蚀念维持着转化出的躯体，伤口会按原来的形状重新合拢；登场时获得 3 层再生，再生层数不会减少。',
       },
     ],
     regen: { initial: 3, max: 5, healPer: 2, persistent: true },
