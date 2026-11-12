@@ -3202,7 +3202,7 @@ export const useGame = create<Store>((set, get) => {
         advanceTime(d, 30)
         if (key) d.meals[key] = true
         if (fee > 0) d.money -= fee
-        d.stamina = clamp(d.stamina + 12, 0, maxStamina(d.skills.physique.tier))
+        d.stamina = clamp(d.stamina + 8, 0, maxStamina(d.skills.physique.tier))
         pushLog(d, `你吃了${meal}，体力恢复了一些。`)
         return fee > 0 ? `你吃了${meal}，付了 ${fee} 枚铜币。体力恢复。` : `你吃了${meal}。体力恢复。`
       })
@@ -3241,9 +3241,8 @@ export const useGame = create<Store>((set, get) => {
         advanceTime(d, minutes)
         const short = minutes < SLEEP_MIN_RECOVERY_MINUTES
         const h = minutes / 60
-        const bonus = !short && minutes >= 420 ? 10 : 0
-        const staminaGain = short ? 0 : h * 6 + bonus
-        const spiritGain = short ? 0 : h * 8
+        const staminaGain = short ? 0 : h * 5
+        const spiritGain = short ? 0 : h * 6
         const hpGain = short ? 0 : h * 5
         const manaGain = short ? 0 : h * 2
         if (!short) {
@@ -3303,7 +3302,7 @@ export const useGame = create<Store>((set, get) => {
       }
       const course = courseById(segment.courseId)
       const physical = course?.kind === 'physical'
-      const cost = physical ? 3 : spiritCost(2, data.mood)
+      const cost = physical ? 4 : spiritCost(3, data.mood)
       if (physical && data.stamina < cost) {
         set({ message: '你太累了，先休息一下再上课。' })
         return
@@ -3375,7 +3374,7 @@ export const useGame = create<Store>((set, get) => {
       }
       const duration = 30
       const courseId = masteryCourseForSkill(key, data.day)
-      const cost = spiritCost(3, data.mood)
+      const cost = spiritCost(4, data.mood)
       if (data.spirit <= cost) {
         mutate((d) => {
           applyFaint(d, getLocation(d.location).name)
@@ -3443,7 +3442,7 @@ export const useGame = create<Store>((set, get) => {
         if (courseId) {
           d.courseMastery[courseId] = (d.courseMastery[courseId] ?? 0) + 0.25
         }
-        d.stamina = clamp(d.stamina - 4, 0, maxStamina(d.skills.physique.tier))
+        d.stamina = clamp(d.stamina - 5, 0, maxStamina(d.skills.physique.tier))
         const place = formal ? '演武场' : '后院'
         pushLog(d, `你在${place}练习了${key === 'brawl' ? '格斗' : '剑术'}。`)
         return formal ? '你练习了半小时。经验 +2。' : '你在后院练了一会儿。经验 +2。'
@@ -4066,7 +4065,7 @@ export const useGame = create<Store>((set, get) => {
       mutate((d) => {
         advanceTime(d, 120)
         d.money += 10
-        d.stamina = clamp(d.stamina - 10, 0, maxStamina(d.skills.physique.tier))
+        d.stamina = clamp(d.stamina - 12, 0, maxStamina(d.skills.physique.tier))
         d.mood = clamp(d.mood - 5, 0, 100)
         pushLog(d, '你在杂货店打了两个小时的工。')
         return '你在杂货店打了两个小时的工，拿到 10 枚铜币。'
@@ -4183,7 +4182,7 @@ export const useGame = create<Store>((set, get) => {
       mutate((d) => {
         advanceTime(d, 120)
         d.money += 12
-        d.stamina = clamp(d.stamina - 10, 0, maxStamina(d.skills.physique.tier))
+        d.stamina = clamp(d.stamina - 12, 0, maxStamina(d.skills.physique.tier))
         d.mood = clamp(d.mood - 3, 0, 100)
         pushLog(d, '你在酒馆帮了两个小时的忙。')
         return '你在酒馆帮了两个小时的忙，拿到 12 枚铜币。'

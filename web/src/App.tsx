@@ -1342,7 +1342,7 @@ function Actions({
         label={`${physicalClass ? '训练' : '听课'} · ${segment.label}`}
         cost={
           remain >= 15
-            ? `${remain} 分钟 · ${physicalClass ? '体力 -3' : `精神 -${spiritCost(2, data.mood)}`}`
+            ? `${remain} 分钟 · ${physicalClass ? '体力 -4' : `精神 -${spiritCost(3, data.mood)}`}`
             : `${remain} 分钟 · 无收益`
         }
       />
@@ -1400,7 +1400,7 @@ function Actions({
         <ActionBtn
           onClick={() => setModal('study')}
           label="自习"
-          cost={`0.5 小时 · 精神 -${spiritCost(3, data.mood)}`}
+          cost={`0.5 小时 · 精神 -${spiritCost(4, data.mood)}`}
         />
       )}
       {loc === 'library' && <ActionBtn onClick={() => setModal('reading')} label="阅读" cost="0.5 小时" />}
@@ -1421,7 +1421,7 @@ function Actions({
             <ActionBtn
               onClick={eat}
               label={`吃饭 · ${meal}`}
-              cost={`0.5 小时 · 体力 +12${canteenFee > 0 ? ` · ${canteenFee} 铜` : ''}`}
+              cost={`0.5 小时 · 体力 +8${canteenFee > 0 ? ` · ${canteenFee} 铜` : ''}`}
             />
           )
         })()}
@@ -1433,7 +1433,7 @@ function Actions({
         ) : (
           <>
             <div className="hint">现在没有体术课。</div>
-            <ActionBtn onClick={() => setModal('practice')} label="练习" cost="0.5 小时 · 体力 -4" />
+            <ActionBtn onClick={() => setModal('practice')} label="练习" cost="0.5 小时 · 体力 -5" />
             <ActionBtn onClick={() => setModal('battleSelect')} label="切磋" cost="木桩 / 练习人偶" />
             {canWaitToClass && (
               <ActionBtn
@@ -1536,7 +1536,7 @@ function Actions({
         (isTimeWindow(data.minutes, GROCERY_OPEN_START, GROCERY_OPEN_END) ? (
           <>
             <ActionBtn onClick={() => setModal('shop')} label="购买" cost="—" />
-            <ActionBtn onClick={workShop} label="打工" cost="2 小时 · 体力 -10" />
+            <ActionBtn onClick={workShop} label="打工" cost="2 小时 · 体力 -12" />
           </>
         ) : (
           <div className="hint">杂货店已经关门了。</div>
@@ -1616,7 +1616,7 @@ function Actions({
           return (
             <>
               {workOpen ? (
-                <ActionBtn onClick={workTavern} label="打工" cost="2 小时 · 体力 -10" />
+                <ActionBtn onClick={workTavern} label="打工" cost="2 小时 · 体力 -12" />
               ) : (
                 <div className="hint">
                   {beforeWork ? '再晚一点才热闹。' : '今晚的活已经干完了。'}
@@ -2054,7 +2054,7 @@ function SleepModal() {
   return (
     <ModalShell title="睡觉" onClose={() => close(null)}>
       <p className="muted">
-        可以在孤儿院寝室或支援队驻地睡觉。睡 7 小时以上会额外恢复体力与心情；少于{' '}
+        可以在孤儿院寝室或支援队驻地睡觉。睡 7 小时以上会额外恢复心情；少于{' '}
         {SLEEP_MIN_RECOVERY_MINUTES / 60} 小时只会跳过时间。
       </p>
       <div className="btn-grid">

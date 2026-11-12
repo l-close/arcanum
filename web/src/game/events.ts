@@ -239,7 +239,7 @@ export const EVENTS: GameEvent[] = [
       {
         label: '坐下一起吃',
         result: '你在她旁边坐下。她把盘子往中间推了推，说今天的炖菜比昨天好一点。',
-        effects: { minutes: 30, stamina: 12, mood: 2, affinity: { mia: 1 }, meal: 'lunch' },
+        effects: { minutes: 30, stamina: 8, mood: 2, affinity: { mia: 1 }, meal: 'lunch' },
       },
       {
         label: '说吃过了',
