@@ -273,7 +273,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     traits: [
       {
         name: '污秽之躯',
-        desc: '蚀念维持着转化出的躯体，伤口会按原来的形状重新合拢；登场时获得 3 层再生，再生层数不会减少。',
+        desc: '伤口会自行愈合，再生活性较高。',
       },
     ],
     regen: { initial: 3, max: 5, healPer: 2, persistent: true },
