@@ -61,6 +61,7 @@ export const CRAFTED_POTIONS = new Set([
   'salve_fine',
   'stimulant',
   'stimulant_fine',
+  'antidote_fine',
 ])
 
 export const WORKSHOP_HERBS = new Set(['bloodherb', 'bitterleaf'])
@@ -174,6 +175,18 @@ export const RECIPES: RecipeDef[] = [
     successBase: 105,
     fineBase: 20,
     desc: '苦叶煎出的提神剂，苦味很重，喝下去身上会暖起来。',
+  },
+  {
+    id: 'antidote',
+    name: '解毒剂',
+    level: 1,
+    unlockExp: 80,
+    inputs: { venom_fang: 1, bitterleaf: 2 },
+    standard: 'antidote',
+    fine: 'antidote_fine',
+    successBase: 105,
+    fineBase: 20,
+    desc: '毒牙磨成粉，和苦叶一起煎。味道很冲，但能把毒压下去。',
   },
 ]
 
