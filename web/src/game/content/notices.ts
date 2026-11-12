@@ -37,7 +37,7 @@ const PLAZA_NOTICES_BASE: PlazaNotice[] = [
   {
     id: 'bell_open',
     title: '钟楼开放',
-    text: '钟楼 08:00–18:00 开放。登楼请勿敲钟。',
+    text: '钟楼 07:00–19:00 开放。登楼请勿敲钟。',
   },
   {
     id: 'caravan_arrive',

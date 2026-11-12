@@ -5,6 +5,11 @@ import { GREENHOUSE_HERB_PRICES, GREENHOUSE_HERB_STOCK } from './greenhouse'
 import { ITEMS } from './items'
 import { TIER_REQ } from './skills'
 
+export const GROCERY_OPEN_START = 7 * 60
+export const GROCERY_OPEN_END = 21 * 60
+export const BOOKSHOP_OPEN_START = 9 * 60
+export const BOOKSHOP_OPEN_END = 20 * 60
+
 export const SHOP_STOCKS: Record<string, Record<string, number>> = {
   shop: {
     advanced_wand: 1,

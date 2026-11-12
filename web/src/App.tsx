@@ -26,6 +26,10 @@ import {
   RUNES,
   runeApplicable,
   CRAFT_RECIPES,
+  GROCERY_OPEN_END,
+  GROCERY_OPEN_START,
+  BOOKSHOP_OPEN_END,
+  BOOKSHOP_OPEN_START,
   weaponShopOpenAt,
   COMMISSION_SOURCE_LABEL,
   MAX_ACTIVE_COMMISSIONS,
@@ -1528,12 +1532,15 @@ function Actions({
             />
           ) : null
         })()}
-      {loc === 'shop' && (
-        <>
-          <ActionBtn onClick={() => setModal('shop')} label="购买" cost="—" />
-          <ActionBtn onClick={workShop} label="打工" cost="2 小时 · 体力 -10" />
-        </>
-      )}
+      {loc === 'shop' &&
+        (isTimeWindow(data.minutes, GROCERY_OPEN_START, GROCERY_OPEN_END) ? (
+          <>
+            <ActionBtn onClick={() => setModal('shop')} label="购买" cost="—" />
+            <ActionBtn onClick={workShop} label="打工" cost="2 小时 · 体力 -10" />
+          </>
+        ) : (
+          <div className="hint">杂货店已经关门了。</div>
+        ))}
       {loc === 'greenhouse' &&
         (isTimeWindow(data.minutes, GREENHOUSE_OPEN_START, GREENHOUSE_OPEN_END) ? (
           <>
@@ -1580,9 +1587,12 @@ function Actions({
         ) : (
           <div className="hint">工坊已经关门了。</div>
         ))}
-      {loc === 'bookshop' && (
-        <ActionBtn onClick={() => setModal('shop')} label="买书" cost="—" />
-      )}
+      {loc === 'bookshop' &&
+        (isTimeWindow(data.minutes, BOOKSHOP_OPEN_START, BOOKSHOP_OPEN_END) ? (
+          <ActionBtn onClick={() => setModal('shop')} label="买书" cost="—" />
+        ) : (
+          <div className="hint">旧书铺已经关门了。</div>
+        ))}
       {loc === 'weaponShop' &&
         (weaponShopOpenAt(data.minutes) ? (
           <ActionBtn onClick={() => setModal('shop')} label="购买与打造" cost="—" />

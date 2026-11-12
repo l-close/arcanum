@@ -110,9 +110,9 @@ export function ritePhaseDone(
 }
 
 export const MEAL_WINDOWS: Array<[number, number, string]> = [
-  [6 * 60, 9 * 60, '早餐'],
+  [6 * 60, 8 * 60, '早餐'],
   [11 * 60, 13 * 60, '午餐'],
-  [17 * 60 + 30, 20 * 60, '晚餐'],
+  [17 * 60, 19 * 60, '晚餐'],
 ]
 
 export function currentMeal(minutes: number): string | null {
@@ -259,9 +259,9 @@ export const RELIEF_VOLUNTEER_STAMINA = 8
 
 export const RELIEF_VOLUNTEER_MOOD = 1
 
-export const BELL_TOWER_OPEN_START = 8 * 60
+export const BELL_TOWER_OPEN_START = 7 * 60
 
-export const BELL_TOWER_OPEN_END = 18 * 60
+export const BELL_TOWER_OPEN_END = 19 * 60
 
 export const BELL_TOWER_MINUTES = 30
 

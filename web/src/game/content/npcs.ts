@@ -359,7 +359,7 @@ export const NPCS: NpcDef[] = [
     short: '戈登',
     title: '铁匠',
     relationship: 'familiarity',
-    schedule: [{ location: 'weaponShop', days: 'all', start: 10 * 60, end: 18 * 60 }],
+    schedule: [{ location: 'weaponShop', days: 'all', start: 8 * 60, end: 20 * 60 }],
     status: '他正把一块烧红的铁按进水桶，白汽冒起来。',
     impression: {
       far: '武具店的铁匠，手上都是旧烫伤',

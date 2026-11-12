@@ -1,7 +1,7 @@
 // arcanum: crafting
 
-export const WEAPON_SHOP_OPEN_START = 10 * 60
-export const WEAPON_SHOP_OPEN_END = 18 * 60
+export const WEAPON_SHOP_OPEN_START = 8 * 60
+export const WEAPON_SHOP_OPEN_END = 20 * 60
 
 export type CraftRecipe = {
   id: string
