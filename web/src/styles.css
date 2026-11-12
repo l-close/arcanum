@@ -1463,6 +1463,12 @@ button:disabled {
 .battle-name { font-family: var(--serif); color: var(--text); font-size: 18px; }
 .battle-tag { color: var(--muted); border: 1px solid var(--line); padding: 1px 6px; font-size: 11px; }
 .battle-desc { color: var(--muted); font-size: 12px; margin-bottom: 10px; }
+.battle-traits {
+  color: #b99a6b;
+  font-size: 12px;
+  line-height: 1.6;
+  margin: -4px 0 10px;
+}
 
 .battle-stat {
   display: grid;

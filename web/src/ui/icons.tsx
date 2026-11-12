@@ -320,6 +320,10 @@ export function ItemIcon({ id, size = 32 }: { id: string; size?: number }) {
       return <ManaPotionIcon size={size} />
     case 'swift_draught':
       return <TonicIcon size={size} />
+    case 'antidote':
+      return <TonicIcon size={size} />
+    case 'regen_potion':
+      return <HealingPotionIcon size={size} />
     case 'dry_ration':
       return <DryRationIcon size={size} />
     case 'slime_gel':
@@ -329,6 +333,7 @@ export function ItemIcon({ id, size = 32 }: { id: string; size?: number }) {
     case 'boar_tusk':
     case 'wolf_fang':
     case 'boar_king_tusk':
+    case 'venom_fang':
       return <BoarTuskIcon size={size} />
     case 'bloodherb':
       return <BloodHerbIcon size={size} />

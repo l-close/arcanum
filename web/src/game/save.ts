@@ -15,6 +15,7 @@ export type SaveBundle = {
   exportedAt: string
   player?: Player
   data?: GameData
+  battle?: SaveData['battle']
   saves?: Record<string, SaveData>
 }
 
@@ -27,12 +28,14 @@ export function saveGame(
   player: Player,
   data: GameData,
   ts: number = Date.now(),
+  battle?: SaveData['battle'],
 ): boolean {
   try {
     const payload: SaveData = {
       ts,
       player: structuredClone(player),
       data: structuredClone(data),
+      ...(battle ? { battle: structuredClone(battle) } : {}),
     }
     localStorage.setItem(key(slot), JSON.stringify(payload))
     return true
@@ -61,14 +64,24 @@ export function deleteSave(slot: SaveSlot): void {
   }
 }
 
-export function listSaves(): Array<{ slot: number | 'auto'; ts: number; name: string } | null> {
-  const out: Array<{ slot: number | 'auto'; ts: number; name: string } | null> = []
+export function listSaves(): Array<{
+  slot: number | 'auto'
+  ts: number
+  name: string
+  battle: boolean
+} | null> {
+  const out: Array<{
+    slot: number | 'auto'
+    ts: number
+    name: string
+    battle: boolean
+  } | null> = []
   for (let i = 1; i <= SLOT_COUNT; i += 1) {
     const s = loadGame(i)
-    out.push(s ? { slot: i, ts: s.ts, name: s.player.name } : null)
+    out.push(s ? { slot: i, ts: s.ts, name: s.player.name, battle: !!s.battle } : null)
   }
   const auto = loadGame('auto')
-  out.push(auto ? { slot: 'auto', ts: auto.ts, name: auto.player.name } : null)
+  out.push(auto ? { slot: 'auto', ts: auto.ts, name: auto.player.name, battle: !!auto.battle } : null)
   return out
 }
 
@@ -108,7 +121,11 @@ export function isAndroidRuntime(): boolean {
   return /Android/i.test(navigator.userAgent)
 }
 
-export function buildCurrentBundle(player: Player, data: GameData): SaveBundle {
+export function buildCurrentBundle(
+  player: Player,
+  data: GameData,
+  battle?: SaveData['battle'],
+): SaveBundle {
   return {
     app: 'arcanum',
     version: APP_VERSION,
@@ -116,6 +133,7 @@ export function buildCurrentBundle(player: Player, data: GameData): SaveBundle {
     exportedAt: new Date().toISOString(),
     player: structuredClone(player),
     data: structuredClone(data),
+    ...(battle ? { battle: structuredClone(battle) } : {}),
   }
 }
 
@@ -213,7 +231,7 @@ export function parseBundleText(text: string): BundleParseResult {
 
 export function importCurrentToSlot(bundle: SaveBundle, slot: number): boolean {
   if (!bundle.player || !bundle.data) return false
-  return saveGame(slot, bundle.player, bundle.data)
+  return saveGame(slot, bundle.player, bundle.data, Date.now(), bundle.battle)
 }
 
 export type ImportPlan = { written: number[]; removed: number[] }
@@ -232,7 +250,7 @@ export function importAllSlots(bundle: SaveBundle): ImportPlan {
   const plan = planAllImport(bundle)
   for (let i = 1; i <= SLOT_COUNT; i += 1) {
     const s = bundle.saves?.[String(i)]
-    if (s?.player && s?.data) saveGame(i, s.player, s.data, s.ts)
+    if (s?.player && s?.data) saveGame(i, s.player, s.data, s.ts, s.battle)
     else deleteSave(i)
   }
   return plan

@@ -41,6 +41,16 @@ export function applyDefense(base: number, defense: number): number {
   return Math.max(floorDamage(base), base - Math.max(0, defense))
 }
 
+export const POISON_MAX_STACKS = 3
+export const POISON_DAMAGE_PER_STACK = 3
+export const POISON_TICKS = 60
+
+export const BLEED_MAX_STACKS = 5
+export const BLEED_DAMAGE_PER_STACK = 2
+
+export const REGEN_MAX_STACKS = 5
+export const REGEN_HEAL_PER_STACK = 2
+
 export type AttackKind = 'brawl' | 'sword'
 
 export function weaponPower(kind: AttackKind, mainHand: string | null): number {
@@ -100,6 +110,19 @@ export function spellDamageRange(
   return [applyDefense(base, resist), applyDefense(base + spell.variance, resist)]
 }
 
+export type EnemyTrait = {
+  name: string
+  desc: string
+}
+
+export type EnemyRegen = {
+  initial: number
+  max: number
+  healPer: number
+  /** 层数不会减少（侵蚀体的污秽之躯）。 */
+  persistent?: boolean
+}
+
 export type EnemyDef = {
   id: string
   name: string
@@ -115,6 +138,14 @@ export type EnemyDef = {
   intro: string
   attackLines: string[]
   defeatLine: string
+  traits?: EnemyTrait[]
+  /** 攻击命中时施加中毒的概率。 */
+  poisonChance?: number
+  /** 攻击命中时施加流血的概率。 */
+  bleedChance?: number
+  /** 生命归零后切换到的敌人 ID。 */
+  transformTo?: string
+  regen?: EnemyRegen
 }
 
 export const ENEMIES: Record<string, EnemyDef> = {
@@ -168,16 +199,37 @@ export const ENEMIES: Record<string, EnemyDef> = {
     ],
     defeatLine: '史莱姆塌成一摊，慢慢渗进落叶底下。',
   },
+  viper: {
+    id: 'viper',
+    name: '毒蛇',
+    desc: '一条细长的蛇，鳞片颜色几乎和落叶一样。它盘在草里，只抬起前半身。',
+    hp: 50,
+    attack: 8,
+    defense: 0,
+    resist: 0,
+    speed: 2.7,
+    expValue: 1,
+    intro:
+      '草叶轻轻动了一下。\n一条细长的蛇从落叶里抬起前半身，鳞片颜色几乎和周围一样。\n它没有退，只是把信子吐了一次。',
+    attackLines: [
+      '毒蛇弹起来，牙尖擦过你的手背。',
+      '它贴着地面绕了半圈，突然咬向你的脚踝。',
+      '毒蛇的身体绷紧，又弹了一次。',
+    ],
+    defeatLine: '毒蛇的身体松开，慢慢滑回落叶里。',
+    traits: [{ name: '毒牙', desc: '攻击命中时可能使目标中毒。' }],
+    poisonChance: 0.35,
+  },
   corrupted_dog: {
     id: 'corrupted_dog',
     name: '被侵蚀的野狗',
     desc: '它的身体像被什么东西从里面撑开，肋骨顶破了皮，脊背弯成一个不自然的角度。',
-    hp: 80,
+    hp: 90,
     attack: 11,
     defense: 1,
-    resist: 0,
-    speed: 2.9,
-    expValue: 1.5,
+    resist: 1,
+    speed: 3.0,
+    expValue: 2,
     intro:
       '路边的草里传来低低的喘息。\n它的身体像被什么东西从里面撑开，肋骨顶破了皮，脊背弯成一个不自然的角度。\n半边脸塌下去，露出的牙床比正常的狗长了一截。\n它还在喘气，喉咙里发出不像狗的声音。\n你只能从脖子上的旧项圈，勉强认出这原本是条狗。',
     attackLines: [
@@ -185,7 +237,35 @@ export const ENEMIES: Record<string, EnemyDef> = {
       '它咬住你的袖子，牙齿刮过皮肉。',
       '它喉咙里发出湿漉漉的声音，又扑了一次。',
     ],
-    defeatLine: '它倒在地上，身体还在抽动。你退开两步，等它彻底不动。',
+    defeatLine: '它倒下去，四肢却从不对的方向撑住地面。',
+    transformTo: 'erosion_body',
+  },
+  erosion_body: {
+    id: 'erosion_body',
+    name: '侵蚀体',
+    desc: '它已经不太像狗了。什么东西从体内把它撑起来，动作比活着时更稳。',
+    hp: 30,
+    attack: 4,
+    defense: 1,
+    resist: 1,
+    element: 'magic',
+    speed: 3.1,
+    expValue: 2,
+    intro:
+      '它的身体从里面塌下去，又有什么东西把它撑了起来。\n它抬起头。这一次，它的动作不像活物。',
+    attackLines: [
+      '它隔着一段距离撞过来，像有什么先一步碰到了你。',
+      '它的影子先动，身体才跟上。',
+      '它的头歪向一边，声音从身体里传出来。',
+    ],
+    defeatLine: '这一次它没有再站起来。地上的东西慢慢安静下去。',
+    traits: [
+      {
+        name: '污秽之躯',
+        desc: '登场时获得 3 层再生，再生层数不会减少。',
+      },
+    ],
+    regen: { initial: 3, max: 5, healPer: 2, persistent: true },
   },
   gray_wolf: {
     id: 'gray_wolf',
@@ -248,8 +328,8 @@ export const ENEMIES: Record<string, EnemyDef> = {
     id: 'gray_wolf_alpha',
     name: '灰狼首领',
     desc: '一只比寻常灰狼大一圈的狼。左耳缺了一块，颈毛上挂着旧伤。',
-    hp: 100,
-    attack: 13,
+    hp: 130,
+    attack: 14,
     defense: 1,
     resist: 0,
     speed: 3.8,
@@ -262,13 +342,15 @@ export const ENEMIES: Record<string, EnemyDef> = {
       '它绕了半圈，突然加速扑上来。',
     ],
     defeatLine: '它退了两步，前腿一软，倒在落叶里。',
+    traits: [{ name: '撕裂', desc: '攻击命中时可能使目标流血。' }],
+    bleedChance: 0.35,
   },
   boar_king: {
     id: 'boar_king',
     name: '野猪王',
     desc: '一头肩高到腰的野猪，獠牙上留着旧裂口，背上结着厚厚的痂。',
-    hp: 140,
-    attack: 15,
+    hp: 190,
+    attack: 16,
     defense: 3,
     resist: 0,
     speed: 2.2,
@@ -281,5 +363,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
       '它喷着白气，又撞了一次。',
     ],
     defeatLine: '它又冲了两步，膝盖一弯，重重跪在地上。',
+    traits: [{ name: '獠牙撕裂', desc: '攻击命中时可能使目标流血。' }],
+    bleedChance: 0.45,
   },
 }

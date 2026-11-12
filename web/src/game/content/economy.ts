@@ -11,6 +11,7 @@ export const SHOP_STOCKS: Record<string, Record<string, number>> = {
     mana_potion: 3,
     tonic: 3,
     healing_potion: 3,
+    antidote: 3,
   },
   weaponShop: {
     practice_sword: 1,
@@ -44,6 +45,7 @@ export const SHOP_STOCKS: Record<string, Record<string, number>> = {
     sharp_draught: 2,
     stone_draught: 2,
     swift_draught: 2,
+    regen_potion: 2,
   },
   greenhouse: GREENHOUSE_HERB_STOCK,
 }

@@ -653,7 +653,13 @@ function BattleView() {
     const def = ITEMS[id]
     return (
       def?.type === 'consumable' &&
-      !!(def.effect?.hp || def.effect?.mana || def.effect?.combatBuff)
+      !!(
+        def.effect?.hp ||
+        def.effect?.mana ||
+        def.effect?.combatBuff ||
+        def.effect?.poisonCure ||
+        def.effect?.regen
+      )
     )
   })
   const rangeText = (range: [number, number]) => `${range[0]}–${range[1]}`
@@ -681,8 +687,25 @@ function BattleView() {
   const burnText = battle.enemyBurn
     ? `烧伤 ×${battle.enemyBurn.stacks} · ${(battle.enemyBurn.ticksLeft / 10).toFixed(1)} 秒`
     : ''
+  const regenText = battle.enemyRegen
+    ? `再生 ${battle.enemyRegen.stacks}`
+    : ''
   const enemyStatus =
-    [burnText, battle.enemyGauge >= 100 ? '行动就绪' : ''].filter(Boolean).join(' · ') || '—'
+    [burnText, regenText, battle.enemyGauge >= 100 ? '行动就绪' : ''].filter(Boolean).join(' · ') || '—'
+  const playerStatusParts: string[] = []
+  const buffText = combatBuffText(data)
+  if (buffText) playerStatusParts.push(buffText)
+  if (battle.playerPoison) {
+    playerStatusParts.push(
+      `中毒 ${battle.playerPoison.stacks} 层（${Math.max(
+        1,
+        Math.ceil(battle.playerPoison.ticksLeft / 10),
+      )} 秒）`,
+    )
+  }
+  if (battle.playerBleed) playerStatusParts.push(`流血 ${battle.playerBleed.stacks} 层`)
+  if (battle.playerRegen) playerStatusParts.push(`再生 ${battle.playerRegen.stacks} 层`)
+  const playerStatus = playerStatusParts.join(' · ') || '—'
 
   const tracking =
     battle.enemyId === 'gray_wolf_alpha' || battle.enemyId === 'boar_king'
@@ -703,6 +726,12 @@ function BattleView() {
           <span className="battle-tag">{enemy.speed > 0 ? '会还手' : '不会还手'}</span>
         </div>
         <div className="battle-desc">{enemy.desc}</div>
+        {enemy.traits && enemy.traits.length > 0 && (
+          <div className="battle-traits">
+            特性　
+            {enemy.traits.map((trait) => `${trait.name} · ${trait.desc}`).join('；')}
+          </div>
+        )}
         <BattleBar label="生命" value={battle.enemyHp} max={enemy.hp} kind="hp" />
         <BattleBar label="魔力" value={0} max={0} kind="mana" />
         <BattleBar
@@ -739,7 +768,7 @@ function BattleView() {
           <BattleBar label="吟唱" value={battle.casting.progress} max={100} kind="gauge" ready={false} />
         )}
         <div className="battle-status">
-          状态　{combatBuffText(data) || '—'}
+          状态　{playerStatus}
         </div>
       </div>
 
@@ -2213,7 +2242,9 @@ function SaveSlots({ mode, onTransfer }: { mode: 'title' | 'game'; onTransfer?: 
 
   return (
     <>
-      {battle && !isTitle && <p className="hint">战斗中无法存档或读档。</p>}
+      {battle && !isTitle && (
+        <p className="hint">战斗中保存会记录开战时的状态；读档会从战斗开始重来。</p>
+      )}
       <div className="save-export-status">
         <span>
           {lastExport === null ? '尚未导出过存档。' : `上次导出：${formatSaveTime(lastExport)}`}
@@ -2238,18 +2269,20 @@ function SaveSlots({ mode, onTransfer }: { mode: 'title' | 'game'; onTransfer?: 
             <div className="save-entry" key={slot}>
               <div className="save-row">
                 <span className="save-slot">槽位 {slot}</span>
-                <span className="save-info">{s ? `${s.name} · ${formatSaveTime(s.ts)}` : '空'}</span>
+                <span className="save-info">
+                  {s ? `${s.name} · ${formatSaveTime(s.ts)}${s.battle ? ' · 战斗开始' : ''}` : '空'}
+                </span>
                 <button
                   className="mini-btn"
                   onClick={() => doSave(slot, !!s)}
-                  disabled={isTitle || !!battle}
+                  disabled={isTitle}
                 >
                   保存
                 </button>
                 <button
                   className="mini-btn"
                   onClick={() => doLoad(slot)}
-                  disabled={!s || (!isTitle && !!battle)}
+                  disabled={!s}
                 >
                   读取
                 </button>
@@ -2274,7 +2307,7 @@ function SaveSlots({ mode, onTransfer }: { mode: 'title' | 'game'; onTransfer?: 
             <button
               className="mini-btn"
               onClick={() => doLoad('auto')}
-              disabled={!saves[SLOT_COUNT] || (!isTitle && !!battle)}
+              disabled={!saves[SLOT_COUNT]}
             >
               读取
             </button>
@@ -2498,12 +2531,18 @@ function ExportPanel({ mode }: { mode: 'title' | 'game' }) {
   const player = useGame((s) => s.player)
   const data = useGame((s) => s.data)
   const battle = useGame((s) => s.battle)
+  const battleStart = useGame((s) => s.battleStart)
   const [text, setText] = useState('')
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
   const textRef = useRef<HTMLTextAreaElement>(null)
   const android = isAndroidRuntime()
-  const canCurrent = mode === 'game' && !battle
+  const canCurrent = mode === 'game'
+  const exportData = battleStart ? battleStart.data : data
+  const exportBattle =
+    battle && battleStart
+      ? { state: battleStart.battle, bonusCopper: battleStart.bonusCopper }
+      : undefined
 
   const saveFile = (bundle: SaveBundle, name: string) => {
     const filename = `arcanum-${name}-${stampForFile()}.json`
@@ -2517,9 +2556,13 @@ function ExportPanel({ mode }: { mode: 'title' | 'game' }) {
   }
 
   const makeCurrentText = () => {
-    setText(encodeBundle(buildCurrentBundle(player, data)))
+    setText(encodeBundle(buildCurrentBundle(player, exportData, exportBattle)))
     markExported()
-    setStatus('已生成当前进度的存档文本。')
+    setStatus(
+      battle
+        ? '已生成战斗开始时状态的存档文本。'
+        : '已生成当前进度的存档文本。',
+    )
     setError('')
   }
 
@@ -2583,7 +2626,7 @@ function ExportPanel({ mode }: { mode: 'title' | 'game' }) {
         <div className="io-title">当前进度</div>
         {canCurrent ? (
           actionRow(
-            () => saveFile(buildCurrentBundle(player, data), 'current'),
+            () => saveFile(buildCurrentBundle(player, exportData, exportBattle), 'current'),
             makeCurrentText,
           )
         ) : (

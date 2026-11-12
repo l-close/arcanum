@@ -151,7 +151,7 @@ export function validateContent(): ContentIssue[] {
       }
     }
     if (item.effect) {
-      for (const key of ['hp', 'mana', 'stamina'] as const) {
+      for (const key of ['hp', 'mana', 'stamina', 'poisonCure', 'regen'] as const) {
         const value = item.effect[key]
         if (value !== undefined && !nonNegative(value)) {
           error('items', `${item.id}: ${key} 为负`)
@@ -207,6 +207,28 @@ export function validateContent(): ContentIssue[] {
     }
     if (!nonNegative(enemy.speed)) error('enemies', `${enemy.id}: speed 为负`)
     if (!nonNegative(enemy.expValue)) error('enemies', `${enemy.id}: expValue 为负`)
+    for (const key of ['poisonChance', 'bleedChance'] as const) {
+      const value = enemy[key]
+      if (value !== undefined && (!Number.isFinite(value) || value < 0 || value > 1)) {
+        error('enemies', `${enemy.id}: ${key} 不在 0–1`)
+      }
+    }
+    for (const trait of enemy.traits ?? []) {
+      if (!trait.name) error('enemies', `${enemy.id}: 特性缺少名字`)
+      if (!trait.desc) error('enemies', `${enemy.id}: 特性 ${trait.name} 缺少说明`)
+    }
+    if (enemy.transformTo) {
+      const target = ENEMIES[enemy.transformTo]
+      if (!target) error('enemies', `${enemy.id}: 转换目标 ${enemy.transformTo} 不存在`)
+      else if (target.id === enemy.id) error('enemies', `${enemy.id}: 不能转换到自己`)
+    }
+    if (enemy.regen) {
+      if (enemy.regen.initial <= 0) error('enemies', `${enemy.id}: 再生初始层数必须大于 0`)
+      if (enemy.regen.max < enemy.regen.initial) {
+        error('enemies', `${enemy.id}: 再生上限小于初始层数`)
+      }
+      if (enemy.regen.healPer <= 0) error('enemies', `${enemy.id}: 每层再生恢复必须大于 0`)
+    }
   }
 
   for (const recipe of CRAFT_RECIPES) {

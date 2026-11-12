@@ -39,7 +39,16 @@ export type ItemDef = {
   speedPct?: number
   melee?: number
   engravingSlots?: number
-  effect?: { stamina?: number; mana?: number; hp?: number; combatBuff?: CombatBuffKey }
+  effect?: {
+    stamina?: number
+    mana?: number
+    hp?: number
+    combatBuff?: CombatBuffKey
+    /** 解除的中毒层数。 */
+    poisonCure?: number
+    /** 获得的再生层数。 */
+    regen?: number
+  }
 }
 
 export const ITEMS: Record<string, ItemDef> = {
@@ -295,6 +304,26 @@ export const ITEMS: Record<string, ItemDef> = {
     desc: '心跳加快，脚步变轻。24 小时内行动条充能 +5%。同种药剂不可叠加。',
     effect: { combatBuff: 'swift' },
   },
+  antidote: {
+    id: 'antidote',
+    name: '解毒药',
+    type: 'consumable',
+    quality: 'rare',
+    price: 10,
+    medium: false,
+    desc: '苦得发涩的药水。解除 1 层中毒，只能在战斗中使用。',
+    effect: { poisonCure: 1 },
+  },
+  regen_potion: {
+    id: 'regen_potion',
+    name: '再生药水',
+    type: 'consumable',
+    quality: 'rare',
+    price: 26,
+    medium: false,
+    desc: '喝下去后伤口会慢慢收拢。获得 3 层再生，最多 5 层，只能在战斗中使用。',
+    effect: { regen: 3 },
+  },
   dry_ration: {
     id: 'dry_ration',
     name: '干粮',
@@ -349,6 +378,15 @@ export const ITEMS: Record<string, ItemDef> = {
     price: 40,
     medium: false,
     desc: '野猪王的獠牙，比普通野猪牙粗一圈，背面结着厚痂。商会按悬赏凭证收。',
+  },
+  venom_fang: {
+    id: 'venom_fang',
+    name: '毒牙',
+    type: 'material',
+    quality: 'uncommon',
+    price: 8,
+    medium: false,
+    desc: '毒蛇的细牙，牙根发暗。暂时只是材料，以后也许有用。',
   },
   bloodherb: {
     id: 'bloodherb',

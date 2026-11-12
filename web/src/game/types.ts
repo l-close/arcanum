@@ -181,6 +181,7 @@ export type SaveData = {
   ts: number
   player: Player
   data: GameData
+  battle?: { state: BattleState; bonusCopper: number }
 }
 
 export type BattlePhase = 'filling' | 'casting' | 'player' | 'submenu' | 'victory' | 'defeat'
@@ -209,6 +210,14 @@ export type BattleState = {
   result: string
   usedSkills: SkillKey[]
   enemyBurn?: { stacks: number; ticksLeft: number } | null
+  /** 玩家身上的持续状态，只在战斗内存在。 */
+  playerPoison?: { stacks: number; ticksLeft: number } | null
+  playerBleed?: { stacks: number } | null
+  playerRegen?: { stacks: number } | null
+  /** 敌人身上的再生层数。 */
+  enemyRegen?: { stacks: number } | null
+  /** 是否已经完成过形态转换。 */
+  transformed?: boolean
 }
 
 export type Screen = 'title' | 'create' | 'game'

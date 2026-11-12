@@ -218,6 +218,13 @@ import {
   MAX_ACTIVE_COMMISSIONS,
   REPUTATION_MAX,
   COMMISSION_BOARD_SIZE,
+  POISON_MAX_STACKS,
+  POISON_DAMAGE_PER_STACK,
+  POISON_TICKS,
+  BLEED_MAX_STACKS,
+  BLEED_DAMAGE_PER_STACK,
+  REGEN_MAX_STACKS,
+  REGEN_HEAL_PER_STACK,
 } from './content'
 import type { BookReward } from './content'
 import {
@@ -972,6 +979,126 @@ function battleLog(b: BattleState, text: string): void {
   if (b.log.length > 24) b.log.splice(0, b.log.length - 24)
 }
 
+function checkPlayerDefeat(b: BattleState): boolean {
+  if (b.playerHp > 0) return false
+  b.playerHp = 0
+  b.phase = 'defeat'
+  b.submenu = null
+  b.casting = null
+  b.result =
+    b.kind === 'wild'
+      ? '你被击倒在地，眼前一阵发黑。'
+      : '你被逼退到场边，抬手认输。练习到此为止。'
+  battleLog(b, b.kind === 'wild' ? '你倒了下去。' : '你抬手认输。')
+  return true
+}
+
+function checkEnemyDefeat(b: BattleState): 'alive' | 'transform' | 'victory' {
+  if (b.enemyHp > 0) return 'alive'
+  const enemy = ENEMIES[b.enemyId]
+  if (!enemy) return 'victory'
+  if (enemy.transformTo && !b.transformed) {
+    const next = ENEMIES[enemy.transformTo]
+    if (next) {
+      b.transformed = true
+      b.enemyId = next.id
+      b.enemyHp = next.hp
+      b.enemyGauge = 0
+      b.enemyBurn = null
+      b.enemyRegen = next.regen ? { stacks: next.regen.initial } : null
+      battleLog(b, next.intro)
+      return 'transform'
+    }
+  }
+  b.enemyHp = 0
+  b.phase = 'victory'
+  b.submenu = null
+  b.result = `${enemy.defeatLine}${b.kind === 'wild' ? '' : ' 你结束了练习。'}`
+  battleLog(b, enemy.defeatLine)
+  return 'victory'
+}
+
+/** 敌人命中后按概率施加中毒 / 流血。 */
+function applyOnHitStatuses(b: BattleState): void {
+  const enemy = ENEMIES[b.enemyId]
+  if (!enemy) return
+  if (enemy.poisonChance && Math.random() < enemy.poisonChance) {
+    const next = Math.min(POISON_MAX_STACKS, (b.playerPoison?.stacks ?? 0) + 1)
+    if (next >= POISON_MAX_STACKS) {
+      const dmg = POISON_MAX_STACKS * POISON_DAMAGE_PER_STACK
+      b.playerHp = Math.max(0, b.playerHp - dmg)
+      b.playerPoison = null
+      battleLog(b, `中毒叠满，立刻发作。 -${dmg}（中毒）`)
+      if (checkPlayerDefeat(b)) return
+    } else {
+      b.playerPoison = { stacks: next, ticksLeft: POISON_TICKS }
+      battleLog(b, `你中毒了（${next} 层）。`)
+    }
+  }
+  if (enemy.bleedChance && Math.random() < enemy.bleedChance) {
+    const next = Math.min(BLEED_MAX_STACKS, (b.playerBleed?.stacks ?? 0) + 1)
+    b.playerBleed = { stacks: next }
+    battleLog(b, `你开始流血（${next} 层）。`)
+  }
+}
+
+/** 每 tick 推进中毒计时；返回玩家是否因此倒下。 */
+function tickPlayerPoison(b: BattleState): boolean {
+  if (!b.playerPoison) return false
+  b.playerPoison.ticksLeft -= 1
+  if (b.playerPoison.ticksLeft > 0) return false
+  const dmg = b.playerPoison.stacks * POISON_DAMAGE_PER_STACK
+  b.playerHp = Math.max(0, b.playerHp - dmg)
+  b.playerPoison = null
+  battleLog(b, `毒性发作。 -${dmg}（中毒）`)
+  return checkPlayerDefeat(b)
+}
+
+/** 玩家行动结束后：先流血，再再生。返回是否倒下。 */
+function settlePlayerAfterAction(b: BattleState, hpMax: number): boolean {
+  if (b.playerBleed && b.playerBleed.stacks > 0) {
+    const dmg = b.playerBleed.stacks * BLEED_DAMAGE_PER_STACK
+    b.playerHp = Math.max(0, b.playerHp - dmg)
+    b.playerBleed.stacks -= 1
+    battleLog(b, `流血发作。 -${dmg}（流血）`)
+    if (b.playerBleed.stacks <= 0) b.playerBleed = null
+    if (checkPlayerDefeat(b)) return true
+  }
+  if (b.playerRegen && b.playerRegen.stacks > 0) {
+    const heal = b.playerRegen.stacks * REGEN_HEAL_PER_STACK
+    const next = Math.min(hpMax, b.playerHp + heal)
+    const actual = next - b.playerHp
+    b.playerHp = next
+    b.playerRegen.stacks -= 1
+    if (actual > 0) battleLog(b, `再生恢复 ${actual} 点生命。`)
+    if (b.playerRegen.stacks <= 0) b.playerRegen = null
+  }
+  return false
+}
+
+/** 敌人行动结束后结算再生。 */
+function settleEnemyAfterAction(b: BattleState): void {
+  if (!b.enemyRegen || b.enemyRegen.stacks <= 0) return
+  const enemy = ENEMIES[b.enemyId]
+  if (!enemy) return
+  const heal = b.enemyRegen.stacks * REGEN_HEAL_PER_STACK
+  const next = Math.min(enemy.hp, b.enemyHp + heal)
+  const actual = next - b.enemyHp
+  b.enemyHp = next
+  if (actual > 0) battleLog(b, `${enemy.name}的再生恢复 ${actual} 点生命。`)
+  if (!enemy.regen?.persistent) {
+    b.enemyRegen.stacks -= 1
+    if (b.enemyRegen.stacks <= 0) b.enemyRegen = null
+  }
+}
+
+function grantPlayerRegen(b: BattleState, amount: number): number {
+  const next = Math.min(REGEN_MAX_STACKS, (b.playerRegen?.stacks ?? 0) + amount)
+  const gained = next - (b.playerRegen?.stacks ?? 0)
+  b.playerRegen = { stacks: next }
+  return gained
+}
+
 function resetReliefDay(d: GameData): void {
   if (d.relief.day !== d.day) {
     d.relief = { day: d.day, cared: false, treated: false, volunteered: false }
@@ -1030,6 +1157,12 @@ type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' |
 
 type TitlePanel = 'saves' | 'export' | 'import' | null
 
+type BattleStartSnapshot = {
+  data: GameData
+  battle: BattleState
+  bonusCopper: number
+}
+
 type Store = {
   screen: Screen
   player: Player
@@ -1046,6 +1179,7 @@ type Store = {
   pendingEvent: string | null
   eventResult: string | null
   battle: BattleState | null
+  battleStart: BattleStartSnapshot | null
   battleBonusCopper: number
   activePackageId: string | null
   examCourseId: string | null
@@ -1398,6 +1532,7 @@ export const useGame = create<Store>((set, get) => {
     pendingEvent: null,
     eventResult: null,
     battle: null,
+    battleStart: null,
     activePackageId: null,
     examCourseId: null,
     battleBonusCopper: 0,
@@ -1419,6 +1554,7 @@ export const useGame = create<Store>((set, get) => {
         pendingEvent: null,
         eventResult: null,
         battle: null,
+        battleStart: null,
         activePackageId: null,
         examCourseId: null,
         battleBonusCopper: 0,
@@ -1443,6 +1579,7 @@ export const useGame = create<Store>((set, get) => {
         pendingEvent: null,
         eventResult: null,
         battle: null,
+        battleStart: null,
         activePackageId: null,
         examCourseId: null,
         battleBonusCopper: 0,
@@ -1687,22 +1824,28 @@ export const useGame = create<Store>((set, get) => {
       }
       const enemy = ENEMIES[enemyId]
       if (!enemy) return
+      const battle: BattleState = {
+        kind: 'spar',
+        enemyId,
+        enemyHp: enemy.hp,
+        playerHp: Math.max(1, data.hp),
+        playerGauge: 0,
+        enemyGauge: 0,
+        elapsedTicks: 0,
+        casting: null,
+        actions: 0,
+        log: [enemy.intro, '行动条开始充能。'],
+        phase: 'filling',
+        submenu: null,
+        result: '',
+        usedSkills: [],
+      }
       set({
-        battle: {
-          kind: 'spar',
-          enemyId,
-          enemyHp: enemy.hp,
-          playerHp: Math.max(1, data.hp),
-          playerGauge: 0,
-          enemyGauge: 0,
-          elapsedTicks: 0,
-          casting: null,
-          actions: 0,
-          log: [enemy.intro, '行动条开始充能。'],
-          phase: 'filling',
-          submenu: null,
-          result: '',
-          usedSkills: [],
+        battle,
+        battleStart: {
+          data: structuredClone(data),
+          battle: structuredClone(battle),
+          bonusCopper: 0,
         },
         modal: null,
         message: '',
@@ -1739,17 +1882,19 @@ export const useGame = create<Store>((set, get) => {
           const burnDmg = b.enemyBurn.stacks * 2
           b.enemyHp = Math.max(0, b.enemyHp - burnDmg)
           battleLog(b, `烧伤造成 ${burnDmg} 点伤害。 -${burnDmg}`)
-          if (b.enemyHp <= 0) {
-            b.phase = 'victory'
-            b.submenu = null
-            b.result = `${enemy.defeatLine}${b.kind === 'wild' ? '' : ' 你结束了练习。'}`
-            battleLog(b, enemy.defeatLine)
+          const burnOutcome = checkEnemyDefeat(b)
+          if (burnOutcome !== 'alive') {
             set({ battle: b, data: nextData })
             return
           }
         }
         b.enemyBurn.ticksLeft -= 1
         if (b.enemyBurn.ticksLeft <= 0) b.enemyBurn = null
+      }
+
+      if (tickPlayerPoison(b)) {
+        set({ battle: b, data: nextData })
+        return
       }
 
       let castReady = false
@@ -1803,11 +1948,12 @@ export const useGame = create<Store>((set, get) => {
           b.playerGauge = 0
           b.casting = null
           battleLog(b, `你念出咒语，${spell.name}在${enemy.name}身上炸开。 -${dmg}（法术）`)
-          if (b.enemyHp <= 0) {
-            b.phase = 'victory'
-            b.submenu = null
-            b.result = `${enemy.defeatLine}${b.kind === 'wild' ? '' : ' 你结束了练习。'}`
-            battleLog(b, enemy.defeatLine)
+          const spellOutcome = checkEnemyDefeat(b)
+          if (spellOutcome === 'victory') {
+            set({ battle: b, data: nextData })
+            return
+          }
+          if (settlePlayerAfterAction(b, maxHp(nextData.skills.physique.tier))) {
             set({ battle: b, data: nextData })
             return
           }
@@ -1827,15 +1973,9 @@ export const useGame = create<Store>((set, get) => {
           ? enemy.attackLines[randInt(0, enemy.attackLines.length - 1)]
           : `${enemy.name}撞了你一下。`
         battleLog(b, `${line} -${dmg}（${magic ? '法术' : '物理'}）`)
-        if (b.playerHp <= 0) {
-          b.phase = 'defeat'
-          b.submenu = null
-          b.casting = null
-          b.result =
-            b.kind === 'wild'
-              ? '你被击倒在地，眼前一阵发黑。'
-              : '你被逼退到场边，抬手认输。练习到此为止。'
-          battleLog(b, b.kind === 'wild' ? '你倒了下去。' : '你抬手认输。')
+        if (!checkPlayerDefeat(b)) {
+          applyOnHitStatuses(b)
+          if (b.phase !== 'defeat') settleEnemyAfterAction(b)
         }
       }
 
@@ -1898,11 +2038,12 @@ export const useGame = create<Store>((set, get) => {
       const verb = kind === 'sword' ? '你挥剑斩向' : weapon?.weapon === 'staff' ? '你挥杖敲向' : '你挥拳打向'
       battleLog(b, `${verb}${enemy.name}。 -${dmg}（物理）`)
 
-      if (b.enemyHp <= 0) {
-        b.phase = 'victory'
-        b.result = `${enemy.defeatLine}${b.kind === 'wild' ? '' : ' 你结束了练习。'}`
-        battleLog(b, enemy.defeatLine)
-      } else {
+      const outcome = checkEnemyDefeat(b)
+      if (outcome === 'victory') {
+        set({ battle: b, data: next })
+        return
+      }
+      if (outcome === 'alive') {
         if (
           kind === 'sword' &&
           weapon &&
@@ -1914,8 +2055,12 @@ export const useGame = create<Store>((set, get) => {
           b.enemyBurn = { stacks, ticksLeft: 40 }
           battleLog(b, `灼燃生效：${enemy.name}烧伤 ${stacks} 层。`)
         }
-        b.phase = 'filling'
       }
+      if (settlePlayerAfterAction(b, maxHp(next.skills.physique.tier))) {
+        set({ battle: b, data: next })
+        return
+      }
+      b.phase = 'filling'
       set({ battle: b, data: next })
     },
 
@@ -1979,15 +2124,27 @@ export const useGame = create<Store>((set, get) => {
       }
       const healHp = def.effect?.hp ?? 0
       const healMana = def.effect?.mana ?? 0
-      if (!healHp && !healMana) return
+      const poisonCure = def.effect?.poisonCure ?? 0
+      const regenGain = def.effect?.regen ?? 0
+      if (!healHp && !healMana && !poisonCure && !regenGain) return
       const hpMax = maxHp(data.skills.physique.tier)
-      if (healHp && battle.playerHp >= hpMax && !healMana) {
-        set({ message: '生命已经满了。' })
+      if (poisonCure > 0 && !battle.playerPoison) {
+        set({ message: '你现在没有中毒。' })
         return
       }
-      if (healMana && data.mana >= 100 && !healHp) {
-        set({ message: '魔力已经满了。' })
+      if (regenGain > 0 && (battle.playerRegen?.stacks ?? 0) >= REGEN_MAX_STACKS) {
+        set({ message: '再生层数已经到上限了。' })
         return
+      }
+      if (!poisonCure && !regenGain) {
+        if (healHp && battle.playerHp >= hpMax && !healMana) {
+          set({ message: '生命已经满了。' })
+          return
+        }
+        if (healMana && data.mana >= 100 && !healHp) {
+          set({ message: '魔力已经满了。' })
+          return
+        }
       }
 
       const next = structuredClone(data)
@@ -1996,14 +2153,26 @@ export const useGame = create<Store>((set, get) => {
       const b: BattleState = { ...battle, log: [...battle.log] }
       if (healHp) b.playerHp = clamp(b.playerHp + healHp, 0, hpMax)
       if (healMana) next.mana = clamp(next.mana + healMana, 0, 100)
+      if (poisonCure > 0 && b.playerPoison) {
+        b.playerPoison.stacks -= poisonCure
+        if (b.playerPoison.stacks <= 0) b.playerPoison = null
+      }
+      let gainedRegen = 0
+      if (regenGain > 0) gainedRegen = grantPlayerRegen(b, regenGain)
       b.actions += 1
       b.playerGauge = 0
       b.submenu = null
       b.phase = 'filling'
-      battleLog(
-        b,
-        `你使用了${def.name}。${healHp ? `生命 +${healHp}。` : ''}${healMana ? `魔力 +${healMana}。` : ''}`,
-      )
+      const parts: string[] = []
+      if (healHp) parts.push(`生命 +${healHp}`)
+      if (healMana) parts.push(`魔力 +${healMana}`)
+      if (poisonCure > 0) parts.push('中毒 -1 层')
+      if (gainedRegen > 0) parts.push(`再生 +${gainedRegen} 层`)
+      battleLog(b, `你使用了${def.name}。${parts.length ? `${parts.join('，')}。` : ''}`)
+      if (settlePlayerAfterAction(b, hpMax)) {
+        set({ battle: b, data: next })
+        return
+      }
       set({ battle: b, data: next })
     },
 
@@ -2025,6 +2194,10 @@ export const useGame = create<Store>((set, get) => {
       b.submenu = null
       b.phase = 'filling'
       battleLog(b, `你换上了${def.name}。`)
+      if (settlePlayerAfterAction(b, maxHp(next.skills.physique.tier))) {
+        set({ battle: b, data: next })
+        return
+      }
       set({ battle: b, data: next })
     },
 
@@ -2071,6 +2244,9 @@ export const useGame = create<Store>((set, get) => {
         if (enemy.id === 'slime' && Math.random() < SLIME_GEL_DROP_CHANCE) {
           addDrop('slime_gel', '你从史莱姆留下的胶质里拾到一块凝胶。')
         }
+        if (enemy.id === 'viper' && Math.random() < 0.5) {
+          addDrop('venom_fang', '你从毒蛇嘴里取下一颗牙。')
+        }
         if (enemy.id === 'gray_wolf' && Math.random() < WOLF_HIDE_DROP_CHANCE) {
           addDrop('beast_hide', '你从灰狼身上剥下一张兽皮。')
         }
@@ -2108,7 +2284,7 @@ export const useGame = create<Store>((set, get) => {
           ? `战斗结束，用时约 ${minutes} 分钟。`
           : `你结束了练习，用时约 ${minutes} 分钟。`) + dropText
       pushLog(next, text)
-      set({ battle: null, data: next, message: text, modal: null, battleBonusCopper: 0 })
+      set({ battle: null, battleStart: null, data: next, message: text, modal: null, battleBonusCopper: 0 })
       if (!next.guild.escort) saveGame('auto', player, next)
     },
 
@@ -2905,22 +3081,28 @@ export const useGame = create<Store>((set, get) => {
       if (battle) return
       const enemy = ENEMIES[enemyId]
       if (!enemy) return
+      const nextBattle: BattleState = {
+        kind: 'wild',
+        enemyId,
+        enemyHp: enemy.hp,
+        playerHp: Math.max(1, data.hp),
+        playerGauge: 0,
+        enemyGauge: 0,
+        elapsedTicks: 0,
+        casting: null,
+        actions: 0,
+        log: [enemy.intro, '行动条开始充能。'],
+        phase: 'filling',
+        submenu: null,
+        result: '',
+        usedSkills: [],
+      }
       set({
-        battle: {
-          kind: 'wild',
-          enemyId,
-          enemyHp: enemy.hp,
-          playerHp: Math.max(1, data.hp),
-          playerGauge: 0,
-          enemyGauge: 0,
-          elapsedTicks: 0,
-          casting: null,
-          actions: 0,
-          log: [enemy.intro, '行动条开始充能。'],
-          phase: 'filling',
-          submenu: null,
-          result: '',
-          usedSkills: [],
+        battle: nextBattle,
+        battleStart: {
+          data: structuredClone(data),
+          battle: structuredClone(nextBattle),
+          bonusCopper,
         },
         battleBonusCopper: bonusCopper,
         modal: null,
@@ -3602,32 +3784,42 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       const encounter = Math.random() < FOREST_ENCOUNTER_CHANCE
+      const enemyId = Math.random() < 0.6 ? 'slime' : 'viper'
       mutate((d) => {
         advanceTime(d, FOREST_WALK_MINUTES)
         d.stamina = clamp(d.stamina - FOREST_WALK_STAMINA, 0, maxStamina(d.skills.physique.tier))
         d.mood = clamp(d.mood + FOREST_WALK_MOOD, 0, 100)
         pushLog(d, '你在林子里走了一会儿。')
-        return encounter ? '灌木里传来黏腻的声响。' : '林子里很安静，只有枝叶晃动的声音。'
+        if (!encounter) return '林子里很安静，只有枝叶晃动的声音。'
+        return enemyId === 'viper'
+          ? '草叶间传来细碎的沙沙声。'
+          : '灌木里传来黏腻的声响。'
       })
       if (encounter) {
-        const enemy = ENEMIES.slime
+        const enemy = ENEMIES[enemyId]
         const state = get()
+        const nextBattle: BattleState = {
+          kind: 'wild',
+          enemyId,
+          enemyHp: enemy.hp,
+          playerHp: Math.max(1, state.data.hp),
+          playerGauge: 0,
+          enemyGauge: 0,
+          elapsedTicks: 0,
+          casting: null,
+          actions: 0,
+          log: [enemy.intro, '行动条开始充能。'],
+          phase: 'filling',
+          submenu: null,
+          result: '',
+          usedSkills: [],
+        }
         set({
-          battle: {
-            kind: 'wild',
-            enemyId: 'slime',
-            enemyHp: enemy.hp,
-            playerHp: Math.max(1, state.data.hp),
-            playerGauge: 0,
-            enemyGauge: 0,
-            elapsedTicks: 0,
-            casting: null,
-            actions: 0,
-            log: [enemy.intro, '行动条开始充能。'],
-            phase: 'filling',
-            submenu: null,
-            result: '',
-            usedSkills: [],
+          battle: nextBattle,
+          battleStart: {
+            data: structuredClone(state.data),
+            battle: structuredClone(nextBattle),
+            bonusCopper: 0,
           },
           message: '',
         })
@@ -4137,6 +4329,10 @@ export const useGame = create<Store>((set, get) => {
       }
       const def = ITEMS[id]
       if (!def || (data.inventory[id] ?? 0) <= 0) return
+      if (def.effect?.poisonCure || def.effect?.regen) {
+        set({ message: '只能在战斗中使用。' })
+        return
+      }
       if (def.type === 'equipment') {
         get().equipItem(id)
         return
@@ -4407,24 +4603,34 @@ export const useGame = create<Store>((set, get) => {
     },
 
     saveSlot: (slot) => {
-      const { player, data, battle } = get()
-      if (battle) {
-        set({ message: '战斗中无法存档。' })
-        return
-      }
+      const { player, data, battle, battleStart } = get()
       if (data.guild?.escort) {
         set({ message: '护送途中无法存档。' })
         return
       }
-      if (saveGame(slot, player, data)) {
-        set({ savesRev: get().savesRev + 1, message: `已保存到${slot === 'auto' ? '自动存档' : `槽位 ${slot}`}。` })
+      if (battle && !battleStart) {
+        set({ message: '战斗状态不完整，无法保存。' })
+        return
+      }
+      const snapshot = battle ? battleStart : null
+      const savedData = snapshot ? snapshot.data : data
+      const savedBattle = snapshot
+        ? { state: snapshot.battle, bonusCopper: snapshot.bonusCopper }
+        : undefined
+      if (saveGame(slot, player, savedData, Date.now(), savedBattle)) {
+        set({
+          savesRev: get().savesRev + 1,
+          message: `已保存到${slot === 'auto' ? '自动存档' : `槽位 ${slot}`}${
+            battle ? '（战斗开始时）' : ''
+          }。`,
+        })
       } else {
         set({ message: '保存失败。' })
       }
     },
     loadSlot: (slot) => {
-      if (get().battle || get().data.guild?.escort) {
-        set({ message: get().battle ? '战斗中无法读档。' : '护送途中无法读档。' })
+      if (get().data.guild?.escort) {
+        set({ message: '护送途中无法读档。' })
         return
       }
       const s = loadGame(slot)
@@ -4432,23 +4638,32 @@ export const useGame = create<Store>((set, get) => {
         set({ message: '这个槽位是空的。' })
         return
       }
+      const nextData = normalizeData(s.data)
+      const battle = s.battle?.state ?? null
       set({
         screen: 'game',
         player: s.player,
-        data: normalizeData(s.data),
+        data: nextData,
         modal: null,
         titlePanel: null,
-        message: '读取成功。',
+        message: battle ? '读取成功，回到战斗开始。' : '读取成功。',
         storyReply: null,
         storyNext: null,
         storyRoute: [],
         storyTarget: null,
         pendingEvent: null,
         eventResult: null,
-        battle: null,
+        battle,
+        battleStart: battle
+          ? {
+              data: structuredClone(nextData),
+              battle: structuredClone(battle),
+              bonusCopper: s.battle?.bonusCopper ?? 0,
+            }
+          : null,
         activePackageId: null,
         examCourseId: null,
-        battleBonusCopper: 0,
+        battleBonusCopper: s.battle?.bonusCopper ?? 0,
       })
     },
     removeSlot: (slot) => {
@@ -4523,6 +4738,7 @@ export const useGame = create<Store>((set, get) => {
         pendingEvent: null,
         eventResult: null,
         battle: null,
+        battleStart: null,
         activePackageId: null,
         examCourseId: null,
         battleBonusCopper: 0,
