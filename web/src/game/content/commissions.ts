@@ -135,8 +135,8 @@ export const COMMISSIONS: CommissionDef[] = [
   {
     id: 'ws_salve',
     source: 'workshop',
-    name: '止血膏订单',
-    desc: '工坊的止血膏见底了，柜台前排队的伤员还等着。',
+    name: '生命药水订单',
+    desc: '工坊的生命药水见底了，柜台前排队的伤员还等着。',
     objective: { kind: 'items', items: { salve: 3 } },
     days: 3,
     money: 30,
@@ -155,8 +155,8 @@ export const COMMISSIONS: CommissionDef[] = [
   {
     id: 'ws_salve_fine',
     source: 'workshop',
-    name: '精制止血膏订单',
-    desc: '教会订了一批细制的止血膏，托工坊转手。',
+    name: '精制生命药水订单',
+    desc: '教会订了一批细制的生命药水，托工坊转手。',
     objective: { kind: 'items', items: { salve_fine: 2 } },
     days: 4,
     money: 42,

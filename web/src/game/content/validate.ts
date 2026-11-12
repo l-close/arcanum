@@ -151,7 +151,7 @@ export function validateContent(): ContentIssue[] {
       }
     }
     if (item.effect) {
-      for (const key of ['hp', 'mana', 'stamina', 'poisonCure', 'regen'] as const) {
+      for (const key of ['hp', 'mana', 'stamina', 'poisonCure', 'bleedCure', 'regen'] as const) {
         const value = item.effect[key]
         if (value !== undefined && !nonNegative(value)) {
           error('items', `${item.id}: ${key} 为负`)

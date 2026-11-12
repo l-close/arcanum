@@ -8,10 +8,11 @@ import { TIER_REQ } from './skills'
 export const SHOP_STOCKS: Record<string, Record<string, number>> = {
   shop: {
     advanced_wand: 1,
+    salve: 2,
     mana_potion: 3,
-    tonic: 3,
-    healing_potion: 3,
+    stimulant: 3,
     antidote: 3,
+    bandage: 3,
   },
   weaponShop: {
     practice_sword: 1,
@@ -24,12 +25,10 @@ export const SHOP_STOCKS: Record<string, Record<string, number>> = {
     old_prayer_charm: 1,
   },
   westGate: {
-    tonic: 1,
-    healing_potion: 1,
+    stimulant: 2,
   },
   westMarket: {
-    healing_potion: 2,
-    tonic: 2,
+    stimulant: 2,
     dry_ration: 4,
   },
   bookshop: {
@@ -50,13 +49,10 @@ export const SHOP_STOCKS: Record<string, Record<string, number>> = {
   greenhouse: GREENHOUSE_HERB_STOCK,
 }
 
-/** 西镇集市价格：阶段 0 更贵，阶段 1 回落。 */
-export function shopPriceAt(location: string, id: string, westStage = 0): number {
+/** 商店价格：温室药草单独定价；其余按物品基础价。 */
+export function shopPriceAt(location: string, id: string, _westStage = 0): number {
   const base = ITEMS[id]?.price ?? 0
   if (location === 'greenhouse') return GREENHOUSE_HERB_PRICES[id] ?? base
-  if (location !== 'westMarket') return base
-  if (id === 'healing_potion') return westStage >= 1 ? 15 : 18
-  if (id === 'tonic') return westStage >= 1 ? 10 : 12
   return base
 }
 
@@ -157,7 +153,7 @@ export type RecipeDef = {
 export const RECIPES: RecipeDef[] = [
   {
     id: 'salve',
-    name: '止血膏',
+    name: '生命药水',
     level: 1,
     unlockExp: 0,
     inputs: { bloodherb: 2 },
@@ -165,7 +161,7 @@ export const RECIPES: RecipeDef[] = [
     fine: 'salve_fine',
     successBase: 105,
     fineBase: 30,
-    desc: '止血草熬成的膏，颜色发暗，带一点草腥味。',
+    desc: '止血草熬成的药水，颜色发暗，带一点草腥味。',
   },
   {
     id: 'stimulant',

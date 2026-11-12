@@ -46,6 +46,8 @@ export type ItemDef = {
     combatBuff?: CombatBuffKey
     /** 解除的中毒层数。 */
     poisonCure?: number
+    /** 解除的流血层数。 */
+    bleedCure?: number
     /** 获得的再生层数。 */
     regen?: number
   }
@@ -214,44 +216,24 @@ export const ITEMS: Record<string, ItemDef> = {
     desc: '瓶身冰凉，液面泛着淡蓝。恢复 20 点魔力。',
     effect: { mana: 20 },
   },
-  tonic: {
-    id: 'tonic',
-    name: '提神药',
-    type: 'consumable',
-    quality: 'rare',
-    price: 10,
-    medium: false,
-    desc: '一股辛辣的草药味。恢复 15 点体力。',
-    effect: { stamina: 15 },
-  },
-  healing_potion: {
-    id: 'healing_potion',
-    name: '伤药',
-    type: 'consumable',
-    quality: 'rare',
-    price: 15,
-    medium: false,
-    desc: '灰白色的药粉，闻起来发苦。恢复 20 点生命。',
-    effect: { hp: 20 },
-  },
   salve: {
     id: 'salve',
-    name: '止血膏',
+    name: '生命药水',
     type: 'consumable',
     quality: 'common',
     price: 16,
     medium: false,
-    desc: '用止血草熬成的药膏。抹在伤口上会有一阵凉意。恢复 25 点生命。',
+    desc: '用止血草熬成的药水。喝下去有一阵凉意，伤口会慢慢收拢。恢复 25 点生命。',
     effect: { hp: 25 },
   },
   salve_fine: {
     id: 'salve_fine',
-    name: '精制止血膏',
+    name: '精制生命药水',
     type: 'consumable',
     quality: 'rare',
     price: 28,
     medium: false,
-    desc: '滤得更细的止血膏，药性更足。恢复 40 点生命。',
+    desc: '滤得更细的生命药水，药性更足。恢复 40 点生命。',
     effect: { hp: 40 },
   },
   stimulant: {
@@ -303,6 +285,16 @@ export const ITEMS: Record<string, ItemDef> = {
     medium: false,
     desc: '心跳加快，脚步变轻。24 小时内行动条充能 +5%。同种药剂不可叠加。',
     effect: { combatBuff: 'swift' },
+  },
+  bandage: {
+    id: 'bandage',
+    name: '绷带',
+    type: 'consumable',
+    quality: 'common',
+    price: 14,
+    medium: false,
+    desc: '一卷干净的布条。减少 2 层流血，只能在战斗中使用。',
+    effect: { bleedCure: 2 },
   },
   antidote: {
     id: 'antidote',

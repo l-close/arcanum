@@ -658,6 +658,7 @@ function BattleView() {
         def.effect?.mana ||
         def.effect?.combatBuff ||
         def.effect?.poisonCure ||
+        def.effect?.bleedCure ||
         def.effect?.regen
       )
     )

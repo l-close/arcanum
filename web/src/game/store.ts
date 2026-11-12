@@ -463,7 +463,7 @@ export function normalizeData(raw: GameData): GameData {
       const merged: Record<string, number> = { basic_wand: 1, ...(raw.inventory ?? {}) }
       const out: Record<string, number> = {}
       for (const [id, qty] of Object.entries(merged)) {
-        if (id === 'defense_notes') continue
+        if (id === 'defense_notes' || id === 'healing_potion' || id === 'tonic') continue
         if (!Number.isFinite(qty) || qty <= 0) continue
         out[id] = qty
       }
@@ -2125,18 +2125,23 @@ export const useGame = create<Store>((set, get) => {
       const healHp = def.effect?.hp ?? 0
       const healMana = def.effect?.mana ?? 0
       const poisonCure = def.effect?.poisonCure ?? 0
+      const bleedCure = def.effect?.bleedCure ?? 0
       const regenGain = def.effect?.regen ?? 0
-      if (!healHp && !healMana && !poisonCure && !regenGain) return
+      if (!healHp && !healMana && !poisonCure && !bleedCure && !regenGain) return
       const hpMax = maxHp(data.skills.physique.tier)
       if (poisonCure > 0 && !battle.playerPoison) {
         set({ message: '你现在没有中毒。' })
+        return
+      }
+      if (bleedCure > 0 && !battle.playerBleed) {
+        set({ message: '你现在没有流血。' })
         return
       }
       if (regenGain > 0 && (battle.playerRegen?.stacks ?? 0) >= REGEN_MAX_STACKS) {
         set({ message: '再生层数已经到上限了。' })
         return
       }
-      if (!poisonCure && !regenGain) {
+      if (!poisonCure && !bleedCure && !regenGain) {
         if (healHp && battle.playerHp >= hpMax && !healMana) {
           set({ message: '生命已经满了。' })
           return
@@ -2157,6 +2162,10 @@ export const useGame = create<Store>((set, get) => {
         b.playerPoison.stacks -= poisonCure
         if (b.playerPoison.stacks <= 0) b.playerPoison = null
       }
+      if (bleedCure > 0 && b.playerBleed) {
+        b.playerBleed.stacks -= bleedCure
+        if (b.playerBleed.stacks <= 0) b.playerBleed = null
+      }
       let gainedRegen = 0
       if (regenGain > 0) gainedRegen = grantPlayerRegen(b, regenGain)
       b.actions += 1
@@ -2167,6 +2176,7 @@ export const useGame = create<Store>((set, get) => {
       if (healHp) parts.push(`生命 +${healHp}`)
       if (healMana) parts.push(`魔力 +${healMana}`)
       if (poisonCure > 0) parts.push('中毒 -1 层')
+      if (bleedCure > 0) parts.push(`流血 -${bleedCure} 层`)
       if (gainedRegen > 0) parts.push(`再生 +${gainedRegen} 层`)
       battleLog(b, `你使用了${def.name}。${parts.length ? `${parts.join('，')}。` : ''}`)
       if (settlePlayerAfterAction(b, hpMax)) {
@@ -4339,7 +4349,7 @@ export const useGame = create<Store>((set, get) => {
       }
       const def = ITEMS[id]
       if (!def || (data.inventory[id] ?? 0) <= 0) return
-      if (def.effect?.poisonCure || def.effect?.regen) {
+      if (def.effect?.poisonCure || def.effect?.bleedCure || def.effect?.regen) {
         set({ message: '只能在战斗中使用。' })
         return
       }
