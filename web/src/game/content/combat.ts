@@ -112,7 +112,10 @@ export function spellDamageRange(
 
 export type EnemyTrait = {
   name: string
+  /** 图鉴个人记录里的短描述。 */
   desc: string
+  /** 战斗界面显示的精确机制。 */
+  battleDesc?: string
 }
 
 export type EnemyRegen = {
@@ -223,7 +226,13 @@ export const ENEMIES: Record<string, EnemyDef> = {
       '毒蛇的身体绷紧，又弹了一次。',
     ],
     defeatLine: '毒蛇的身体松开，慢慢滑回落叶里。',
-    traits: [{ name: '毒牙', desc: '攻击命中时可能使目标中毒。' }],
+    traits: [
+      {
+        name: '毒牙',
+        desc: '攻击命中时可能使目标中毒。',
+        battleDesc: '命中时 35% 概率施加 1 层中毒。',
+      },
+    ],
     poisonChance: 0.35,
   },
   corrupted_dog: {
@@ -274,6 +283,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
       {
         name: '污秽之躯',
         desc: '伤口会自行愈合，再生活性较高。',
+        battleDesc: '登场时获得 3 层再生，层数不会减少；每次行动结束恢复 6 点生命。',
       },
     ],
     regen: { initial: 3, max: 5, healPer: 2, persistent: true },
@@ -353,7 +363,13 @@ export const ENEMIES: Record<string, EnemyDef> = {
       '它绕了半圈，突然加速扑上来。',
     ],
     defeatLine: '它退了两步，前腿一软，倒在落叶里。',
-    traits: [{ name: '撕裂', desc: '攻击命中时可能使目标流血。' }],
+    traits: [
+      {
+        name: '撕裂',
+        desc: '攻击命中时可能使目标流血。',
+        battleDesc: '命中时 35% 概率施加 1 层流血。',
+      },
+    ],
     bleedChance: 0.35,
   },
   boar_king: {
@@ -374,7 +390,13 @@ export const ENEMIES: Record<string, EnemyDef> = {
       '它喷着白气，又撞了一次。',
     ],
     defeatLine: '它又冲了两步，膝盖一弯，重重跪在地上。',
-    traits: [{ name: '獠牙撕裂', desc: '攻击命中时可能使目标流血。' }],
+    traits: [
+      {
+        name: '獠牙撕裂',
+        desc: '攻击命中时可能使目标流血。',
+        battleDesc: '命中时 45% 概率施加 1 层流血。',
+      },
+    ],
     bleedChance: 0.45,
   },
 }

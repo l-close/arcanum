@@ -732,7 +732,7 @@ function BattleView() {
         {enemy.traits && enemy.traits.length > 0 && (
           <div className="battle-traits">
             特性　
-            {enemy.traits.map((trait) => `${trait.name} · ${trait.desc}`).join('；')}
+            {enemy.traits.map((trait) => `${trait.name} · ${trait.battleDesc ?? trait.desc}`).join('；')}
           </div>
         )}
         <BattleBar label="生命" value={battle.enemyHp} max={enemy.hp} kind="hp" />
