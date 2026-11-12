@@ -1,4 +1,5 @@
 import {
+  BESTIARY_GROUPS,
   BOOKS,
   BOOK_CATEGORY_LABEL,
   COMMISSIONS,
@@ -229,6 +230,20 @@ export function validateContent(): ContentIssue[] {
       }
       if (enemy.regen.healPer <= 0) error('enemies', `${enemy.id}: 每层再生恢复必须大于 0`)
     }
+  }
+
+  const bestiaryIds: string[] = []
+  for (const group of BESTIARY_GROUPS) {
+    if (!group.label) error('bestiary', `${group.id}: 缺少分组名`)
+    if (group.enemyIds.length === 0) error('bestiary', `${group.id}: 分组为空`)
+    for (const id of group.enemyIds) {
+      if (!enemyIds.has(id)) error('bestiary', `${group.id}: 敌人 ${id} 不存在`)
+      if (bestiaryIds.includes(id)) error('bestiary', `敌人 ${id} 出现在多个分组`)
+      bestiaryIds.push(id)
+    }
+  }
+  for (const id of enemyIds) {
+    if (!bestiaryIds.includes(id)) error('bestiary', `敌人 ${id} 未加入图鉴`)
   }
 
   for (const recipe of CRAFT_RECIPES) {

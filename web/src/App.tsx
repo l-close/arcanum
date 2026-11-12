@@ -10,6 +10,8 @@ import {
   BOOK_CATEGORY_LABEL,
   BOOK_CATEGORY_ORDER,
   BOOKSHELF_SIZE,
+  BESTIARY_GROUPS,
+  BESTIARY_TOTAL,
   ACADEMY_MEAL_FEE,
   CEMETERY_SWEEP_MINUTES,
   CEMETERY_SWEEP_MOOD,
@@ -532,6 +534,7 @@ function GameScreen() {
       {modal === 'guildBoard' && <GuildBoardModal />}
       {modal === 'workshopOrders' && <WorkshopOrdersModal />}
       {modal === 'commissions' && <CommissionsModal />}
+      {modal === 'bestiary' && <BestiaryModal />}
       {modal === 'shop' && <ShopModal />}
       {modal === 'brew' && <BrewModal />}
       {modal === 'workshop' && <WorkshopModal />}
@@ -1103,6 +1106,7 @@ function StatusRail() {
         <button className="side-menu-btn full" onClick={() => setModal('stats')}>属性</button>
         <button className="side-menu-btn full" onClick={() => setModal('relations')}>关系</button>
         <button className="side-menu-btn full" onClick={() => setModal('commissions')}>委托</button>
+        <button className="side-menu-btn full" onClick={() => setModal('bestiary')}>图鉴</button>
         <button className="side-menu-btn" onClick={() => setModal('inventory')}>物品</button>
         <button className="side-menu-btn" onClick={() => setModal('log')}>日志</button>
         <button className="side-menu-btn" onClick={() => setModal('save')}>存档</button>
@@ -4005,6 +4009,78 @@ function CommissionsModal() {
         </div>
       )}
       <p className="hint">委托详情请在对应地点查看和交付。</p>
+    </ModalShell>
+  )
+}
+
+function BestiaryModal() {
+  const data = useGame((s) => s.data)
+  const setModal = useGame((s) => s.setModal)
+  const seen = new Set(data.bestiarySeen ?? [])
+  const count = BESTIARY_GROUPS.reduce(
+    (total, group) => total + group.enemyIds.filter((id) => seen.has(id)).length,
+    0,
+  )
+
+  return (
+    <ModalShell title="图鉴" wide onClose={() => setModal(null)}>
+      <div className="bestiary-count">
+        已记录 {count} / {BESTIARY_TOTAL}
+      </div>
+      <div className="bestiary-groups">
+        {BESTIARY_GROUPS.map((group) => (
+          <div className="bestiary-group" key={group.id}>
+            <div className="bestiary-group-title">{group.label}</div>
+            <div className="bestiary-list">
+              {group.enemyIds.map((id) => {
+                const enemy = ENEMIES[id]
+                if (!enemy) return null
+                const known = seen.has(id)
+                return (
+                  <div className={`bestiary-card${known ? '' : ' locked'}`} key={id}>
+                    {known ? (
+                      <>
+                        <div className="bestiary-card-head">
+                          <span className="item-name">{enemy.name}</span>
+                          <span className="shop-stock">
+                            {enemy.element === 'magic' ? '法术' : '物理'}
+                          </span>
+                        </div>
+                        <div className="item-desc">{enemy.desc}</div>
+                        <div className="bestiary-stats">
+                          <span>生命 {enemy.hp}</span>
+                          <span>攻击 {enemy.attack}</span>
+                          <span>物防 {enemy.defense}</span>
+                          <span>法抗 {enemy.resist}</span>
+                          <span>速度 {enemy.speed.toFixed(1)}</span>
+                          <span>经验 {enemy.expValue}</span>
+                        </div>
+                        {enemy.traits?.length ? (
+                          <div className="bestiary-traits">
+                            {enemy.traits.map((trait) => (
+                              <span key={trait.name}>
+                                {trait.name}：{trait.desc}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+                      </>
+                    ) : (
+                      <>
+                        <div className="bestiary-card-head">
+                          <span className="item-name">???</span>
+                          <span className="shop-stock">{group.label}</span>
+                        </div>
+                        <div className="item-desc">尚未遭遇。</div>
+                      </>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
     </ModalShell>
   )
 }

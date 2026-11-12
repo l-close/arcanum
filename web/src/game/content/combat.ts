@@ -350,7 +350,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     name: '野猪王',
     desc: '一头肩高到腰的野猪，獠牙上留着旧裂口，背上结着厚厚的痂。',
     hp: 190,
-    attack: 16,
+    attack: 15,
     defense: 3,
     resist: 0,
     speed: 2.2,

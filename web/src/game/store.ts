@@ -320,6 +320,7 @@ export function freshData(): GameData {
       done: [],
       abandoned: {},
     },
+    bestiarySeen: [],
     combatBuffs: { sharpUntil: 0, stoneUntil: 0, swiftUntil: 0 },
     events: { day: 0, count: 0, today: [], lastSeen: {}, lastAt: -9999, seen: [] },
     examPackages: [],
@@ -603,6 +604,9 @@ export function normalizeData(raw: GameData): GameData {
       }
       return { week, board, accepted, done, abandoned }
     })(),
+    bestiarySeen: Array.isArray(raw.bestiarySeen)
+      ? raw.bestiarySeen.filter((id) => !!ENEMIES[id])
+      : [],
     combatBuffs: {
       sharpUntil: raw.combatBuffs?.sharpUntil ?? 0,
       stoneUntil: raw.combatBuffs?.stoneUntil ?? 0,
@@ -979,6 +983,12 @@ function battleLog(b: BattleState, text: string): void {
   if (b.log.length > 24) b.log.splice(0, b.log.length - 24)
 }
 
+function markBestiarySeen(data: GameData, enemyId: string): void {
+  if (!ENEMIES[enemyId]) return
+  if (!Array.isArray(data.bestiarySeen)) data.bestiarySeen = []
+  if (!data.bestiarySeen.includes(enemyId)) data.bestiarySeen.push(enemyId)
+}
+
 function checkPlayerDefeat(b: BattleState): boolean {
   if (b.playerHp > 0) return false
   b.playerHp = 0
@@ -1153,7 +1163,7 @@ function applyStoryEffects(d: GameData, e?: StoryEffects): void {
   if (e.location) d.location = e.location
 }
 
-type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'brew' | 'workshop' | 'engrave' | 'starChart' | 'calendar' | 'commissions' | 'workshopOrders' | null
+type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'brew' | 'workshop' | 'engrave' | 'starChart' | 'calendar' | 'commissions' | 'workshopOrders' | 'bestiary' | null
 
 type TitlePanel = 'saves' | 'export' | 'import' | null
 
@@ -1824,6 +1834,8 @@ export const useGame = create<Store>((set, get) => {
       }
       const enemy = ENEMIES[enemyId]
       if (!enemy) return
+      const next = structuredClone(data)
+      markBestiarySeen(next, enemyId)
       const battle: BattleState = {
         kind: 'spar',
         enemyId,
@@ -1843,10 +1855,11 @@ export const useGame = create<Store>((set, get) => {
       set({
         battle,
         battleStart: {
-          data: structuredClone(data),
+          data: structuredClone(next),
           battle: structuredClone(battle),
           bonusCopper: 0,
         },
+        data: next,
         modal: null,
         message: '',
       })
@@ -2227,6 +2240,7 @@ export const useGame = create<Store>((set, get) => {
       const { battle, data, player } = get()
       if (!battle) return
       const next = structuredClone(data)
+      markBestiarySeen(next, battle.enemyId)
       const hpMax = maxHp(next.skills.physique.tier)
       next.hp = clamp(Math.max(1, battle.playerHp), 1, hpMax)
       const minutes = Math.max(1, battle.actions)
@@ -3091,6 +3105,8 @@ export const useGame = create<Store>((set, get) => {
       if (battle) return
       const enemy = ENEMIES[enemyId]
       if (!enemy) return
+      const next = structuredClone(data)
+      markBestiarySeen(next, enemyId)
       const nextBattle: BattleState = {
         kind: 'wild',
         enemyId,
@@ -3111,10 +3127,11 @@ export const useGame = create<Store>((set, get) => {
       set({
         battle: nextBattle,
         battleStart: {
-          data: structuredClone(data),
+          data: structuredClone(next),
           battle: structuredClone(nextBattle),
           bonusCopper,
         },
+        data: next,
         battleBonusCopper: bonusCopper,
         modal: null,
         message: '',

@@ -157,6 +157,7 @@ export type GameData = {
   starWatch: StarWatchState
   reputation: number
   commissions: CommissionState
+  bestiarySeen: string[]
   combatBuffs: CombatBuffs
   events: {
     day: number
