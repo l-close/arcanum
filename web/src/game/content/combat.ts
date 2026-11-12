@@ -42,11 +42,11 @@ export function applyDefense(base: number, defense: number): number {
 }
 
 export const POISON_MAX_STACKS = 3
-export const POISON_DAMAGE_PER_STACK = 3
+export const POISON_DAMAGE_PER_STACK = 4
 export const POISON_TICKS = 60
 
 export const BLEED_MAX_STACKS = 5
-export const BLEED_DAMAGE_PER_STACK = 2
+export const BLEED_DAMAGE_PER_STACK = 3
 
 export const REGEN_MAX_STACKS = 5
 export const REGEN_HEAL_PER_STACK = 2

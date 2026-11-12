@@ -323,8 +323,8 @@ export const ITEMS: Record<string, ItemDef> = {
     quality: 'rare',
     price: 26,
     medium: false,
-    desc: '喝下去后伤口会慢慢收拢。获得 3 层再生，最多 5 层，只能在战斗中使用。',
-    effect: { regen: 3 },
+    desc: '喝下去后伤口会慢慢收拢。获得 4 层再生，最多 5 层，只能在战斗中使用。',
+    effect: { regen: 4 },
   },
   dry_ration: {
     id: 'dry_ration',
