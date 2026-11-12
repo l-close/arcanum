@@ -218,6 +218,8 @@ export type BattleState = {
   enemyRegen?: { stacks: number } | null
   /** 是否已经完成过形态转换。 */
   transformed?: boolean
+  /** 是否由讨伐追踪进入的战斗。 */
+  tracking?: boolean
 }
 
 export type Screen = 'title' | 'create' | 'game'

@@ -707,8 +707,7 @@ function BattleView() {
   if (battle.playerRegen) playerStatusParts.push(`再生 ${battle.playerRegen.stacks} 层`)
   const playerStatus = playerStatusParts.join(' · ') || '—'
 
-  const tracking =
-    battle.enemyId === 'gray_wolf_alpha' || battle.enemyId === 'boar_king'
+  const tracking = !!battle.tracking
   return (
     <div className="battle-screen">
       <div className="battle-head">

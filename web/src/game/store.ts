@@ -1244,7 +1244,7 @@ type Store = {
   escortArrive: () => void
   escortAbort: () => void
   returnFromEscort: () => void
-  startWildBattle: (enemyId: string, bonusCopper: number) => void
+  startWildBattle: (enemyId: string, bonusCopper: number, tracking?: boolean) => void
   eat: () => void
   rest: () => void
   sleep: (hours: number) => void
@@ -2973,7 +2973,7 @@ export const useGame = create<Store>((set, get) => {
         current.lastHuntDay = d.day
         return '你循着痕迹追了上去。'
       })
-      if (!expired) get().startWildBattle(def.objective.enemyId, 0)
+      if (!expired) get().startWildBattle(def.objective.enemyId, 0, true)
     },
 
     startEscort: () => {
@@ -3076,7 +3076,7 @@ export const useGame = create<Store>((set, get) => {
       })
     },
 
-    startWildBattle: (enemyId, bonusCopper) => {
+    startWildBattle: (enemyId, bonusCopper, tracking = false) => {
       const { data, battle } = get()
       if (battle) return
       const enemy = ENEMIES[enemyId]
@@ -3096,6 +3096,7 @@ export const useGame = create<Store>((set, get) => {
         submenu: null,
         result: '',
         usedSkills: [],
+        tracking,
       }
       set({
         battle: nextBattle,
@@ -3837,17 +3838,26 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       const encounter = Math.random() < FOREST_DEEP_ENCOUNTER_CHANCE
+      const elite = encounter && Math.random() < 0.05
+      const enemyId = elite
+        ? Math.random() < 0.5
+          ? 'gray_wolf_alpha'
+          : 'boar_king'
+        : Math.random() < 0.6
+          ? 'boar'
+          : 'gray_wolf'
       mutate((d) => {
         advanceTime(d, 30)
         d.stamina = clamp(d.stamina - 6, 0, maxStamina(d.skills.physique.tier))
         const text = encounter
-          ? '前面的灌木被什么东西撞开，枝叶还在晃。'
+          ? elite
+            ? '前面的灌木被撞开，这一次撞开它的东西很大。'
+            : '前面的灌木被什么东西撞开，枝叶还在晃。'
           : '你往林子深处走了一段。除了被踩倒的草和新泥印，什么也没发现。'
         pushLog(d, text)
         return text
       })
       if (encounter) {
-        const enemyId = Math.random() < 0.6 ? 'boar' : 'gray_wolf'
         get().startWildBattle(enemyId, 0)
       }
     },
