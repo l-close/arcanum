@@ -233,6 +233,28 @@ export function nextExamThreshold(day: number, minutes: number): number | null {
   return examThresholdForDay(Math.floor(total / 1440))
 }
 
+export type ClassSlot = {
+  courseId: string
+  subject: string
+  start: number
+  end: number
+  location: string
+}
+
+/** 当天所有课程，用于顶栏与上课提醒；考试日、周末、假期返回空。 */
+export function classSlotsForDay(day: number): ClassSlot[] {
+  if (!isClassDay(day)) return []
+  return coursesForYear(currentYear(day))
+    .map((course) => ({
+      courseId: course.id,
+      subject: course.name,
+      start: course.start,
+      end: course.end,
+      location: courseLocationOn(course, day),
+    }))
+    .sort((a, b) => a.start - b.start)
+}
+
 export type ClassSegment = {
   subject: string
   label: string

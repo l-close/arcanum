@@ -96,6 +96,7 @@ import {
   attackDamageRange,
   areaNeighbors,
   classSegmentAt,
+  classSlotsForDay,
   courseById,
   courseExamLocationOn,
   courseLocationOn,
@@ -122,6 +123,7 @@ import {
   brewSuccessChance,
   brewFineChance,
   currentMeal,
+  mealWindowHint,
   currentYear,
   ageOf,
   daysUntil,
@@ -410,6 +412,20 @@ function GameScreen() {
         ? `目标：等到 ${formatTime(targetScene.time)}`
         : ''
     : ''
+  const classSlots = classSlotsForDay(data.day)
+  const currentClassSlot = classSlots.find(
+    (slot) => data.minutes >= slot.start && data.minutes < slot.end,
+  )
+  const nextClassSlot = classSlots.find((slot) => data.minutes < slot.start)
+  const classStripText = currentClassSlot
+    ? `${data.location === currentClassSlot.location ? '正在上课' : '现在有课'}：${currentClassSlot.subject} ${formatTime(currentClassSlot.start)}–${formatTime(currentClassSlot.end)}`
+    : nextClassSlot
+      ? `下一节 ${formatTime(nextClassSlot.start)} ${nextClassSlot.subject} · 还有 ${nextClassSlot.start - data.minutes} 分钟`
+      : classSlots.length > 0
+        ? '今天没有课了'
+        : isExamDay(data.day)
+          ? '今天有考试'
+          : '今天没有课'
 
   return (
     <div className="game-shell">
@@ -430,6 +446,8 @@ function GameScreen() {
         <div className="top-spacer" />
         <div className="top-auto">{autoSave ? '自动存档可用' : '尚无存档'}</div>
       </header>
+
+      <div className="class-strip">{classStripText}</div>
 
       <div className="game-body">
         {sidebarOpen && <div className="sidebar-backdrop" onClick={toggleSidebar} />}
@@ -1331,6 +1349,22 @@ function Actions({
   const waitToClass = nextClass === null ? null : nextClass - data.minutes
   const canWaitToClass = waitToClass !== null && waitToClass > 0 && waitToClass <= 30
   const physicalClass = segment ? courseById(segment.courseId)?.kind === 'physical' : false
+  const latePenalty = remain >= 15 && remain < 30
+  const classSpiritCost = spiritCost(3, data.mood)
+  const studySpiritCost = spiritCost(4, data.mood)
+  const classFaint = !physicalClass && data.spirit <= classSpiritCost
+  const studyFaint = data.spirit <= studySpiritCost
+  const classSlots = classSlotsForDay(data.day)
+  const currentClassSlot = classSlots.find(
+    (slot) => data.minutes >= slot.start && data.minutes < slot.end,
+  )
+  const nextClassSlot = classSlots.find((slot) => data.minutes < slot.start)
+  const classHint =
+    currentClassSlot && data.location !== currentClassSlot.location
+      ? `现在有课：${currentClassSlot.subject} ${formatTime(currentClassSlot.start)}–${formatTime(currentClassSlot.end)}（${getLocation(currentClassSlot.location).name}）。`
+      : nextClassSlot && nextClassSlot.start - data.minutes <= 15
+        ? `快上课了。${formatTime(nextClassSlot.start)} ${nextClassSlot.subject}，${getLocation(nextClassSlot.location).name}。`
+        : ''
   const canteenFee = loc === 'canteen' && isVacation(data.day) ? ACADEMY_MEAL_FEE : 0
   const ritePhase = loc === 'chapel' ? ritePhaseAt(data.day, data.minutes) : null
   const riteDone = ritePhase ? ritePhaseDone(data.rite, data.day, ritePhase.key) : false
@@ -1342,10 +1376,11 @@ function Actions({
         label={`${physicalClass ? '训练' : '听课'} · ${segment.label}`}
         cost={
           remain >= 15
-            ? `${remain} 分钟 · ${physicalClass ? '体力 -4' : `精神 -${spiritCost(3, data.mood)}`}`
+            ? `${remain} 分钟 · ${physicalClass ? '体力 -4' : `精神 -${classSpiritCost}`}${classFaint ? ' · 会昏倒' : ''}${latePenalty ? ' · 迟到，收益减半' : ''}`
             : `${remain} 分钟 · 无收益`
         }
       />
+      {latePenalty && <div className="hint">本段已过 {30 - remain} 分钟，收益减半。</div>}
       <ActionBtn onClick={slackClass} label="摸鱼" cost={`${remain} 分钟`} />
     </>
   ) : null
@@ -1369,6 +1404,7 @@ function Actions({
   return (
     <div className="actions">
       <div className="section-title">行动</div>
+      {classHint && <div className="class-hint">{classHint}</div>}
       {examDay && loc !== 'lecture' && loc !== 'yard' && (
         <div className="hint">今天是月考日。考试在讲堂与演武场进行。</div>
       )}
@@ -1381,7 +1417,7 @@ function Actions({
           <ActionBtn
             onClick={previewClass}
             label={`预习 · ${lecturePlan.subject}`}
-            cost={`${lecturePlan.minutes} 分钟 · 精神 -${spiritCost(3, data.mood)}`}
+            cost={`${lecturePlan.minutes} 分钟 · 精神 -${classSpiritCost}${classFaint ? ' · 会昏倒' : ''}`}
           />
         ) : (
           <>
@@ -1400,7 +1436,7 @@ function Actions({
         <ActionBtn
           onClick={() => setModal('study')}
           label="自习"
-          cost={`0.5 小时 · 精神 -${spiritCost(4, data.mood)}`}
+          cost={`0.5 小时 · 精神 -${studySpiritCost}${studyFaint ? ' · 会昏倒' : ''}`}
         />
       )}
       {loc === 'library' && <ActionBtn onClick={() => setModal('reading')} label="阅读" cost="0.5 小时" />}
@@ -1409,7 +1445,7 @@ function Actions({
       )}
       {(loc === 'canteen' || loc === 'orphanCanteen') &&
         (() => {
-          if (!meal) return <div className="hint">现在不是用餐时间。</div>
+          if (!meal) return <div className="hint">{mealWindowHint(data.minutes)}</div>
           const key = mealKeyFor(meal)
           if (key && data.meals.day === data.day && data.meals[key]) {
             return <div className="hint">你已经吃过{meal}了。</div>
@@ -2482,7 +2518,11 @@ function ReadingModal() {
                     </div>
                     <div className="reading-meta">
                       <span>30 分钟</span>
-                      <span>{book.spiritCost ? `精神 -${book.spiritCost}` : '不耗精神'}</span>
+                      <span>
+                        {book.spiritCost
+                          ? `精神 -${book.spiritCost}${data.spirit <= book.spiritCost ? ' · 会昏倒' : ''}`
+                          : '不耗精神'}
+                      </span>
                       <span>{book.repeatable ? '可重复阅读' : '一次性'}</span>
                     </div>
                     <div className="reading-rewards">

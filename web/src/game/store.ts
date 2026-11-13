@@ -144,6 +144,7 @@ import {
   brewSuccessChance,
   brewFineChance,
   currentMeal,
+  mealWindowHint,
   currentYear,
   examDaysForYear,
   examPackageTime,
@@ -664,7 +665,7 @@ function maybeUnlockFireballReading(d: GameData): string | null {
   if (!qualified) return null
   d.flags.fireball_ready = true
   const text = '你对法术的理解又深了一层。有些以前看不懂的东西，现在能看懂了。'
-  d.notice = d.notice ? `${d.notice} ${text}` : text
+  pushNotice(d, text)
   pushLog(d, text)
   return text
 }
@@ -834,11 +835,11 @@ function settleWeek(d: GameData): void {
       d.flags.church_volunteer = true
       text += ' 诺拉看了看账本：“教堂救济院缺人手。你去帮几天忙，至少能还上一点。”'
     }
-    d.notice = d.notice ? `${d.notice} ${text}` : text
+    pushNotice(d, text)
     pushLog(d, text)
   } else {
     const text = '周日结算：你把 50 铜币交给诺拉，算作这周的一点还款。'
-    d.notice = d.notice ? `${d.notice} ${text}` : text
+    pushNotice(d, text)
     pushLog(d, text)
   }
   const week = Math.floor(d.day / 7)
@@ -877,7 +878,7 @@ function applyFaint(d: GameData, place?: string): void {
   d.location = 'dorm'
   const where = place ? `在${place}里` : ''
   const text = `你${where}眼前一黑，昏了过去。醒来时，你躺在孤儿院的寝室里。`
-  d.notice = d.notice ? `${d.notice} ${text}` : text
+  pushNotice(d, text)
   pushLog(d, text)
 }
 
@@ -893,7 +894,7 @@ function settleExpiredCommissions(d: GameData): void {
     loss > 0
       ? `有 ${expired.length} 个委托到期，名誉 -${loss}。`
       : `有 ${expired.length} 个委托到期，名誉已经见底。`
-  d.notice = d.notice ? `${d.notice} ${text}` : text
+  pushNotice(d, text)
   pushLog(d, text)
 }
 
@@ -944,7 +945,7 @@ function advanceTime(d: GameData, minutes: number): boolean {
     d.flags.year2_started = true
     d.courseMastery = {}
     const text = '第二学年开始了。边区支援项目在等你。'
-    d.notice = d.notice ? `${d.notice} ${text}` : text
+    pushNotice(d, text)
     pushLog(d, text)
   } else if (d.day >= YEAR_DAYS && !d.flags.year2_started) {
     d.flags.year2_started = true
@@ -952,13 +953,21 @@ function advanceTime(d: GameData, minutes: number): boolean {
   if (beforeDay < YEAR_DAYS * 2 && d.day >= YEAR_DAYS * 2) {
     d.flags.year3_notice = true
     const text = '第二学年结束了。第三学年内容尚未开放。'
-    d.notice = d.notice ? `${d.notice} ${text}` : text
+    pushNotice(d, text)
     pushLog(d, text)
   } else if (d.day >= YEAR_DAYS * 2 && !d.flags.year3_notice) {
     d.flags.year3_notice = true
   }
 
   return d.day > Math.floor(beforeTotal / 1440)
+}
+
+function pushNotice(d: GameData, text: string): void {
+  const trimmed = text.trim()
+  if (!trimmed) return
+  if (d.notice === trimmed || d.notice.endsWith(` ${trimmed}`)) return
+  d.notice = d.notice ? `${d.notice} ${trimmed}` : trimmed
+  if (d.notice.length > 240) d.notice = d.notice.slice(-240)
 }
 
 function pushLog(d: GameData, text: string): void {
@@ -1358,7 +1367,7 @@ function refreshWestSet(d: GameData): void {
   d.west.accepted = []
   d.west.done = []
   const text = `第 ${d.west.setIndex + 1} 组委托已刷新。`
-  d.notice = d.notice ? `${d.notice} ${text}` : text
+  pushNotice(d, text)
   pushLog(d, text)
 }
 
@@ -1384,7 +1393,7 @@ function checkWestStage(d: GameData): void {  if (d.west.stage >= 1) {
   d.west.construction = WEST_CONSTRUCTION_MAX
   d.flags.west_stage1 = true
   const text = '西镇的重建暂时告一段落。阶段 1：勉强维持。'
-  d.notice = d.notice ? `${d.notice} ${text}` : text
+  pushNotice(d, text)
   pushLog(d, text)
 }
 
@@ -2380,6 +2389,10 @@ export const useGame = create<Store>((set, get) => {
         set({ message: '这里不是广场。' })
         return
       }
+      if (data.stamina < 1) {
+        set({ message: '你太累了，先休息一下。' })
+        return
+      }
       mutate((d) => {
         advanceTime(d, 15)
         d.stamina = clamp(d.stamina - 1, 0, maxStamina(d.skills.physique.tier))
@@ -3185,7 +3198,7 @@ export const useGame = create<Store>((set, get) => {
       }
       const meal = currentMeal(data.minutes)
       if (!meal) {
-        set({ message: '现在不是用餐时间。' })
+        set({ message: mealWindowHint(data.minutes) })
         return
       }
       const key = mealKeyFor(meal)
@@ -3434,6 +3447,10 @@ export const useGame = create<Store>((set, get) => {
         set({ modal: null })
         return
       }
+      if (data.stamina < 5) {
+        set({ message: '你太累了，先休息一下。', modal: null })
+        return
+      }
       const formal = data.location === 'yard'
       const courseId = formal ? masteryCourseForSkill(key, data.day) : null
       mutate((d) => {
@@ -3675,6 +3692,10 @@ export const useGame = create<Store>((set, get) => {
         set({ message: '这周已经打理得够多了。诺拉让你去忙自己的事。' })
         return
       }
+      if (data.stamina < 10) {
+        set({ message: '你太累了，先休息一下。' })
+        return
+      }
       mutate((d) => {
         const currentWeek = Math.floor(d.day / 7)
         if (d.weekly.week !== currentWeek) {
@@ -3706,6 +3727,10 @@ export const useGame = create<Store>((set, get) => {
       }
       if (data.vacation.day === data.day && data.vacation.kids) {
         set({ message: '今天已经陪过孩子们了。' })
+        return
+      }
+      if (data.stamina < 3) {
+        set({ message: '你太累了，先休息一下。' })
         return
       }
       mutate((d) => {
@@ -4062,6 +4087,10 @@ export const useGame = create<Store>((set, get) => {
         set({ message: '这里没有你能打的工。' })
         return
       }
+      if (data.stamina < 12) {
+        set({ message: '你太累了，先休息一下。' })
+        return
+      }
       mutate((d) => {
         advanceTime(d, 120)
         d.money += 10
@@ -4177,6 +4206,10 @@ export const useGame = create<Store>((set, get) => {
       }
       if (!isTimeWindow(data.minutes, TAVERN_WORK_START, TAVERN_WORK_END)) {
         set({ message: '今晚的活已经干完了。' })
+        return
+      }
+      if (data.stamina < 12) {
+        set({ message: '你太累了，先休息一下。' })
         return
       }
       mutate((d) => {

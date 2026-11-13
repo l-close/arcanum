@@ -1,6 +1,6 @@
 // arcanum: life
 import { timePeriod } from './locations'
-import { semesterState, weekday } from './time'
+import { formatTime, semesterState, weekday } from './time'
 
 export const SLEEP_LOCATIONS: string[] = ['dorm', 'westInn']
 
@@ -120,6 +120,18 @@ export function currentMeal(minutes: number): string | null {
     if (minutes >= start && minutes < end) return name
   }
   return null
+}
+
+export function mealWindowHint(minutes: number): string {
+  const next = MEAL_WINDOWS.find(([start]) => start > minutes)
+  if (next) {
+    const [start, end, name] = next
+    return `现在不是用餐时间。下一个用餐时段：${name} ${formatTime(start)}–${formatTime(end)}。`
+  }
+  const windows = MEAL_WINDOWS.map(
+    ([start, end, name]) => `${name} ${formatTime(start)}–${formatTime(end)}`,
+  ).join('，')
+  return `现在不是用餐时间。${windows}。`
 }
 
 export type MealKey = 'breakfast' | 'lunch' | 'dinner'
