@@ -1,5 +1,5 @@
-import { SKILL_LABEL, npcById, npcLocationAt, weekday } from './content'
-import type { CourseId } from './content'
+import { SKILL_LABEL, currentMeal, npcById, npcLocationAt, weekday } from './content'
+import type { CourseId, MealKey, MealName } from './content'
 import type { GameData, SkillKey } from './types'
 
 export const EVENT_DAILY_CAP = 3
@@ -29,7 +29,7 @@ export type EventEffects = {
   exp?: Partial<Record<SkillKey, number>>
   affinity?: Record<string, number>
   flag?: string
-  meal?: 'breakfast' | 'lunch' | 'dinner'
+  meal?: MealKey
 }
 
 export type EventChoice = {
@@ -94,6 +94,8 @@ export type GameEvent = {
   locations: string[]
   days?: 'workday' | 'weekend' | 'all'
   timeRanges?: Array<[number, number]>
+  /** 用餐时段；与 timeRanges 二选一。 */
+  mealWindows?: MealName[]
   weight?: number
   once?: boolean
   expCapTier?: number
@@ -203,7 +205,7 @@ export const EVENTS: GameEvent[] = [
     trigger: { type: 'enter' },
     locations: ['canteen'],
     days: 'all',
-    timeRanges: [[at(11, 30), at(12, 30)]],
+    mealWindows: ['午餐'],
     requires: {
       npc: 'mia',
       affinity: { npc: 'mia', min: 20 },
@@ -236,7 +238,8 @@ export const EVENTS: GameEvent[] = [
     trigger: { type: 'enter' },
     locations: ['canteen'],
     days: 'all',
-    timeRanges: [[at(11, 30), at(12, 30)]],
+    mealWindows: ['午餐'],
+    requires: { npc: 'mia' },
     text: [
       '食堂里挤满了人。米娅远远看见你，抬手拍了拍旁边的空位，又把占座的书往自己那边挪了挪。',
     ],
@@ -361,10 +364,7 @@ export const EVENTS: GameEvent[] = [
     trigger: { type: 'enter' },
     locations: ['orphanCanteen'],
     days: 'all',
-    timeRanges: [
-      [at(6), at(9)],
-      [at(17, 30), at(20)],
-    ],
+    mealWindows: ['早餐', '晚餐'],
     text: [
       '一个孩子端着碗从桌边跑过，脚下一绊，粥洒了一地。他站在原地，先看了看地上的碗，又看了看你。',
     ],
@@ -796,6 +796,11 @@ export function eventMatches(event: GameEvent, data: GameData, trigger: EventTri
     !event.timeRanges.some(([start, end]) => data.minutes >= start && data.minutes < end)
   ) {
     return false
+  }
+
+  if (event.mealWindows && event.mealWindows.length > 0) {
+    const meal = currentMeal(data.minutes)
+    if (!meal || !event.mealWindows.includes(meal)) return false
   }
 
   const last = data.events.lastSeen[event.id]

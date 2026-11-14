@@ -17,6 +17,7 @@ import {
   GUILD_JOB_DEFS,
   ITEMS,
   LOCATIONS,
+  MEAL_WINDOWS,
   NPCS,
   RECIPES,
   REPUTATION_BANDS,
@@ -503,6 +504,22 @@ export function validateContent(): ContentIssue[] {
     for (const [start, end] of event.timeRanges ?? []) {
       if (!inDay(start) || !inDay(end) || start >= end) {
         error('events', `${event.id}: 时间窗 ${start}–${end} 无效`)
+      }
+    }
+    if (event.timeRanges && event.mealWindows) {
+      error('events', `${event.id}: 不能同时使用 timeRanges 与 mealWindows`)
+    }
+    if (event.mealWindows) {
+      const mealNames = new Set(MEAL_WINDOWS.map(([, , name]) => name))
+      const seenMeals = new Set<string>()
+      for (const name of event.mealWindows) {
+        if (!mealNames.has(name)) {
+          error('events', `${event.id}: 用餐时段 ${name} 不存在`)
+        }
+        if (seenMeals.has(name)) {
+          error('events', `${event.id}: 用餐时段 ${name} 重复`)
+        }
+        seenMeals.add(name)
       }
     }
     if (event.expCapTier !== undefined && event.expCapTier < 0) {

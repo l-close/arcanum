@@ -1196,7 +1196,7 @@ function Actions({
   onPickNpc,
 }: {
   segment: ReturnType<typeof classSegmentAt>
-  meal: string | null
+  meal: ReturnType<typeof currentMeal>
   onPickNpc: (id: string) => void
 }) {
   const data = useGame((s) => s.data)
@@ -4624,11 +4624,13 @@ function EventPickerModal() {
               const locations = event.locations
                 .map((id) => getLocation(id).name)
                 .join(' / ')
-              const times = event.timeRanges
-                ? event.timeRanges
-                    .map(([start, end]) => `${formatTime(start)}–${formatTime(end)}`)
-                    .join('，')
-                : '全天'
+              const times = event.mealWindows
+                ? `用餐时段：${event.mealWindows.join(' / ')}`
+                : event.timeRanges
+                  ? event.timeRanges
+                      .map(([start, end]) => `${formatTime(start)}–${formatTime(end)}`)
+                      .join('，')
+                  : '全天'
               const days =
                 event.days === 'workday' ? '工作日' : event.days === 'weekend' ? '周末' : '每天'
               return (

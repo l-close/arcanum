@@ -478,7 +478,7 @@ function designChildren() {
   const c = [];
   c.push(...cover(
     "游戏设计文档",
-    "项目代号 arcanum · v2.26.12 · 2026-11-15",
+    "项目代号 arcanum · v2.26.13 · 2026-11-15",
     "说明：本文档记录游戏机制、数值、UI 与开发计划。世界观设定见《世界观设定_整理版.docx》。"
   ));
   c.push(...tocPage());
@@ -606,6 +606,7 @@ function designChildren() {
   c.push(bullet("v2.26.10 起：睡眠体力 +5/小时、精神 +6/小时；三餐 +8；文化课 -3、武艺课（原体术课）-4、杂货店 / 酒馆打工 -12、练习 -5、自习 -4；预习仍为 -3。"));
   c.push(bullet("v2.26.11 起：顶栏课程栏显示下一节 / 正在上课 / 今天没有课；上课前 15 分钟提示快上课了；上课时间不在教室时提示现在有课；课程剩余不足 30 分钟显示迟到收益减半。"));
   c.push(bullet("v2.26.12 起：事件 class 触发器只认 courseId，不认课程显示名；CourseId 从课程表派生；课程词表从 COURSES 生成并写入 STYLE.md，prebuild 校验两者一致。"));
+  c.push(bullet("v2.26.13 起：GameEvent 可用 mealWindows 引用用餐时段，不再手写食堂时间；MealName 从 MEAL_WINDOWS 派生，MealKey 仍用于存档与效果；两者不混用。"));
   c.push(bullet("原地休息：体力低于 20 时出现，30 分钟，体力 +5；回到 20 后消失。"));
   c.push(bullet("每天 00:00：若心情高于 60，则 -1；不高于 60 时不回落。"));
   c.push(bullet("每周日 22:00：向诺拉还款 50 铜（学费、食宿与早年养育成本）；同时结算成长技能的周衰减：本周未获得经验的技能扣当前档位需求的 5%。"));
@@ -1674,6 +1675,8 @@ function designChildren() {
     "神圣系加入成长途径后，纳入每周未训练衰减。",
     "特殊现象：血月、狂猎、审判庭夜间巡逻（上线时间未定）。",
     "外神污染与主线推进的后续内容。",
+    "假期学院食堂事件：米娅不在场时「米娅占座」不触发，假期学院食堂可能没有事件；另写一条假期专用事件，不复用「米娅占座」。",
+    "STYLE.md 后半本：四段双读、翻转表、冬版五条、句式库、近似组、素材表、暮节规则、量化有界、光感词表、压缩构式、锚句，待从文本工作区原样合并。",
   ].forEach((t, i) => c.push(numbered(i + 1, t)));
 
   c.push(h1("十八、变更记录"));
@@ -1786,6 +1789,7 @@ function designChildren() {
   c.push(p("v2.26.10 · 2026-11-13 · 体力与精神平衡：睡眠体力 5/小时、精神 6/小时；三餐 +8；文化课 -3、体术课 -4、杂货店 / 酒馆打工 -12、练习 -5、自习 -4；预习保持 -3。", { size: SMALL, color: "666666" }));
   c.push(p("v2.26.11 · 2026-11-13 · 行动检查与上课提醒：补齐体力门槛；顶栏课程栏、课前 15 分钟与上课中提示；昏厥预警；用餐时段提示；迟到收益减半反馈；notice 去重与截断。", { size: SMALL, color: "666666" }));
   c.push(p("v2.26.12 · 2026-11-15 · 武艺课与触发器：体术课（现武艺课）改名；EventTrigger 的 class 分支改用 courseId，删除 subject；ClassSegment 保留 courseId；COURSE_WORDS 从课程表生成；STYLE.md 进入仓库并校验。", { size: SMALL, color: "666666" }));
+  c.push(p("v2.26.13 · 2026-11-15 · 用餐时段：MealName 从 MEAL_WINDOWS 派生，与 MealKey 分离；三个食堂事件改用 mealWindows；米娅占座补 requires.npc；validate 增加用餐时段检查；调试列表显示用餐时段。", { size: SMALL, color: "666666" }));
   return c;
 }
 

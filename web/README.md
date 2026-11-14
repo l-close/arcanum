@@ -1,4 +1,4 @@
-# arcanum（v2.26.12）
+# arcanum（v2.26.13）
 
 文字驱动的沙盒生活模拟 RPG。当前已包含生活循环、学校、社交、事件、学期、演武场切磋、商业区扩展、魔法城市设施、星象台、装备打造与名誉委托，用 Vite + React + TypeScript + Zustand 构建。
 
@@ -465,6 +465,17 @@ npm.cmd run validate:style
 - `npm run validate:style` 校验课程表与 `STYLE.md` 是否一致；`prebuild` 自动执行
 - `AGENTS.md` 增加指向 `STYLE.md` 的说明
 
+### 用餐时段与事件时间窗（v2.26.13）
+
+- `MEAL_WINDOWS` 改为 `as const`，`MealName` 从中派生，`currentMeal` 返回 `MealName | null`
+- `MealName`（早餐 / 午餐 / 晚餐）与 `MealKey`（breakfast / lunch / dinner）保持分离
+- `GameEvent` 新增 `mealWindows?: MealName[]`；与 `timeRanges` 二选一
+- 「打翻的粥」改为 `mealWindows: ['早餐', '晚餐']`，不再手写 06:00–09:00 / 17:30–20:00
+- 米娅两个食堂事件改为 `mealWindows: ['午餐']`
+- 「米娅占座」补 `requires: { npc: 'mia' }`；假期她不在学院食堂时不再触发
+- 调试事件列表显示「用餐时段：早餐 / 晚餐」
+- 内容校验增加：用餐时段必须存在、不能重复、不能与 `timeRanges` 并存
+
 - 野外战斗界面标题为「森林 · 遭遇」，失败或逃跑后留在森林
 - 敌人详细数值见项目根目录《敌人数据.md》
 - 原地休息：体力低于 20 时出现，30 分钟恢复 5 点体力，回到 20 后消失
@@ -621,6 +632,8 @@ npm.cmd run validate:style
 - 森林低概率随机刷出灰狼首领 / 野猪王（待战斗版本）
 - 更多高级知识书与更高的学识门槛
 - 更多假期活动与假期补课
+- 假期学院食堂事件：米娅不在场时「米娅占座」不触发，另写一条假期专用事件
+- STYLE.md 后半本：四段双读、翻转表、冬版五条、句式库、近似组、素材表、暮节规则、量化有界、光感词表、压缩构式、锚句
 - 教会内容补充与圣祷仪式细节定稿
 - 墓园与城外更多行动
 - 唱诗班、夜间钟声、神圣系成长途径

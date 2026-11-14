@@ -109,13 +109,19 @@ export function ritePhaseDone(
   return rite.phases.includes(key)
 }
 
-export const MEAL_WINDOWS: Array<[number, number, string]> = [
+export const MEAL_WINDOWS = [
   [6 * 60, 8 * 60, '早餐'],
   [11 * 60, 13 * 60, '午餐'],
   [17 * 60, 19 * 60, '晚餐'],
-]
+] as const
 
-export function currentMeal(minutes: number): string | null {
+/** 用餐时段的中文名，用于界面与 mealWindows。 */
+export type MealName = (typeof MEAL_WINDOWS)[number][2]
+
+/** 存档与效果里的英文键，和 MealName 分开。 */
+export type MealKey = 'breakfast' | 'lunch' | 'dinner'
+
+export function currentMeal(minutes: number): MealName | null {
   for (const [start, end, name] of MEAL_WINDOWS) {
     if (minutes >= start && minutes < end) return name
   }
@@ -134,13 +140,10 @@ export function mealWindowHint(minutes: number): string {
   return `现在不是用餐时间。${windows}。`
 }
 
-export type MealKey = 'breakfast' | 'lunch' | 'dinner'
-
-export function mealKeyFor(meal: string): MealKey | null {
+export function mealKeyFor(meal: MealName): MealKey {
   if (meal === '早餐') return 'breakfast'
   if (meal === '午餐') return 'lunch'
-  if (meal === '晚餐') return 'dinner'
-  return null
+  return 'dinner'
 }
 
 export type DrinkDef = {
