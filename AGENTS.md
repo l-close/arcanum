@@ -5,6 +5,7 @@
 - 文字驱动的沙盒生活模拟 RPG。
 - 技术栈：React 18 + TypeScript + Zustand + Vite，PWA + Capacitor。
 - 游戏内容在 `web/src/game/content/`，按领域拆分；`text*.ts` 是纯文本表。
+- 文本规范见 `STYLE.md`。
 
 ## 构建与校验
 
@@ -17,13 +18,13 @@ npm.cmd run build
 npm.cmd run validate:content
 ```
 
-`npm.cmd run build` 会先自动运行 `prebuild`，也就是内容校验。
+`npm.cmd run build` 会先自动运行 `prebuild`，也就是内容校验与文本规范校验。
 
 ## 内容改动规范
 
 任何修改 `web/src/game/content/` 下文件的任务，完成后必须：
 
-1. 运行 `npm.cmd run validate:content`
+1. 运行 `npm.cmd run validate:content` 与 `npm.cmd run validate:style`
 2. 把完整输出贴给用户
 3. 有 `error` 时不得宣称完成；先修复或明确报告
 

@@ -1,14 +1,16 @@
 {
   "name": "arcanum",
   "private": true,
-  "version": "2.26.11",
+  "version": "2.26.12",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "npm run validate:content",
+    "prebuild": "npm run validate:content && npm run validate:style",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "validate:content": "node scripts/validate-content.mjs"
+    "validate:content": "node scripts/validate-content.mjs",
+    "sync:style": "node scripts/sync-style-course-words.mjs",
+    "validate:style": "node scripts/validate-style.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.0",

@@ -6,6 +6,7 @@ import {
   COMMISSION_BOARD_SIZE,
   COMBAT_BUFF_LABEL,
   CONSTELLATIONS,
+  COURSE_IDS,
   COURSES,
   CRAFT_RECIPES,
   ENEMIES,
@@ -68,6 +69,16 @@ export function validateContent(): ContentIssue[] {
   checkUnique('items', Object.keys(ITEMS))
   checkUnique('npcs', NPCS.map((n) => n.id))
   checkUnique('courses', COURSES.map((c) => c.id))
+  for (const id of COURSE_IDS) {
+    if (!COURSES.some((course) => course.id === id)) {
+      error('courses', `COURSE_IDS 中的 ${id} 不在课程表`)
+    }
+  }
+  for (const course of COURSES) {
+    if (!COURSE_IDS.includes(course.id)) {
+      error('courses', `${course.id}: 不在 COURSE_IDS 中`)
+    }
+  }
   checkUnique('recipes', RECIPES.map((r) => r.id))
   checkUnique('events', EVENTS.map((e) => e.id))
   checkUnique('story', STORY.map((s) => s.id))

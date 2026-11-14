@@ -1,4 +1,5 @@
 import { SKILL_LABEL, npcById, npcLocationAt, weekday } from './content'
+import type { CourseId } from './content'
 import type { GameData, SkillKey } from './types'
 
 export const EVENT_DAILY_CAP = 3
@@ -10,8 +11,12 @@ export type EventTrigger =
   | { type: 'enter' }
   | {
       type: 'after'
-      action: 'class' | 'study' | 'practice' | 'work' | 'pray' | 'eat' | 'backyard'
-      subject?: string
+      action: 'class'
+      courseId: CourseId
+    }
+  | {
+      type: 'after'
+      action: 'study' | 'practice' | 'work' | 'pray' | 'eat' | 'backyard'
     }
 
 export type EventEffects = {
@@ -277,7 +282,7 @@ export const EVENTS: GameEvent[] = [
   {
     id: 'lecture_alvin_notes',
     title: '阿尔文的批注',
-    trigger: { type: 'after', action: 'class', subject: '法术导论' },
+    trigger: { type: 'after', action: 'class', courseId: 'y1_nature' },
     locations: ['lecture'],
     days: 'workday',
     expCapTier: 2,
@@ -301,7 +306,7 @@ export const EVENTS: GameEvent[] = [
   {
     id: 'lecture_elena_question',
     title: '伊莲娜的提问',
-    trigger: { type: 'after', action: 'class', subject: '古典文学' },
+    trigger: { type: 'after', action: 'class', courseId: 'y1_literature' },
     locations: ['lecture'],
     days: 'workday',
     expCapTier: 2,
@@ -329,12 +334,12 @@ export const EVENTS: GameEvent[] = [
   {
     id: 'yard_gregory_extra',
     title: '格里高利的加练',
-    trigger: { type: 'after', action: 'class', subject: '体术课' },
+    trigger: { type: 'after', action: 'class', courseId: 'y1_physical' },
     locations: ['yard'],
     days: 'workday',
     expCapTier: 2,
     text: [
-      '体术课结束，其他人陆续离开。格里高利把木桩摆回原位，看了你一眼：“刚才那个动作，要再来一组吗？”',
+      '武艺课结束，其他人陆续离开。格里高利把木桩摆回原位，看了你一眼：“刚才那个动作，要再来一组吗？”',
     ],
     choices: [
       {
@@ -776,7 +781,9 @@ export function eventMatches(event: GameEvent, data: GameData, trigger: EventTri
   if (event.trigger.type !== trigger.type) return false
   if (event.trigger.type === 'after' && trigger.type === 'after') {
     if (event.trigger.action !== trigger.action) return false
-    if (event.trigger.subject && event.trigger.subject !== trigger.subject) return false
+    if (event.trigger.action === 'class' && trigger.action === 'class') {
+      if (event.trigger.courseId !== trigger.courseId) return false
+    }
   }
   if (!event.locations.includes(data.location)) return false
 

@@ -1468,7 +1468,7 @@ function Actions({
           classActions
         ) : (
           <>
-            <div className="hint">现在没有体术课。</div>
+            <div className="hint">现在没有武艺课。</div>
             <ActionBtn onClick={() => setModal('practice')} label="练习" cost="0.5 小时 · 体力 -5" />
             <ActionBtn onClick={() => setModal('battleSelect')} label="切磋" cost="木桩 / 练习人偶" />
             {canWaitToClass && (
@@ -2157,7 +2157,7 @@ function PracticeModal() {
     <ModalShell title="练习" onClose={() => close(null)}>
       <p className="muted">
         {location === 'backyard'
-          ? '后院只能自行练习，不计入体术课程掌握度。'
+          ? '后院只能自行练习，不计入武艺课程掌握度。'
           : '选择一项，花 0.5 小时，体力 -4。'}
       </p>
       <div className="btn-grid">
@@ -4583,7 +4583,11 @@ function EventPickerModal() {
       backyard: '帮后院结束',
     }
     const base = labels[event.trigger.action] ?? '行动结束'
-    return event.trigger.subject ? `${base} · ${event.trigger.subject}` : base
+    if (event.trigger.type === 'after' && event.trigger.action === 'class') {
+      const course = courseById(event.trigger.courseId)
+      return `${base} · ${course?.name ?? event.trigger.courseId}`
+    }
+    return base
   }
 
   const groups = LOCATIONS.map((loc) => ({

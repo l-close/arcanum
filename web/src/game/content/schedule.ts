@@ -6,8 +6,20 @@ import { HOLIDAY_DAYS, MAX_YEAR, SEMESTER_DAYS, YEAR_DAYS, absoluteMinutes, curr
 import { isConstructionWeek } from './world'
 import { CLASS_SCENES } from './textClassScenes'
 
+export const COURSE_IDS = [
+  'y1_literature',
+  'y1_nature',
+  'y1_physical',
+  'y2_history',
+  'y2_advanced_nature',
+  'y2_sword',
+  'y2_course_4',
+] as const
+
+export type CourseId = (typeof COURSE_IDS)[number]
+
 export type CourseDef = {
-  id: string
+  id: CourseId
   year: number
   name: string
   skill: SkillKey
@@ -16,7 +28,7 @@ export type CourseDef = {
   start: number
   end: number
   teacher: string
-  /** 每 30 分钟的技能经验；体术课默认 0.5，其他课默认 1。 */
+  /** 每 30 分钟的技能经验；武艺课默认 0.5，其他课默认 1。 */
   expPerSegment?: number
   /** 考试地点；不填则跟随当天的上课地点 */
   examLocation?: string
@@ -24,7 +36,7 @@ export type CourseDef = {
   locationByWeekday?: string[]
   /** 按星期指定上课技能，索引 0 = 周一 */
   skillByWeekday?: SkillKey[]
-  /** 体术类课程在格斗与剑术之间轮换 */
+  /** 武艺类课程在格斗与剑术之间轮换 */
   rotate?: boolean
   /** 按整周轮换，而不是按天轮换 */
   rotateWeekly?: boolean
@@ -58,7 +70,7 @@ export const COURSES: CourseDef[] = [
   {
     id: 'y1_physical',
     year: 1,
-    name: '体术课',
+    name: '武艺课',
     skill: 'brawl',
     kind: 'physical',
     location: 'yard',
@@ -121,6 +133,9 @@ export const COURSES: CourseDef[] = [
     expPerSegment: 2,
   },
 ]
+
+/** 课程词表：从课程表生成，供文本规范与校验使用。 */
+export const COURSE_WORDS = Array.from(new Set(COURSES.map((course) => course.name)))
 
 export const EXAM_DAYS_YEAR1 = [25, 53, 81, 137, 165, 193]
 
@@ -234,7 +249,7 @@ export function nextExamThreshold(day: number, minutes: number): number | null {
 }
 
 export type ClassSlot = {
-  courseId: string
+  courseId: CourseId
   subject: string
   start: number
   end: number
@@ -260,7 +275,7 @@ export type ClassSegment = {
   label: string
   skill: SkillKey
   extraSkill?: SkillKey
-  courseId: string
+  courseId: CourseId
   start: number
   end: number
   segmentStart: number
@@ -357,7 +372,7 @@ export type LecturePreviewPlan =
       minutes: number
       subject: string
       skill: SkillKey
-      courseId: string
+      courseId: CourseId
     }
   | { ok: false; reason: string }
 

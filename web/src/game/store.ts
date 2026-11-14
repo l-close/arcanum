@@ -3309,7 +3309,7 @@ export const useGame = create<Store>((set, get) => {
           return '只剩几分钟，你没有听进去。'
         })
         if (classEnded) {
-          maybeEvent({ type: 'after', action: 'class', subject: segment.subject })
+          maybeEvent({ type: 'after', action: 'class', courseId: segment.courseId })
         }
         return
       }
@@ -3351,7 +3351,7 @@ export const useGame = create<Store>((set, get) => {
         return text
       })
       if (classEnded) {
-        maybeEvent({ type: 'after', action: 'class', subject: segment.subject })
+        maybeEvent({ type: 'after', action: 'class', courseId: segment.courseId })
       }
     },
 
@@ -3370,7 +3370,7 @@ export const useGame = create<Store>((set, get) => {
         return remaining >= 15 ? '你趴在桌上摸了一会儿鱼。' : '你坐着等下课。'
       })
       if (classEnded) {
-        maybeEvent({ type: 'after', action: 'class', subject: segment.subject })
+        maybeEvent({ type: 'after', action: 'class', courseId: segment.courseId })
       }
     },
 
