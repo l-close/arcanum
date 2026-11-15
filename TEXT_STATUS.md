@@ -51,7 +51,7 @@
 - 素材表已有：`town`、`commercial`、`yard`、`gate`、`academy`、`backyard`、`bellTower`、`academyStreet`、`orphanStreet`、`churchStreet`。
 - `yard`、`gate`、`town` 整体锁定。
 - `academyStreet`、`orphanStreet`、`churchStreet`、`academy`、`commercial` 季节已锁、天气未开始。
-- 其余 6 行全部 `未开始`。
+- 其余 4 行全部 `未开始`。
 - `已锁` 不等于整体锁定：`季节` 与 `天气` 都 `已锁`、两层自检都 `通过`，才算整体锁定。
 - 已知弱配（复核时优先）：`yard` 冬·阴（4 数量，写成了程度）、`yard` 冬·雪（11 位置，写成了对比）、`bellTower` 夏·多云（`是湿的`，为避开 `还潮`／`发潮` 二元组连续换词三次，句子已被稀释）。
 - baseline 静音项（写该地点时自行核分布）：`gate` 门洞、`town` 喷泉。
