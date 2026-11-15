@@ -76,10 +76,10 @@ export const BANNED_CATEGORIES: BannedCategory[] = [
 ]
 
 /**
- * 先于禁词匹配替换掉的名词。
+ * 先于禁词匹配替换掉的词。
  * 只放不依赖可见性、也不会和禁词撞义的词；`热气` 不在其中。
  */
-export const ALLOWED_NOUNS = ['热食', '热水']
+export const ALLOWED_NOUNS = ['热食', '热水', '背阴', '阴影', '阴凉', '阴面']
 
 /** 行首禁用；两层都查。 */
 export const BANNED_LINE_START = ['风', '天色', '阳光', '日头']
