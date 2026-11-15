@@ -16,8 +16,8 @@ export type MaterialTable = {
   objects: string[]
   sounds: string[]
   traces: string[]
-  /** 只参与命中检查的简称，必须是某个通用 token 的子串。 */
-  aliases?: string[]
+  /** 只参与命中检查的简称，映射到宿主通用 token（计数记到宿主头上）。 */
+  aliases?: Record<string, string>
   /** 只在该季成立的词；与通用列互斥。同一个词可登记在多季。 */
   seasonal?: Partial<Record<Season, string[]>>
   npc: NpcPresence
@@ -61,7 +61,7 @@ export function hitTokens(table: MaterialTable, season: Season): string[] {
     ...new Set([
       ...generalTokens(table),
       ...splitTerms(seasonal),
-      ...(table.aliases ?? []),
+      ...Object.keys(table.aliases ?? {}),
     ]),
   ]
 }
@@ -114,7 +114,7 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     ],
     sounds: ['木桩', '木剑', '水桶', '扫帚'],
     traces: ['脚印', '扫过的土', '木剑扔回架', '桶倒扣', '麻绳结', '撞歪的桩', '踩出来的窄路'],
-    aliases: ['桩', '剑', '桶', '绳', '架'],
+    aliases: { 桩: '木桩', 剑: '木剑', 桶: '水桶', 绳: '麻绳', 架: '剑架' },
     seasonal: {
       spring: ['露水'],
       autumn: ['落叶'],
@@ -123,6 +123,7 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     npc: 'future',
     npcNote: '格里高利上课时在场',
   },
+  // 城门。新增（本批补）：甲架。
   gate: {
     objects: [
       '两扇木门',
@@ -138,12 +139,14 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
       '门轴',
       '换下来的旧门板',
       '班次木牌',
+      '甲架',
     ],
     sounds: ['门轴', '甲片', '门缝'],
     traces: ['车辙', '蹄印', '门洞里踩出的圆痕', '石阶磨出的凹面', '门轴下的油迹'],
-    aliases: ['门', '墙', '甲', '阶'],
+    aliases: { 门: '两扇木门', 墙: '石墙', 甲: '盔甲', 阶: '石阶' },
     seasonal: {
       spring: ['运菜的车'],
+      winter: ['雪'],
     },
     npc: 'future',
     npcNote: '守门骑士，常驻未具名',
@@ -172,7 +175,7 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     ],
     sounds: ['鸽子', '喷泉'],
     traces: ['车辙', '脚印', '鸽食', '告示叠贴', '摊位绳结', '花瓣', '井沿磨出的凹口'],
-    aliases: ['井', '泉', '灯', '鸽', '棚'],
+    aliases: { 井: '封了的井', 泉: '旧喷泉', 灯: '街灯', 鸽: '鸽子', 棚: '摊棚' },
     seasonal: {
       spring: ['花摊', '池水'],
       summer: ['池水'],
@@ -196,7 +199,7 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     ],
     sounds: ['门板', '招牌', '遮棚'],
     traces: ['车辙', '烂菜叶', '绳结', '门板靠墙', '遮棚上的补丁', '摊位压出的地痕'],
-    aliases: ['摊', '棚', '牌', '板'],
+    aliases: { 摊: '货摊', 棚: '遮棚', 牌: '招牌', 板: '门板' },
     seasonal: {
       spring: ['卖花的摊'],
       winter: ['厚布', '薄布'],
@@ -302,7 +305,7 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
  * 校验器只扫表，不再看 drafts。
  */
 export const LOCKED: { season: string[]; weather: string[] } = {
-  season: ['yard'],
+  season: ['yard', 'gate'],
   weather: ['yard'],
 }
 

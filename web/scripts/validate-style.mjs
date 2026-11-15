@@ -342,13 +342,15 @@ function checkMaterialTables(sceneMaterials) {
       }
     }
 
-    for (const alias of table.aliases ?? []) {
+    for (const [alias, host] of Object.entries(table.aliases ?? {})) {
       if (!alias || /\s/.test(alias)) {
         err('material', `${id}: alias 为空或含空白`)
         continue
       }
-      if (![...general].some((term) => term.includes(alias))) {
-        err('material', `${id}: alias「${alias}」不是通用 token 的子串`)
+      if (!general.has(host)) {
+        err('material', `${id}: alias「${alias}」的宿主「${host}」不是通用 token`)
+      } else if (!host.includes(alias)) {
+        err('material', `${id}: alias「${alias}」不是宿主「${host}」的子串`)
       }
     }
   }
@@ -384,13 +386,39 @@ function checkMaterialCap(scan, styleRules, sceneMaterials) {
   for (const [location, cells] of groups) {
     const table = sceneMaterials.MATERIALS[location]
     if (!table) continue
-    const terms = new Set([
-      ...sceneMaterials.generalTokens(table),
-      ...sceneMaterials.seasonalTokens(table).keys(),
-    ])
+    const aliases = table.aliases ?? {}
+    const hostAliases = new Map()
+    for (const [alias, host] of Object.entries(aliases)) {
+      if (!hostAliases.has(host)) hostAliases.set(host, [])
+      hostAliases.get(host).push(alias)
+    }
+    const realTokens = [
+      ...new Set([
+        ...sceneMaterials.generalTokens(table),
+        ...sceneMaterials.seasonalTokens(table).keys(),
+      ]),
+    ].sort((a, b) => b.length - a.length)
+
+    // 先剔除真正的 token，剩下的才允许 alias 命中——避免「门」把「门洞／门轴」算到「两扇木门」头上。
+    const matchedCells = cells.map((cell) => {
+      let residual = cell.text
+      const matched = new Set()
+      for (const term of realTokens) {
+        if (!residual.includes(term)) continue
+        matched.add(term)
+        residual = residual.split(term).join('\u0000')
+      }
+      return { matched, residual }
+    })
+
     const counts = []
-    for (const term of terms) {
-      const count = cells.filter((cell) => cell.text.includes(term)).length
+    for (const term of realTokens) {
+      const names = hostAliases.get(term) ?? []
+      let count = 0
+      for (const cell of matchedCells) {
+        if (cell.matched.has(term)) count += 1
+        else if (names.some((alias) => cell.residual.includes(alias))) count += 1
+      }
       if (count > 1) counts.push([term, count])
     }
     if (counts.length === 0) continue
@@ -435,7 +463,7 @@ function checkBigrams(scan, sceneMaterials) {
       ? [
           ...sceneMaterials.generalTokens(table),
           ...sceneMaterials.seasonalTokens(table).keys(),
-          ...(table.aliases ?? []),
+          ...Object.keys(table.aliases ?? {}),
         ].sort((a, b) => b.length - a.length)
       : []
     let clean = cell.text
