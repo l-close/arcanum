@@ -215,7 +215,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
       sunny: '黄土表面结了一层干壳。',
       cloudy: '黄土踩上去，一半有响，一半没声。',
       overcast: '只有背阴那面的木桩还潮。',
-      rain: '水没到剑架最下面那格。',
+      rain: '水淹到剑架最下面那格。',
     },
     summer: {
       sunny: '脚印只留下半圈，边上翘起。',

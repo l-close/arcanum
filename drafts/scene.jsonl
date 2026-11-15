@@ -58,7 +58,7 @@
 {"location":"yard","layer":"weather","season":0,"slot":2,"syntaxId":7,"candidate":3,"skeleton":"数量","text":"只有靠墙的三根桩底下还留着脚印。","selected":false}
 {"location":"yard","layer":"weather","season":0,"slot":3,"syntaxId":16,"candidate":1,"skeleton":"水位","text":"水积到第二根桩的桩脚。","selected":false}
 {"location":"yard","layer":"weather","season":0,"slot":3,"syntaxId":16,"candidate":2,"skeleton":"滴落","text":"桩顶的水滴到第三根桩的坑里。","selected":false}
-{"location":"yard","layer":"weather","season":0,"slot":3,"syntaxId":16,"candidate":3,"skeleton":"界限","text":"水没到剑架最下面那格。","selected":true}
+{"location":"yard","layer":"weather","season":0,"slot":3,"syntaxId":16,"candidate":3,"skeleton":"界限","text":"水淹到剑架最下面那格。","selected":true}
 {"location":"yard","layer":"weather","season":1,"slot":0,"syntaxId":2,"candidate":1,"skeleton":"名词","text":"脚印只留下半圈，边上翘起。","selected":true}
 {"location":"yard","layer":"weather","season":1,"slot":0,"syntaxId":2,"candidate":2,"skeleton":"数量","text":"桩脚下一圈泥印，中间干了。","selected":false}
 {"location":"yard","layer":"weather","season":1,"slot":0,"syntaxId":2,"candidate":3,"skeleton":"方位","text":"剑架底下扫过，土痕断了半截。","selected":false}
