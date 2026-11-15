@@ -74,7 +74,15 @@ for (const patch of patches) {
     usage(`${where}: slot 必须是 0–3`)
   }
   if (![1, 2, 3].includes(patch.candidate)) usage(`${where}: candidate 必须是 1–3`)
-  if (typeof patch.text !== 'string' || !patch.text.trim()) usage(`${where}: text 为空`)
+  if (patch.selected !== undefined && typeof patch.selected !== 'boolean') {
+    usage(`${where}: selected 必须是布尔值`)
+  }
+  if (patch.text === undefined && patch.selected === undefined) {
+    usage(`${where}: text 与 selected 至少要有一项`)
+  }
+  if (patch.text !== undefined && (typeof patch.text !== 'string' || !patch.text.trim())) {
+    usage(`${where}: text 为空`)
+  }
 
   const row = matrix[patch.location]
   const expectedSyntax = row?.[patch.season * 4 + patch.slot]
@@ -119,7 +127,10 @@ if (total !== expect) usage(`命中 ${total} 条，--expect 是 ${expect}`)
 
 const updates = new Map()
 for (const patch of patches) {
-  updates.set(draftIndex.get(keyOf(patch))[0], patch.text)
+  updates.set(draftIndex.get(keyOf(patch))[0], {
+    text: patch.text,
+    selected: patch.selected,
+  })
 }
 
 console.log(`patch: ${patches.length} 条命中，layer=${layer}，写入 ${dry ? '否（dry）' : '是'}`)
@@ -129,7 +140,9 @@ if (!dry) {
     .map((line, index) => {
       if (!updates.has(index)) return line
       const parsed = JSON.parse(line)
-      parsed.text = updates.get(index)
+      const patch = updates.get(index)
+      if (patch.text !== undefined) parsed.text = patch.text
+      if (patch.selected !== undefined) parsed.selected = patch.selected
       return JSON.stringify(parsed)
     })
     .join('\n')

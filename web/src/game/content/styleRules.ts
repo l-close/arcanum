@@ -142,6 +142,13 @@ export const ANCHOR_BASELINE = [
   'season/town:喷泉', // 广场以泉为中心
 ]
 
+/**
+ * 二元组统计前过滤的功能字：含任一字符的二元组不计入 warning。
+ * 被压下的仍会打印到 INFO [bigram:suppressed]，避免“过滤后就看不见”。
+ * 已知损失：底下／边上 这类方位词重复属于习惯，但太常见，接受噪声压制。
+ */
+export const BIGRAM_STOP_CHARS = '的得地了着过那这还只是在有上下里底边中去来和也都'
+
 /** 每层每地点的格数：4 季 × 4 段（天气层是 4 季 × 4 天气）。 */
 export const CELLS_PER_LAYER = 16
 

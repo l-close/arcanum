@@ -171,7 +171,7 @@
 {"location":"gate","layer":"weather","season":2,"slot":0,"syntaxId":12,"candidate":2,"skeleton":"水线","text":"门洞里的水只剩门缝那一条。","selected":false}
 {"location":"gate","layer":"weather","season":2,"slot":0,"syntaxId":12,"candidate":3,"skeleton":"干泥","text":"车辙里剩一圈干泥。","selected":true}
 {"location":"gate","layer":"weather","season":2,"slot":1,"syntaxId":4,"candidate":1,"skeleton":"两处","text":"门洞里还潮的地方只剩两处。","selected":false}
-{"location":"gate","layer":"weather","season":2,"slot":1,"syntaxId":4,"candidate":2,"skeleton":"三处","text":"石阶上有三处没干。","selected":true}
+{"location":"gate","layer":"weather","season":2,"slot":1,"syntaxId":4,"candidate":2,"skeleton":"三处","text":"石阶上有三处还潮。","selected":true}
 {"location":"gate","layer":"weather","season":2,"slot":1,"syntaxId":4,"candidate":3,"skeleton":"两段","text":"车辙里两段还湿。","selected":false}
 {"location":"gate","layer":"weather","season":2,"slot":2,"syntaxId":6,"candidate":1,"skeleton":"内外","text":"门洞里是湿的，门洞外是干的。","selected":false}
 {"location":"gate","layer":"weather","season":2,"slot":2,"syntaxId":6,"candidate":2,"skeleton":"两半","text":"石阶上干湿分在两半。","selected":false}
@@ -185,9 +185,9 @@
 {"location":"gate","layer":"weather","season":3,"slot":1,"syntaxId":9,"candidate":1,"skeleton":"内外","text":"门洞冻住了，石阶还是松的。","selected":false}
 {"location":"gate","layer":"weather","season":3,"slot":1,"syntaxId":9,"candidate":2,"skeleton":"外沿","text":"石墙外沿冻硬，靠里还是软的。","selected":false}
 {"location":"gate","layer":"weather","season":3,"slot":1,"syntaxId":9,"candidate":3,"skeleton":"辙底","text":"车辙冻上了，辙底还软。","selected":true}
-{"location":"gate","layer":"weather","season":3,"slot":2,"syntaxId":10,"candidate":1,"skeleton":"一指","text":"石阶只冻住一指深。","selected":true}
+{"location":"gate","layer":"weather","season":3,"slot":2,"syntaxId":10,"candidate":1,"skeleton":"一指","text":"石阶只冻住一指深。","selected":false}
 {"location":"gate","layer":"weather","season":3,"slot":2,"syntaxId":10,"candidate":2,"skeleton":"脚踝","text":"门洞里的冻土只到脚踝。","selected":false}
-{"location":"gate","layer":"weather","season":3,"slot":2,"syntaxId":10,"candidate":3,"skeleton":"薄层","text":"石墙冻了薄薄一层。","selected":false}
+{"location":"gate","layer":"weather","season":3,"slot":2,"syntaxId":10,"candidate":3,"skeleton":"薄层","text":"石墙冻了薄薄一层。","selected":true}
 {"location":"gate","layer":"weather","season":3,"slot":3,"syntaxId":14,"candidate":1,"skeleton":"之间","text":"雪积在门洞和石阶之间。","selected":false}
 {"location":"gate","layer":"weather","season":3,"slot":3,"syntaxId":14,"candidate":2,"skeleton":"两侧","text":"门轴那侧雪薄，门缝这侧雪厚。","selected":false}
 {"location":"gate","layer":"weather","season":3,"slot":3,"syntaxId":14,"candidate":3,"skeleton":"墙根","text":"石墙根下的雪最厚。","selected":true}
@@ -287,7 +287,7 @@
 {"location":"commercial","layer":"season","season":3,"slot":3,"syntaxId":5,"candidate":1,"skeleton":"门板","text":"门板下沿被门槛磨得发毛。","selected":true}
 {"location":"commercial","layer":"season","season":3,"slot":3,"syntaxId":5,"candidate":2,"skeleton":"绳结","text":"遮棚的绳子换过几回，横杆上全是结痕。","selected":false}
 {"location":"commercial","layer":"season","season":3,"slot":3,"syntaxId":5,"candidate":3,"skeleton":"筐底","text":"筐底磨穿过两次，补过。","selected":false}
-{"location":"town","layer":"weather","season":0,"slot":0,"syntaxId":11,"candidate":1,"skeleton":"池沿","text":"喷泉池沿那一圈是干的。","selected":true}
+{"location":"town","layer":"weather","season":0,"slot":0,"syntaxId":11,"candidate":1,"skeleton":"池沿","text":"喷泉池沿是干的。","selected":true}
 {"location":"town","layer":"weather","season":0,"slot":0,"syntaxId":11,"candidate":2,"skeleton":"井盖","text":"井盖边上是干的，缝里也干透了。","selected":false}
 {"location":"town","layer":"weather","season":0,"slot":0,"syntaxId":11,"candidate":3,"skeleton":"灯座","text":"街灯座底下的石板是干的。","selected":false}
 {"location":"town","layer":"weather","season":0,"slot":1,"syntaxId":12,"candidate":1,"skeleton":"湿印","text":"井沿留着一圈湿印，旁边干了。","selected":false}
@@ -300,9 +300,9 @@
 {"location":"town","layer":"weather","season":0,"slot":3,"syntaxId":10,"candidate":2,"skeleton":"半指","text":"井盖凹下去的地方积了半指深的水。","selected":true}
 {"location":"town","layer":"weather","season":0,"slot":3,"syntaxId":10,"candidate":3,"skeleton":"鞋底","text":"石板路上的水只到鞋底边。","selected":false}
 {"location":"town","layer":"weather","season":1,"slot":0,"syntaxId":7,"candidate":1,"skeleton":"池沿","text":"只有喷泉池沿那圈还是潮的。","selected":false}
-{"location":"town","layer":"weather","season":1,"slot":0,"syntaxId":7,"candidate":2,"skeleton":"井盖","text":"只有井盖底下没干。","selected":true}
+{"location":"town","layer":"weather","season":1,"slot":0,"syntaxId":7,"candidate":2,"skeleton":"井盖","text":"只有井盖下沿还是湿的。","selected":true}
 {"location":"town","layer":"weather","season":1,"slot":0,"syntaxId":7,"candidate":3,"skeleton":"石缝","text":"只有石板路的缝里还留着湿。","selected":false}
-{"location":"town","layer":"weather","season":1,"slot":1,"syntaxId":8,"candidate":1,"skeleton":"溅水","text":"喷泉溅出来的水落在池沿上，那一片没干。","selected":true}
+{"location":"town","layer":"weather","season":1,"slot":1,"syntaxId":8,"candidate":1,"skeleton":"溅水","text":"喷泉溅出来的水落在池沿上，那一片聚着水。","selected":true}
 {"location":"town","layer":"weather","season":1,"slot":1,"syntaxId":8,"candidate":2,"skeleton":"井盖","text":"井盖盖得严，底下透不进风，还是潮的。","selected":false}
 {"location":"town","layer":"weather","season":1,"slot":1,"syntaxId":8,"candidate":3,"skeleton":"墙挡","text":"石板路两边被墙挡住，那边没干。","selected":false}
 {"location":"town","layer":"weather","season":1,"slot":2,"syntaxId":15,"candidate":1,"skeleton":"石板","text":"石板路上踩过去发黏。","selected":true}

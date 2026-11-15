@@ -4,14 +4,14 @@ import type { SeasonSceneTable } from '../types'
 export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
   town: {
     spring: {
-      sunny: '喷泉池沿那一圈是干的。',
+      sunny: '喷泉池沿是干的。',
       cloudy: '石板路上留着半干的车轮印。',
       overcast: '井沿外侧干了，靠里还是湿的。',
       rain: '井盖凹下去的地方积了半指深的水。',
     },
     summer: {
-      sunny: '只有井盖底下没干。',
-      cloudy: '喷泉溅出来的水落在池沿上，那一片没干。',
+      sunny: '只有井盖下沿还是湿的。',
+      cloudy: '喷泉溅出来的水落在池沿上，那一片聚着水。',
       overcast: '石板路上踩过去发黏。',
       rain: '石板路上的水到街灯座底下就断了。',
     },
@@ -303,14 +303,14 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     },
     autumn: {
       sunny: '车辙里剩一圈干泥。',
-      cloudy: '石阶上有三处没干。',
+      cloudy: '石阶上有三处还潮。',
       overcast: '门轴这侧潮，门缝那侧干。',
       rain: '石阶上踩过去发滑。',
     },
     winter: {
       sunny: '冻硬的地方从门洞到石阶。',
       cloudy: '车辙冻上了，辙底还软。',
-      overcast: '石阶只冻住一指深。',
+      overcast: '石墙冻了薄薄一层。',
       snow: '石墙根下的雪最厚。',
     },
   },

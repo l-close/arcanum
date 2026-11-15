@@ -290,7 +290,7 @@ async function checkSceneText(sceneMaterials, styleRules, schedule, data) {
   for (const scan of scans) {
     checkQuota(scan, styleRules)
     checkMaterialCap(scan, styleRules, sceneMaterials)
-    checkBigrams(scan, sceneMaterials)
+    checkBigrams(scan, sceneMaterials, styleRules)
     for (const cell of scan.cells) {
       if (!cell.text) continue
       const hit = findBanned(cell.text, scan.layer, styleRules, schedule)
@@ -486,7 +486,7 @@ function checkMaterialCap(scan, styleRules, sceneMaterials) {
   }
 }
 
-function checkBigrams(scan, sceneMaterials) {
+function checkBigrams(scan, sceneMaterials, styleRules) {
   const texts = scan.cells.filter((cell) => cell.text)
   if (texts.length < 8) return
   const counts = new Map()
@@ -512,10 +512,23 @@ function checkBigrams(scan, sceneMaterials) {
     }
   }
   const floor = Math.max(3, Math.ceil(0.05 * texts.length))
+  const stop = styleRules.BIGRAM_STOP_CHARS ?? ''
+  const suppressed = new Map()
   for (const [pair, count] of counts) {
-    if (count >= floor) {
-      warn('bigram', `${scan.layer}: 二元组「${pair}」出现 ${count} 次（共 ${texts.length} 句）`)
+    if (count < floor) continue
+    if ([...pair].some((char) => stop.includes(char))) {
+      suppressed.set(pair, count)
+      continue
     }
+    warn('bigram', `${scan.layer}: 二元组「${pair}」出现 ${count} 次（共 ${texts.length} 句）`)
+  }
+  if (suppressed.size > 0) {
+    const top = [...suppressed.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([pair, count]) => `${pair} ${count}`)
+      .join('，')
+    console.log(`INFO [bigram:suppressed] ${scan.layer}: ${top}`)
   }
 }
 
