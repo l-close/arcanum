@@ -60,3 +60,7 @@
 - `npm run sync:style`：从课程表生成课程词块，只替换标记区间。
 - `npm run validate:style`：比对课程表与 STYLE.md 课程词块。
 - `npm run build` 的 `prebuild` 会同时运行内容校验与文本规范校验。
+
+## 进度
+
+文本批次进度见 `TEXT_STATUS.md`。
