@@ -44,7 +44,7 @@ export const BANNED_CATEGORIES: BannedCategory[] = [
   {
     key: 'process',
     label: '进程',
-    words: ['正在', '已经', '刚', '还没', '停了', '化了', '退了', '散了', '从…起'],
+    words: ['正在', '已经', '刚', '停了', '化了', '退了', '散了', '从…起'],
   },
   {
     key: 'universalNegation',

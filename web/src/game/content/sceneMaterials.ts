@@ -237,10 +237,12 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
       '晾衣绳',
       '石阶',
       '屋檐',
+      '瓦',
       '孤儿院的屋顶',
       '尖顶',
       '柴火',
       '烟囱',
+      '衣服',
     ],
     sounds: ['晾衣绳', '屋檐'],
     traces: ['脚印', '水洼', '窗上的水汽'],
@@ -364,7 +366,7 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
  * 校验器只扫表，不再看 drafts。
  */
 export const LOCKED: { season: string[]; weather: string[] } = {
-  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet'],
+  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet'],
   weather: ['yard', 'gate', 'town'],
 }
 
