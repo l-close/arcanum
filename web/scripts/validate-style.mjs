@@ -276,6 +276,8 @@ async function checkStatus(sceneMaterials, locations, weather) {
 // ---------- 场景文本 ----------
 
 async function checkSceneText(sceneMaterials, styleRules, schedule, data) {
+  checkMaterialTables(sceneMaterials)
+
   const drafts = await loadDrafts()
   const scans = [
     buildScan('season', sceneMaterials, drafts, data.SEASON_DESC),
@@ -286,7 +288,8 @@ async function checkSceneText(sceneMaterials, styleRules, schedule, data) {
 
   for (const scan of scans) {
     checkQuota(scan, styleRules)
-    checkBigrams(scan)
+    checkMaterialCap(scan, styleRules, sceneMaterials)
+    checkBigrams(scan, sceneMaterials)
     for (const cell of scan.cells) {
       if (!cell.text) continue
       const hit = findBanned(cell.text, scan.layer, styleRules, schedule)
@@ -304,6 +307,119 @@ async function checkSceneText(sceneMaterials, styleRules, schedule, data) {
           `${scan.layer}/${cell.location}/${cell.label}: 句式号 ${cell.syntaxId}，矩阵要求 ${cell.expectedSyntax}`,
         )
       }
+      checkMaterialHit(cell, scan.layer, sceneMaterials)
+    }
+  }
+}
+
+// ---------- 素材表 ----------
+
+function checkMaterialTables(sceneMaterials) {
+  for (const [id, table] of Object.entries(sceneMaterials.MATERIALS)) {
+    const general = new Set(sceneMaterials.generalTokens(table))
+    const seasonal = sceneMaterials.seasonalTokens(table)
+
+    for (const term of seasonal.keys()) {
+      if (general.has(term)) {
+        err('material', `${id}: 「${term}」同时登记在通用列与 seasonal`)
+      }
+    }
+
+    for (const alias of table.aliases ?? []) {
+      if (!alias || /\s/.test(alias)) {
+        err('material', `${id}: alias 为空或含空白`)
+        continue
+      }
+      if (![...general].some((term) => term.includes(alias))) {
+        err('material', `${id}: alias「${alias}」不是通用 token 的子串`)
+      }
+    }
+  }
+}
+
+function checkMaterialHit(cell, layer, sceneMaterials) {
+  const table = sceneMaterials.MATERIALS[cell.location]
+  if (!table) {
+    err('material', `${layer}/${cell.location}: 已有文本但没有素材表`)
+    return
+  }
+  const hits = sceneMaterials.hitTokens(table, cell.season)
+  if (!hits.some((term) => cell.text.includes(term))) {
+    err('material', `${layer}/${cell.location}/${cell.label}: 未命中任何素材（物件／声音／痕迹／本季词）`)
+  }
+  const seasonal = sceneMaterials.seasonalTokens(table)
+  for (const [term, seasons] of seasonal) {
+    if (cell.text.includes(term) && !seasons.has(cell.season)) {
+      err(
+        'material',
+        `${layer}/${cell.location}/${cell.label}: 「${term}」只属于 ${[...seasons].join('/')}，出现在 ${cell.season}`,
+      )
+    }
+  }
+}
+
+function checkMaterialCap(scan, styleRules, sceneMaterials) {
+  const groups = new Map()
+  for (const cell of scan.cells) {
+    if (!groups.has(cell.location)) groups.set(cell.location, [])
+    groups.get(cell.location).push(cell)
+  }
+  for (const [location, cells] of groups) {
+    const table = sceneMaterials.MATERIALS[location]
+    if (!table) continue
+    const terms = new Set([
+      ...sceneMaterials.generalTokens(table),
+      ...sceneMaterials.seasonalTokens(table).keys(),
+    ])
+    const counts = []
+    for (const term of terms) {
+      const count = cells.filter((cell) => cell.text.includes(term)).length
+      if (count > 1) counts.push([term, count])
+    }
+    if (counts.length === 0) continue
+    counts.sort((a, b) => b[1] - a[1])
+
+    if (styleRules.MATERIAL_TERM_CAP === null) {
+      const top = counts.slice(0, 3).map(([term, count]) => `${term} ${count}`).join('，')
+      console.log(`INFO [material] ${scan.layer}/${location}: ${top}`)
+    } else if (counts[0][1] > styleRules.MATERIAL_TERM_CAP) {
+      warn(
+        'material',
+        `${scan.layer}/${location}: 「${counts[0][0]}」出现 ${counts[0][1]} 格，上限 ${styleRules.MATERIAL_TERM_CAP}`,
+      )
+    }
+  }
+}
+
+function checkBigrams(scan, sceneMaterials) {
+  const texts = scan.cells.filter((cell) => cell.text)
+  if (texts.length < 8) return
+  const counts = new Map()
+  for (const cell of texts) {
+    const table = sceneMaterials.MATERIALS[cell.location]
+    const terms = table
+      ? [
+          ...sceneMaterials.generalTokens(table),
+          ...sceneMaterials.seasonalTokens(table).keys(),
+          ...(table.aliases ?? []),
+        ].sort((a, b) => b.length - a.length)
+      : []
+    let clean = cell.text
+    for (const term of terms) clean = clean.split(term).join('\u0000')
+    const seen = new Set()
+    for (let i = 0; i < clean.length - 1; i += 1) {
+      const pair = clean.slice(i, i + 2)
+      if (pair.includes('\u0000')) continue
+      if (/[\s，。、；：！“”（）]/.test(pair)) continue
+      if (seen.has(pair)) continue
+      seen.add(pair)
+      counts.set(pair, (counts.get(pair) ?? 0) + 1)
+    }
+  }
+  const floor = Math.max(3, Math.ceil(0.05 * texts.length))
+  for (const [pair, count] of counts) {
+    if (count >= floor) {
+      warn('bigram', `${scan.layer}: 二元组「${pair}」出现 ${count} 次（共 ${texts.length} 句）`)
     }
   }
 }
@@ -327,7 +443,14 @@ function buildScan(layer, sceneMaterials, drafts, table) {
             err('scene', `${layer}/${location}/${label}: 已锁定但缺文本`)
             continue
           }
-          cells.push({ location, label, text, syntaxId: row[index], expectedSyntax: row[index] })
+          cells.push({
+            location,
+            label,
+            season: SEASONS[season],
+            text,
+            syntaxId: row[index],
+            expectedSyntax: row[index],
+          })
         }
       }
     } else {
@@ -337,6 +460,7 @@ function buildScan(layer, sceneMaterials, drafts, table) {
         cells.push({
           location,
           label: `${SEASONS[draft.season]}/${draft.slot}`,
+          season: SEASONS[draft.season],
           text: draft.text,
           syntaxId: draft.syntaxId,
           expectedSyntax: row[index],
@@ -374,28 +498,6 @@ function checkQuota(scan, styleRules) {
         'quota',
         `${scan.layer}/${location}: 压缩构式 ${compressed} 格，上限 ${styleRules.QUOTA.compressedMaxCells}`,
       )
-    }
-  }
-}
-
-function checkBigrams(scan) {
-  const texts = scan.cells.map((cell) => cell.text).filter(Boolean)
-  if (texts.length < 8) return
-  const counts = new Map()
-  for (const text of texts) {
-    const seen = new Set()
-    for (let i = 0; i < text.length - 1; i += 1) {
-      const pair = text.slice(i, i + 2)
-      if (/[\s，。、；：！“”（）]/.test(pair)) continue
-      if (seen.has(pair)) continue
-      seen.add(pair)
-      counts.set(pair, (counts.get(pair) ?? 0) + 1)
-    }
-  }
-  for (const [pair, count] of counts) {
-    if (count < 3) continue
-    if (count / texts.length > 0.05) {
-      warn('bigram', `${scan.layer}: 二元组「${pair}」出现 ${count} 次（共 ${texts.length} 句）`)
     }
   }
 }

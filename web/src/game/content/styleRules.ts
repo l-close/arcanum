@@ -97,6 +97,12 @@ export const QUOTA = {
 /** 压缩构式：X 压 X / X 叠 X / X 挨 X / X 套 X。 */
 export const COMPRESSED_PATTERN = /(.{2,4})(压|叠|挨|套)\1/
 
+/**
+ * 素材词在整个地点同一层里的出现格数上限。
+ * null = 校准中：只打印前三个高频词，不判定。跑满三个地点后填数字。
+ */
+export const MATERIAL_TERM_CAP: number | null = null
+
 /** 每层每地点的格数：4 季 × 4 段（天气层是 4 季 × 4 天气）。 */
 export const CELLS_PER_LAYER = 16
 

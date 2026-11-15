@@ -8,15 +8,64 @@
 //   天气层：春晴/春多云/春阴/春雨(雪) → 夏 → 秋 → 冬
 // 每行必须是 1–16 的置换，且同组不相邻、缺席不在晨。
 
+import type { Season } from '../types'
+
 export type NpcPresence = 'none' | 'has' | 'future'
 
 export type MaterialTable = {
   objects: string[]
   sounds: string[]
   traces: string[]
+  /** 只参与命中检查的简称，必须是某个通用 token 的子串。 */
+  aliases?: string[]
+  /** 只在该季成立的词；与通用列互斥。同一个词可登记在多季。 */
+  seasonal?: Partial<Record<Season, string[]>>
   npc: NpcPresence
   npcNote?: string
 }
+
+/** 按 、／括号拆分复合词条，去重。 */
+export function splitTerms(entries: string[]): string[] {
+  const out = new Set<string>()
+  for (const entry of entries) {
+    for (const part of entry.split(/[、／/（）()]/)) {
+      const term = part.trim()
+      if (term) out.add(term)
+    }
+  }
+  return [...out]
+}
+
+/** 通用 token：全季可用。 */
+export function generalTokens(table: MaterialTable): string[] {
+  return splitTerms([...table.objects, ...table.sounds, ...table.traces])
+}
+
+/** 季节 token → 允许的季节集合。 */
+export function seasonalTokens(table: MaterialTable): Map<string, Set<Season>> {
+  const map = new Map<string, Set<Season>>()
+  const seasons = Object.keys(table.seasonal ?? {}) as Season[]
+  for (const season of seasons) {
+    for (const term of splitTerms(table.seasonal?.[season] ?? [])) {
+      if (!map.has(term)) map.set(term, new Set())
+      map.get(term)!.add(season)
+    }
+  }
+  return map
+}
+
+/** 命中集合：通用 + 本季 + 简称。 */
+export function hitTokens(table: MaterialTable, season: Season): string[] {
+  const seasonal = table.seasonal?.[season] ?? []
+  return [
+    ...new Set([
+      ...generalTokens(table),
+      ...splitTerms(seasonal),
+      ...(table.aliases ?? []),
+    ]),
+  ]
+}
+
 
 /** 与 weather.ts 的 OUTDOOR 顺序一致。 */
 export const SCENE_LOCATIONS = [
@@ -44,24 +93,33 @@ export type SceneLocationId = (typeof SCENE_LOCATIONS)[number]
 
 /** 素材表按批次补齐；未建的地点不在此。 */
 export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
+  // 演武场。新增（无正文依据）：门口、墙根的草。
   yard: {
     objects: [
-      '木桩（桩顶／桩脚／桩身）',
+      '木桩',
+      '桩顶',
+      '桩脚',
+      '桩身',
       '旧刻痕',
       '黄土',
       '浮土',
-      '木剑架',
+      '剑架',
       '木剑',
       '水桶',
       '麻绳',
       '墙根',
       '墙根的草',
       '门口',
-      '换下来的旧桩',
-      '裂口缠过麻绳的桩',
+      '旧桩',
     ],
-    sounds: ['鞋底碾土', '木剑相击', '桶底磕地', '风穿过木桩', '扫帚扫地'],
+    sounds: ['木桩', '木剑', '水桶', '扫帚'],
     traces: ['脚印', '扫过的土', '木剑扔回架', '桶倒扣', '麻绳结', '撞歪的桩', '踩出来的窄路'],
+    aliases: ['桩', '剑', '桶', '绳', '草', '架'],
+    seasonal: {
+      spring: ['露水'],
+      autumn: ['落叶'],
+      winter: ['雪', '薄冰', '落叶'],
+    },
     npc: 'future',
     npcNote: '格里高利上课时在场',
   },
@@ -77,22 +135,33 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
       '盔甲',
       '肩甲',
       '披风',
-      '运菜的车',
       '门轴',
       '换下来的旧门板',
       '班次木牌',
     ],
-    sounds: ['门轴', '车轴', '甲片相碰', '脚步', '风从门缝', '马'],
+    sounds: ['门轴', '甲片', '门缝'],
     traces: ['车辙', '蹄印', '门洞里踩出的圆痕', '石阶磨出的凹面', '门轴下的油迹'],
+    aliases: ['门', '墙', '甲', '阶'],
+    seasonal: {
+      spring: ['运菜的车'],
+    },
     npc: 'future',
     npcNote: '守门骑士，常驻未具名',
   },
+  // 中央广场。封井是干的、有盖；喷泉是活的、有水声。两者不要在同一句里并列。
   town: {
     objects: [
-      '旧喷泉（池沿／池底／池水）',
-      '封了的井（石板／铁环／缝隙里的草）',
+      '旧喷泉',
+      '池沿',
+      '池底',
+      '封了的井',
+      '井盖',
+      '铁环',
+      '井沿',
       '石板路',
-      '街灯（灯座／旧灯罩）',
+      '街灯',
+      '灯座',
+      '旧灯罩',
       '告示板',
       '鸽子',
       '摊棚',
@@ -101,8 +170,14 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
       '街边旗子',
       '车辙',
     ],
-    sounds: ['鸽翅', '水声', '叫卖', '车轴', '脚步', '棚布'],
-    traces: ['车辙', '脚印', '鸽食', '告示叠贴', '摊位绳结', '花摊落下的花瓣', '井沿磨出的凹口'],
+    sounds: ['鸽子', '喷泉'],
+    traces: ['车辙', '脚印', '鸽食', '告示叠贴', '摊位绳结', '花瓣', '井沿磨出的凹口'],
+    aliases: ['井', '泉', '灯', '鸽', '棚'],
+    seasonal: {
+      spring: ['花摊', '池水'],
+      summer: ['池水'],
+      autumn: ['池水'],
+    },
     npc: 'none',
   },
   commercial: {
@@ -110,21 +185,22 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
       '招牌',
       '门板',
       '遮棚',
-      '布棚',
       '货摊',
       '屋檐',
       '绳索',
       '筐',
       '酒馆的灯',
       '车辙',
-      '卖花的摊',
       '热食摊',
       '换下来的旧招牌',
-      '厚布',
-      '薄布',
     ],
-    sounds: ['卸门板', '招牌碰墙', '叫卖', '雨打遮棚', '车轴', '脚步'],
+    sounds: ['门板', '招牌', '遮棚'],
     traces: ['车辙', '烂菜叶', '绳结', '门板靠墙', '遮棚上的补丁', '摊位压出的地痕'],
+    aliases: ['摊', '棚', '牌', '板'],
+    seasonal: {
+      spring: ['卖花的摊'],
+      winter: ['厚布', '薄布'],
+    },
     npc: 'has',
     npcNote: '米娅、卢卡，假日下午',
   },
@@ -164,7 +240,7 @@ export const SEASON_SHAPES: ShapeAnchor[] = [
   { id: 8, name: '变化方向', anchor: '桩身朝门口那一面磨得更狠。' },
   { id: 9, name: '归属', anchor: '木剑柄上刻名字，磨得只剩半个。' },
   { id: 10, name: '修补', anchor: '桩身裂口缠了麻绳，结打得很紧。' },
-  { id: 11, name: '废弃', anchor: '墙根堆几根换下来的旧桩，裂口里长草。' },
+  { id: 11, name: '废弃', anchor: '墙根码着几根换下来的旧桩。' },
   { id: 12, name: '边界', anchor: '场地的边界是一道踩出来的线，线外是草。' },
   { id: 13, name: '交接', anchor: '旧桩退墙根，新桩立原处。' },
   { id: 14, name: '缺席', anchor: '水桶不在，墙根一圈印子。' },
