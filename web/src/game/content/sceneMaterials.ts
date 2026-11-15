@@ -151,7 +151,8 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     npc: 'future',
     npcNote: '守门骑士，常驻未具名',
   },
-  // 中央广场。封井是干的、有盖；喷泉是活的、有水声。两者不要在同一句里并列。
+  // 中央广场：公共空间 + 过境，不是市场。集市是事件，不进通用素材。
+  // 冬季喷泉盖板，不写水声；池水仅春夏秋。广场的车只有“路过”一个状态。
   town: {
     objects: [
       '旧喷泉',
@@ -167,19 +168,21 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
       '旧灯罩',
       '告示板',
       '鸽子',
-      '摊棚',
-      '绳索',
+      '绳子',
       '店铺门板',
       '街边旗子',
-      '车辙',
+      '车',
+      '车轮',
+      '车斗',
     ],
     sounds: ['鸽子', '喷泉'],
-    traces: ['车辙', '脚印', '鸽食', '告示叠贴', '摊位绳结', '花瓣', '井沿磨出的凹口'],
-    aliases: { 井: '封了的井', 泉: '旧喷泉', 灯: '街灯', 鸽: '鸽子', 棚: '摊棚' },
+    traces: ['脚印', '鸽食', '告示叠贴', '井沿磨出的凹口'],
+    aliases: { 井: '封了的井', 泉: '旧喷泉', 灯: '街灯', 鸽: '鸽子' },
     seasonal: {
-      spring: ['花摊', '池水'],
+      spring: ['花摊', '池水', '花瓣'],
       summer: ['池水'],
-      autumn: ['池水'],
+      autumn: ['池水', '落叶'],
+      winter: ['雪', '木板'],
     },
     npc: 'none',
   },
@@ -305,7 +308,7 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
  * 校验器只扫表，不再看 drafts。
  */
 export const LOCKED: { season: string[]; weather: string[] } = {
-  season: ['yard', 'gate'],
+  season: ['yard', 'gate', 'town'],
   weather: ['yard', 'gate'],
 }
 

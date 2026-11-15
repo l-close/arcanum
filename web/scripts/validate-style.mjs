@@ -315,6 +315,16 @@ async function checkSceneText(sceneMaterials, styleRules, schedule, data) {
 
 function checkDraftConsistency(sceneMaterials, drafts, data) {
   for (const draft of drafts) {
+    const matrix =
+      draft.layer === 'season' ? sceneMaterials.SEASON_MATRIX : sceneMaterials.WEATHER_MATRIX
+    const expected = matrix[draft.location]?.[draft.season * 4 + draft.slot]
+    if (expected !== undefined && draft.syntaxId !== expected) {
+      err(
+        'drafts',
+        `${draft.layer}/${draft.location}/${draft.season}/${draft.slot}: 句式号 ${draft.syntaxId}，矩阵要求 ${expected}`,
+      )
+    }
+
     if (!draft.selected) continue
     const locked =
       draft.layer === 'season' ? sceneMaterials.LOCKED.season : sceneMaterials.LOCKED.weather
