@@ -19,7 +19,7 @@ export const LOCATIONS: Location[] = [
     name: '中央广场',
     kind: 'area',
     childLabel: '广场',
-    desc: '广场中央有一座旧喷泉，四周是店铺和往来的行人。往东是学院区，往西是孤儿院和教堂。',
+    desc: '广场中央有一座旧喷泉，四周是店铺和往来的行人。往东是学院区，往西是孤儿院和教堂区。',
   },
   {
     id: 'craftDistrict',
@@ -42,7 +42,7 @@ export const LOCATIONS: Location[] = [
   },
   {
     id: 'churchStreet',
-    name: '教堂',
+    name: '教堂区',
     kind: 'area',
     desc: '教堂在孤儿院旁边，钟声从尖顶传下来，门前石阶被扫得很干净。',
   },
@@ -112,7 +112,7 @@ export const LOCATIONS: Location[] = [
   },
   {
     id: 'orphanage',
-    name: '孤儿院正厅',
+    name: '正厅',
     parent: 'orphanStreet',
     kind: 'venue',
     childLabel: '房间',
@@ -197,7 +197,7 @@ export const LOCATIONS: Location[] = [
   },
   {
     id: 'church',
-    name: '教堂内堂',
+    name: '内堂',
     parent: 'churchStreet',
     kind: 'venue',
     childLabel: '教堂设施',
@@ -222,7 +222,7 @@ export const LOCATIONS: Location[] = [
     name: '钟楼',
     parent: 'churchStreet',
     kind: 'room',
-    desc: '塔门开在街边，一条长凳靠着墙。门里是窄木楼梯，越往上越冷。',
+    desc: '塔门开在街边，一条长凳靠着墙。门里是窄木楼梯，往上通到钟室。',
   },
   {
     id: 'gate',
