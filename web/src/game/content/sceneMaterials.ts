@@ -222,7 +222,7 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     traces: ['脚印', '湿印', '扫过的痕'],
     aliases: { 楼: '学院门楼', 坡: '坡道' },
     seasonal: {
-      spring: ['新芽', '新叶', '露水'],
+      spring: ['新芽', '新叶'],
       autumn: ['落叶'],
       winter: ['雪', '薄冰'],
     },
@@ -247,7 +247,7 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     traces: ['脚印', '水洼', '窗上的水汽'],
     aliases: { 绳: '晾衣绳' },
     seasonal: {
-      spring: ['新草', '露水'],
+      spring: ['新草'],
       summer: ['藤蔓'],
       autumn: ['落叶'],
       winter: ['雪', '冰棱'],
