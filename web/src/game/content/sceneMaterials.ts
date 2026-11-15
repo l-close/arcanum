@@ -114,7 +114,7 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     ],
     sounds: ['木桩', '木剑', '水桶', '扫帚'],
     traces: ['脚印', '扫过的土', '木剑扔回架', '桶倒扣', '麻绳结', '撞歪的桩', '踩出来的窄路'],
-    aliases: ['桩', '剑', '桶', '绳', '草', '架'],
+    aliases: ['桩', '剑', '桶', '绳', '架'],
     seasonal: {
       spring: ['露水'],
       autumn: ['落叶'],

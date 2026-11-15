@@ -103,6 +103,12 @@ export const COMPRESSED_PATTERN = /(.{2,4})(压|叠|挨|套)\1/
  */
 export const MATERIAL_TERM_CAP: number | null = null
 
+/** 空间参照词：分别管“锚点习惯”，不参与道具用量。 */
+export const REFERENCE_TERMS = ['墙根', '门口', '角落', '场地', '台阶', '路面', '墙边']
+
+/** 参照词占该组已扫描格数的比例上限。 */
+export const REFERENCE_RATIO = 0.4
+
 /** 每层每地点的格数：4 季 × 4 段（天气层是 4 季 × 4 天气）。 */
 export const CELLS_PER_LAYER = 16
 

@@ -379,14 +379,31 @@ function checkMaterialCap(scan, styleRules, sceneMaterials) {
     if (counts.length === 0) continue
     counts.sort((a, b) => b[1] - a[1])
 
+    const reference = new Set(styleRules.REFERENCE_TERMS ?? [])
     if (styleRules.MATERIAL_TERM_CAP === null) {
-      const top = counts.slice(0, 3).map(([term, count]) => `${term} ${count}`).join('，')
+      const top = counts
+        .slice(0, 3)
+        .map(([term, count]) => `${term} ${count}（${reference.has(term) ? '参照' : '物件'}）`)
+        .join('，')
       console.log(`INFO [material] ${scan.layer}/${location}: ${top}`)
     } else if (counts[0][1] > styleRules.MATERIAL_TERM_CAP) {
       warn(
         'material',
         `${scan.layer}/${location}: 「${counts[0][0]}」出现 ${counts[0][1]} 格，上限 ${styleRules.MATERIAL_TERM_CAP}`,
       )
+    }
+
+    const ratio = styleRules.REFERENCE_RATIO ?? 0.4
+    if (cells.length >= 8) {
+      for (const term of reference) {
+        const count = cells.filter((cell) => cell.text.includes(term)).length
+        if (count / cells.length > ratio) {
+          warn(
+            'material',
+            `${scan.layer}/${location}: 参照词「${term}」占 ${count}/${cells.length} 格（上限 ${Math.round(ratio * 100)}%）`,
+          )
+        }
+      }
     }
   }
 }
