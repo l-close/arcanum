@@ -146,7 +146,7 @@
 {"location":"gate","layer":"weather","season":0,"slot":0,"syntaxId":8,"candidate":1,"skeleton":"因果","text":"石阶干透了，鞋底沾不上泥。","selected":true}
 {"location":"gate","layer":"weather","season":0,"slot":0,"syntaxId":8,"candidate":2,"skeleton":"承接","text":"门轴上的油迹发干，灰粘在轴上。","selected":false}
 {"location":"gate","layer":"weather","season":0,"slot":0,"syntaxId":8,"candidate":3,"skeleton":"名词","text":"石阶上的泥干成块，一踩就碎。","selected":false}
-{"location":"gate","layer":"weather","season":0,"slot":1,"syntaxId":16,"candidate":1,"skeleton":"第三级","text":"第三级石阶干了，第四级还潮。","selected":true}
+{"location":"gate","layer":"weather","season":0,"slot":1,"syntaxId":16,"candidate":1,"skeleton":"第三级","text":"第三级石阶干了，第四级还是湿的。","selected":true}
 {"location":"gate","layer":"weather","season":0,"slot":1,"syntaxId":16,"candidate":2,"skeleton":"前后","text":"门洞前一半干了，后一半还潮。","selected":false}
 {"location":"gate","layer":"weather","season":0,"slot":1,"syntaxId":16,"candidate":3,"skeleton":"齐腰","text":"石墙只干到齐腰高，上面还潮。","selected":false}
 {"location":"gate","layer":"weather","season":0,"slot":2,"syntaxId":13,"candidate":1,"skeleton":"内外","text":"潮气到门洞里就断了，外侧是干的。","selected":true}

@@ -173,7 +173,6 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
       '街边旗子',
       '车',
       '车轮',
-      '车斗',
     ],
     sounds: ['鸽子', '喷泉'],
     traces: ['脚印', '鸽食', '告示叠贴', '井沿磨出的凹口'],
@@ -239,7 +238,7 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
       '石阶',
       '屋檐',
       '孤儿院的屋顶',
-      '教堂尖顶',
+      '尖顶',
       '柴火',
       '烟囱',
     ],
@@ -256,7 +255,7 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
   },
   // 教堂街：钟声和石阶——扫得干净、募捐箱、门口收伞。
   churchStreet: {
-    objects: ['教堂尖顶', '钟楼', '石阶', '石墙', '教堂的门', '伞', '募捐箱', '教堂的窗', '蜡烛'],
+    objects: ['尖顶', '钟楼', '石阶', '石墙', '教堂的门', '伞', '募捐箱', '教堂的窗', '蜡烛'],
     sounds: ['钟楼'],
     traces: ['脚印', '扫痕', '伞上的水', '蜡烛油'],
     aliases: { 钟: '钟楼', 阶: '石阶', 门: '教堂的门' },

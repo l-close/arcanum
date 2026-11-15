@@ -276,7 +276,7 @@ async function checkStatus(sceneMaterials, locations, weather) {
 // ---------- 场景文本 ----------
 
 async function checkSceneText(sceneMaterials, styleRules, schedule, data) {
-  checkMaterialTables(sceneMaterials)
+  checkMaterialTables(sceneMaterials, styleRules)
 
   const drafts = await loadDrafts()
   const scans = [
@@ -341,7 +341,7 @@ function checkDraftConsistency(sceneMaterials, drafts, data) {
 }
 
 // ---------- 素材表 ----------
-function checkMaterialTables(sceneMaterials) {
+function checkMaterialTables(sceneMaterials, styleRules) {
   for (const [id, table] of Object.entries(sceneMaterials.MATERIALS)) {
     const general = new Set(sceneMaterials.generalTokens(table))
     const seasonal = sceneMaterials.seasonalTokens(table)
@@ -366,9 +366,11 @@ function checkMaterialTables(sceneMaterials) {
   }
 
   // 规则 9：相邻地点的通用 token 重合率超过 50%，必须能说清区别。
+  // 全城通用的基础设施词（石墙、石阶、车……）不计入，否则会顶出假警。
+  const common = new Set(styleRules.COMMON_CITY_TOKENS ?? [])
   const tokenSets = Object.entries(sceneMaterials.MATERIALS).map(([id, table]) => [
     id,
-    new Set(sceneMaterials.generalTokens(table)),
+    new Set(sceneMaterials.generalTokens(table).filter((token) => !common.has(token))),
   ])
   for (let i = 0; i < tokenSets.length; i += 1) {
     for (let j = i + 1; j < tokenSets.length; j += 1) {

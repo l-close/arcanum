@@ -152,6 +152,9 @@ export const BIGRAM_STOP_CHARS = '的得地了着过那这还只是在有上下�
 /** 含功能字、但整体是内容短语的二元组：绕过功能字过滤，照常计数。 */
 export const BIGRAM_EXCEPTIONS = ['还潮', '起壳', '冻实']
 
+/** 全城通用的基础设施词：不计入相邻地点重复率（规则 9）。 */
+export const COMMON_CITY_TOKENS = ['石墙', '石阶', '石板路', '脚印', '车', '车轮', '墙根']
+
 /** 每层每地点的格数：4 季 × 4 段（天气层是 4 季 × 4 天气）。 */
 export const CELLS_PER_LAYER = 16
 

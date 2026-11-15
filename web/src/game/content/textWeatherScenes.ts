@@ -291,7 +291,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
   gate: {
     spring: {
       sunny: '石阶干透了，鞋底沾不上泥。',
-      cloudy: '第三级石阶干了，第四级还潮。',
+      cloudy: '第三级石阶干了，第四级还是湿的。',
       overcast: '潮气到门洞里就断了，外侧是干的。',
       rain: '门洞里滴水声一下接一下，石阶上那片水还在。',
     },
