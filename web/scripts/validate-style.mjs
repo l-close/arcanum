@@ -364,6 +364,27 @@ function checkMaterialTables(sceneMaterials) {
       }
     }
   }
+
+  // 规则 9：相邻地点的通用 token 重合率超过 50%，必须能说清区别。
+  const tokenSets = Object.entries(sceneMaterials.MATERIALS).map(([id, table]) => [
+    id,
+    new Set(sceneMaterials.generalTokens(table)),
+  ])
+  for (let i = 0; i < tokenSets.length; i += 1) {
+    for (let j = i + 1; j < tokenSets.length; j += 1) {
+      const [idA, setA] = tokenSets[i]
+      const [idB, setB] = tokenSets[j]
+      let overlap = 0
+      for (const token of setA) if (setB.has(token)) overlap += 1
+      const smaller = Math.min(setA.size, setB.size)
+      if (smaller > 0 && overlap / smaller > 0.5) {
+        warn(
+          'material',
+          `${idA} 与 ${idB} 通用 token 重合 ${overlap}/${smaller}（>50%），需要说清区别`,
+        )
+      }
+    }
+  }
 }
 
 function checkMaterialHit(cell, layer, sceneMaterials) {
@@ -513,10 +534,11 @@ function checkBigrams(scan, sceneMaterials, styleRules) {
   }
   const floor = Math.max(3, Math.ceil(0.05 * texts.length))
   const stop = styleRules.BIGRAM_STOP_CHARS ?? ''
+  const exceptions = new Set(styleRules.BIGRAM_EXCEPTIONS ?? [])
   const suppressed = new Map()
   for (const [pair, count] of counts) {
     if (count < floor) continue
-    if ([...pair].some((char) => stop.includes(char))) {
+    if (!exceptions.has(pair) && [...pair].some((char) => stop.includes(char))) {
       suppressed.set(pair, count)
       continue
     }

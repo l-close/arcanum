@@ -149,6 +149,9 @@ export const ANCHOR_BASELINE = [
  */
 export const BIGRAM_STOP_CHARS = '的得地了着过那这还只是在有上下里底边中去来和也都'
 
+/** 含功能字、但整体是内容短语的二元组：绕过功能字过滤，照常计数。 */
+export const BIGRAM_EXCEPTIONS = ['还潮', '起壳', '冻实']
+
 /** 每层每地点的格数：4 季 × 4 段（天气层是 4 季 × 4 天气）。 */
 export const CELLS_PER_LAYER = 16
 

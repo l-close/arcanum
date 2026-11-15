@@ -215,6 +215,58 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     npc: 'has',
     npcNote: '米娅、卢卡，假日下午',
   },
+  // 学院区：上下坡和抱书的人——坡度、门楼、学生的东西。
+  academyStreet: {
+    objects: ['坡道', '学院门楼', '门楼的灯', '树', '石墙', '石阶', '书', '外衣'],
+    sounds: ['树', '门楼'],
+    traces: ['脚印', '湿印', '扫过的痕'],
+    aliases: { 楼: '学院门楼', 坡: '坡道' },
+    seasonal: {
+      spring: ['新芽', '新叶', '露水'],
+      autumn: ['落叶'],
+      winter: ['雪', '薄冰'],
+    },
+    npc: 'none',
+  },
+  // 孤儿院街：安静和草——墙根、孩子、教堂尖顶从旁边露出来。
+  orphanStreet: {
+    objects: [
+      '巷子',
+      '墙',
+      '墙根的草',
+      '窗',
+      '晾衣绳',
+      '石阶',
+      '屋檐',
+      '孤儿院的屋顶',
+      '教堂尖顶',
+      '柴火',
+      '烟囱',
+    ],
+    sounds: ['晾衣绳', '屋檐'],
+    traces: ['脚印', '水洼', '窗上的水汽'],
+    aliases: { 绳: '晾衣绳' },
+    seasonal: {
+      spring: ['新草', '露水'],
+      summer: ['藤蔓'],
+      autumn: ['落叶'],
+      winter: ['雪', '冰棱'],
+    },
+    npc: 'none',
+  },
+  // 教堂街：钟声和石阶——扫得干净、募捐箱、门口收伞。
+  churchStreet: {
+    objects: ['教堂尖顶', '钟楼', '石阶', '石墙', '教堂的门', '伞', '募捐箱', '教堂的窗', '蜡烛'],
+    sounds: ['钟楼'],
+    traces: ['脚印', '扫痕', '伞上的水', '蜡烛油'],
+    aliases: { 钟: '钟楼', 阶: '石阶', 门: '教堂的门' },
+    seasonal: {
+      spring: ['晨露'],
+      autumn: ['落叶'],
+      winter: ['霜', '雪'],
+    },
+    npc: 'none',
+  },
 }
 
 export type ShapeAnchor = { id: number; name: string; anchor: string }

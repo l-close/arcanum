@@ -21,9 +21,9 @@
 | id | 地点 | 素材表 | 季节 | 天气 | 季节自检 | 天气自检 |
 |---|---|---|---|---|---|---|
 | town | 中央广场 | 已有 | 已锁 | 已锁 | 通过 | 通过 |
-| academyStreet | 学院区 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
-| orphanStreet | 孤儿院 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
-| churchStreet | 教堂 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
+| academyStreet | 学院区 | 已有 | 未开始 | 未开始 | 未开始 | 未开始 |
+| orphanStreet | 孤儿院 | 已有 | 未开始 | 未开始 | 未开始 | 未开始 |
+| churchStreet | 教堂 | 已有 | 未开始 | 未开始 | 未开始 | 未开始 |
 | craftDistrict | 工坊区 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
 | academy | 长明学院 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
 | orphanage | 孤儿院正厅 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
@@ -41,7 +41,7 @@
 
 ## 说明
 
-- 素材表已有：`town`、`commercial`、`yard`、`gate`。
+- 素材表已有：`town`、`commercial`、`yard`、`gate`、`academyStreet`、`orphanStreet`、`churchStreet`。
 - `yard`、`gate` 两层都已锁，整体锁定。
 - `town`、`commercial` 季节已锁、天气未开始。
 - 其余 12 行全部 `未开始`。
