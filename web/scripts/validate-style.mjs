@@ -291,6 +291,7 @@ async function checkSceneText(sceneMaterials, styleRules, schedule, data) {
     checkQuota(scan, styleRules)
     checkMaterialCap(scan, styleRules, sceneMaterials)
     checkMagicDensity(scan, styleRules)
+    checkDeadTokens(scan, styleRules, sceneMaterials)
     checkBigrams(scan, sceneMaterials, styleRules)
     for (const cell of scan.cells) {
       if (!cell.text) continue
@@ -506,6 +507,33 @@ function checkMaterialCap(scan, styleRules, sceneMaterials) {
           )
         }
       }
+    }
+  }
+}
+
+function checkDeadTokens(scan, styleRules, sceneMaterials) {
+  const minLen = styleRules.DEAD_TOKEN_MIN_LEN ?? 5
+  const groups = new Map()
+  for (const cell of scan.cells) {
+    if (!groups.has(cell.location)) groups.set(cell.location, [])
+    groups.get(cell.location).push(cell)
+  }
+  for (const [location, cells] of groups) {
+    const table = sceneMaterials.MATERIALS[location]
+    if (!table) continue
+    const aliases = table.aliases ?? {}
+    const dead = []
+    for (const token of sceneMaterials.generalTokens(table)) {
+      if (token.length < minLen) continue
+      const names = Object.keys(aliases).filter((key) => aliases[key] === token)
+      const hit = cells.some(
+        (cell) => cell.text.includes(token) || names.some((name) => cell.text.includes(name)),
+      )
+      if (!hit) dead.push(token)
+    }
+    if (dead.length) {
+      dead.sort((a, b) => b.length - a.length)
+      warn('token', `${scan.layer}/${location}: ${dead.length} 个长 token 未命中 —— ${dead.join('、')}`)
     }
   }
 }

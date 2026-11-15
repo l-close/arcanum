@@ -93,6 +93,12 @@ export const ALLOWED_NOUNS = [
 /** 场景层魔法密度统计用的词。单字「符」不入表：会误伤护符、符号、符合。 */
 export const MAGIC_TERMS = ['符文', '法阵', '传送', '咒', '长明灯']
 
+/**
+ * 长 token 检查：这个长度以上的素材词必须在该地点该层至少命中 1 格。
+ * 短词不查——那是词汇储备，16 格没写到不代表表写错了。
+ */
+export const DEAD_TOKEN_MIN_LEN = 5
+
 /** 行首禁用；两层都查。 */
 export const BANNED_LINE_START = ['风', '天色', '阳光', '日头']
 
@@ -151,6 +157,7 @@ export const ANCHOR_MIN_RATIO = 0.75
 /** 已知基线：命中后只打 INFO，不再 warning。只放“该地点本体”这种理由。 */
 export const ANCHOR_BASELINE = [
   'season/gate:门洞', // 城门是一条通道，方位就是它的本体
+  'weather/gate:门洞', // 同上；实测 6 格 / 带方位 5，清理长 token 后计数上浮
   'season/town:喷泉', // 广场以泉为中心
 ]
 
