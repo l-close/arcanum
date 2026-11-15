@@ -418,18 +418,26 @@ function checkMaterialCap(scan, styleRules, sceneMaterials) {
         matched.add(term)
         residual = residual.split(term).join('\u0000')
       }
-      return { matched, residual }
+      return { text: cell.text, matched, residual }
     })
 
     const counts = []
     for (const term of realTokens) {
       const names = hostAliases.get(term) ?? []
       let count = 0
+      let anchored = 0
       for (const cell of matchedCells) {
-        if (cell.matched.has(term)) count += 1
-        else if (names.some((alias) => cell.residual.includes(alias))) count += 1
+        const hit = cell.matched.has(term) || names.some((alias) => cell.residual.includes(alias))
+        if (!hit) continue
+        count += 1
+        // 先剔掉锚点本身，再看残句里有没有方位词：井沿 自带的「沿」不算拿它定位。
+        let rest = cell.text
+        for (const name of [term, ...names].sort((a, b) => b.length - a.length)) {
+          rest = rest.split(name).join('\u0000')
+        }
+        if (styleRules.ORIENTATION_TERMS.some((word) => rest.includes(word))) anchored += 1
       }
-      if (count > 1) counts.push([term, count])
+      if (count > 1) counts.push([term, count, anchored])
     }
     if (counts.length === 0) continue
     counts.sort((a, b) => b[1] - a[1])
@@ -438,7 +446,10 @@ function checkMaterialCap(scan, styleRules, sceneMaterials) {
     if (styleRules.MATERIAL_TERM_CAP === null) {
       const top = counts
         .slice(0, 3)
-        .map(([term, count]) => `${term} ${count}（${reference.has(term) ? '参照' : '物件'}）`)
+        .map(
+          ([term, count, anchored]) =>
+            `${term} ${count}（${reference.has(term) ? '参照' : '物件'}，带方位 ${anchored}）`,
+        )
         .join('，')
       console.log(`INFO [material] ${scan.layer}/${location}: ${top}`)
     } else if (counts[0][1] > styleRules.MATERIAL_TERM_CAP) {
