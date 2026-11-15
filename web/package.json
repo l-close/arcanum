@@ -9,7 +9,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "validate:content": "node scripts/validate-content.mjs",
-    "sync:style": "node scripts/sync-style-course-words.mjs",
+    "sync:style": "node scripts/sync-style-course-words.mjs && node scripts/sync-style-blocks.mjs",
     "validate:style": "node scripts/validate-style.mjs"
   },
   "dependencies": {

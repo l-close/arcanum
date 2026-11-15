@@ -3,7 +3,7 @@ import type { Season, WeatherKind } from '../types'
 import { hash01 } from './rng'
 import { WEATHER_SCENES } from './textWeatherScenes'
 
-const OUTDOOR = new Set([
+export const OUTDOOR = new Set([
   'town',
   'academyStreet',
   'orphanStreet',
