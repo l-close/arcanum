@@ -27,7 +27,7 @@ const MEDITATION_SCENES: Record<string, [string, string, string]> = {
 
 export function meditationScene(location: string, minutes: number): string {
   const table = MEDITATION_SCENES[location]
-  return table ? table[timePeriod(minutes)] : '你安静地坐了一会儿。'
+  return table ? table[Math.min(timePeriod(minutes), 2)] : '你安静地坐了一会儿。'
 }
 
 export const ACADEMY_MEAL_FEE = 2

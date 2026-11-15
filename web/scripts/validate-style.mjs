@@ -25,6 +25,14 @@ const warnings = []
 const err = (area, message) => errors.push(`[${area}] ${message}`)
 const warn = (area, message) => warnings.push(`[${area}] ${message}`)
 
+const SEASONS = ['spring', 'summer', 'autumn', 'winter']
+const WEATHER_SLOTS = [
+  ['sunny', 'cloudy', 'overcast', 'rain'],
+  ['sunny', 'cloudy', 'overcast', 'rain'],
+  ['sunny', 'cloudy', 'overcast', 'rain'],
+  ['sunny', 'cloudy', 'overcast', 'snow'],
+]
+
 let source
 try {
   source = await readStyle()
@@ -274,6 +282,8 @@ async function checkSceneText(sceneMaterials, styleRules, schedule, data) {
     buildScan('weather', sceneMaterials, drafts, data.WEATHER_SCENES),
   ]
 
+  checkOverrides(sceneMaterials, styleRules, schedule)
+
   for (const scan of scans) {
     checkQuota(scan, styleRules)
     checkBigrams(scan)
@@ -297,14 +307,6 @@ async function checkSceneText(sceneMaterials, styleRules, schedule, data) {
     }
   }
 }
-
-const SEASONS = ['spring', 'summer', 'autumn', 'winter']
-const WEATHER_SLOTS = [
-  ['sunny', 'cloudy', 'overcast', 'rain'],
-  ['sunny', 'cloudy', 'overcast', 'rain'],
-  ['sunny', 'cloudy', 'overcast', 'rain'],
-  ['sunny', 'cloudy', 'overcast', 'snow'],
-]
 
 function buildScan(layer, sceneMaterials, drafts, table) {
   const locked = new Set(
@@ -391,8 +393,28 @@ function checkBigrams(scan) {
     }
   }
   for (const [pair, count] of counts) {
+    if (count < 3) continue
     if (count / texts.length > 0.05) {
       warn('bigram', `${scan.layer}: 二元组「${pair}」出现 ${count} 次（共 ${texts.length} 句）`)
+    }
+  }
+}
+
+function checkOverrides(sceneMaterials, styleRules, schedule) {
+  const overrides = sceneMaterials.EVENING_OVERRIDE ?? {}
+  for (const [location, text] of Object.entries(overrides)) {
+    if (!text || !text.trim()) {
+      err('scene', `override/${location}: 空文本`)
+      continue
+    }
+    const hit = findBanned(text, 'season', styleRules, schedule)
+    if (hit) {
+      err('scene', `override/${location}: 命中禁词「${hit.word}」（${hit.label}）`)
+    }
+    for (const prefix of styleRules.BANNED_LINE_START) {
+      if (text.startsWith(prefix)) {
+        err('scene', `override/${location}: 句首禁词「${prefix}」`)
+      }
     }
   }
 }

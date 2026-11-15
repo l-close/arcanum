@@ -347,11 +347,12 @@ export function getLocation(id: string): Location {
 
 // ---------- 时段描述 / 天气 ----------
 
-/** 0 = 早晨 06:00–11:00，1 = 白天 11:00–18:00，2 = 夜晚 18:00–06:00 */
-export function timePeriod(minutes: number): 0 | 1 | 2 {
+/** 0 = 晨 06:00–11:00，1 = 昼 11:00–18:00，2 = 暮 18:00–21:00，3 = 夜 21:00–06:00 */
+export function timePeriod(minutes: number): 0 | 1 | 2 | 3 {
   if (minutes >= 6 * 60 && minutes < 11 * 60) return 0
   if (minutes >= 11 * 60 && minutes < 18 * 60) return 1
-  return 2
+  if (minutes < 21 * 60) return 2
+  return 3
 }
 
 export type Exit = { to: string; minutes: number }

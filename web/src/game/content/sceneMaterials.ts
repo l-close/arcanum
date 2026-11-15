@@ -226,6 +226,19 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
  * 校验器只扫表，不再看 drafts。
  */
 export const LOCKED: { season: string[]; weather: string[] } = {
-  season: [],
+  season: ['yard'],
   weather: [],
+}
+
+/**
+ * 室内暮格（18:00–21:00）覆盖。只覆盖该时段仍开着的室内地点，
+ * 其余室内继续用 DESC_BY_TIME 的夜句。
+ */
+export const EVENING_OVERRIDE: Record<string, string> = {
+  canteen: '灶间门口堆着择下的菜叶。',
+  orphanCanteen: '水缸的水少了一截。',
+  relief: '长椅上叠着几件旧衣。',
+  greenhouse: '砖台上摆着几只空陶盆。',
+  runeShop: '台面上的铜屑扫成了一堆。',
+  weaponShop: '工作台上摊着没打完的活。',
 }

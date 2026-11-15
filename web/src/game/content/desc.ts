@@ -69,20 +69,28 @@ function lampLine(p: number): string {
   return '集市口的街灯只剩一盏还亮着。'
 }
 
+import { EVENING_OVERRIDE } from './sceneMaterials'
+
 export function locationDesc(
   loc: Location,
   minutes: number,
   day: number,
   west?: WestDescState,
 ): string {
+  const period = timePeriod(minutes)
   if (west && west.stage >= 1) {
     const stage1 = WEST_STAGE1_DESC[loc.id]
-    if (stage1) return stage1[timePeriod(minutes)]
+    if (stage1) return stage1[Math.min(period, 2)]
   }
   const seasonal = SEASON_DESC[loc.id]
-  if (seasonal) return seasonal[seasonOf(day)][timePeriod(minutes)]
+  if (seasonal) {
+    const lines = seasonal[seasonOf(day)]
+    return lines[period] ?? lines[2]
+  }
+  if (period === 2 && EVENING_OVERRIDE[loc.id]) return EVENING_OVERRIDE[loc.id]
   const table = DESC_BY_TIME[loc.id]
-  let text = table ? table[timePeriod(minutes)] : loc.desc
+  const index = Math.min(period, 2)
+  let text = table ? table[index] : loc.desc
   if (west && west.stage === 0) {
     if (loc.id === 'westGate') {
       text = `${text} ${wallLine(west.projects.wall ?? 0)} ${ditchLine(west.projects.ditch ?? 0)}`
