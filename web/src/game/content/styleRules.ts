@@ -155,10 +155,14 @@ export const ANCHOR_MIN_CELLS = 5
 export const ANCHOR_MIN_RATIO = 0.75
 
 /** 已知基线：命中后只打 INFO，不再 warning。只放“该地点本体”这种理由。 */
+/**
+ * 不报锚点告警的词：记录的是「这个地点的身体」，与层无关。
+ * 键是 `地点:锚点`，一条覆盖季节与天气两层。
+ * 地点本体变了（喷泉拆了、门洞封了），这条要跟着删——理由跟着本体走。
+ */
 export const ANCHOR_BASELINE = [
-  'season/gate:门洞', // 城门是一条通道，方位就是它的本体
-  'weather/gate:门洞', // 同上；实测 6 格 / 带方位 5，清理长 token 后计数上浮
-  'season/town:喷泉', // 广场以泉为中心
+  'gate:门洞', // 城门是一条通道，方位就是它的本体
+  'town:喷泉', // 广场以泉为中心
 ]
 
 /**
