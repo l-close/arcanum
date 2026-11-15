@@ -281,6 +281,36 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     npc: 'future',
     npcNote: '守钟人奥托',
   },
+  // 墓园：有人管的野地——碑、墙、草、坡。守墓人只在 NPC 描述里，名册不进表。
+  // 坡地是地形，不是锚点：写它要落在具体的事上（水往碑脚走），不写「坡地上很安静」。
+  cemetery: {
+    objects: ['墓碑', '石墙', '草', '坡地', '守墓人的屋'],
+    sounds: ['草', '守墓人的屋'],
+    traces: ['脚印', '水洼', '花', '碑脚的土'],
+    aliases: { 碑: '墓碑', 墙: '石墙', 屋: '守墓人的屋' },
+    seasonal: {
+      spring: ['新草'],
+      autumn: ['枯草'],
+      winter: ['雪', '霜'],
+    },
+    npc: 'future',
+    npcNote: '守墓人，未排班',
+  },
+  // 森林：有人来过的林子——路是踩出来的，桩是砍出来的。
+  // 4 件：树管上半（枝叶、断枝），树桩与小路管「有人来过」，灌木管低处与声音。
+  // 落叶是地表层，全年都在；秋天的特征是「黄叶」。
+  forest: {
+    objects: ['树', '落叶', '树桩', '小路', '灌木'],
+    sounds: ['树', '落叶', '灌木'],
+    traces: ['脚印', '断枝', '岔路', '锯痕'],
+    aliases: { 桩: '树桩', 路: '小路', 枝: '断枝' },
+    seasonal: {
+      spring: ['新芽'],
+      autumn: ['黄叶'],
+      winter: ['雪', '霜'],
+    },
+    npc: 'none',
+  },
   // 孤儿院街：安静和草——墙根、孩子、教堂尖顶从旁边露出来。
   orphanStreet: {
     objects: [
@@ -431,8 +461,8 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
  * 校验器只扫表，不再看 drafts。
  */
 export const LOCKED: { season: string[]; weather: string[] } = {
-  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy', 'backyard', 'bellTower'],
-  weather: ['yard', 'gate', 'town', 'commercial', 'backyard', 'bellTower'],
+  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy', 'backyard', 'bellTower', 'cemetery', 'forest'],
+  weather: ['yard', 'gate', 'town', 'commercial', 'backyard', 'bellTower', 'cemetery', 'forest'],
 }
 
 /**
