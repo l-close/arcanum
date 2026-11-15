@@ -193,19 +193,24 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
       '遮棚',
       '货摊',
       '屋檐',
-      '绳索',
+      '绳子',
       '筐',
       '酒馆的灯',
-      '车辙',
       '热食摊',
       '换下来的旧招牌',
+      '石板路',
+      '车',
+      '车轮',
+      '薄布',
+      '合页',
+      '门槛',
     ],
-    sounds: ['门板', '招牌', '遮棚'],
-    traces: ['车辙', '烂菜叶', '绳结', '门板靠墙', '遮棚上的补丁', '摊位压出的地痕'],
+    sounds: ['门板', '招牌', '遮棚', '筐'],
+    traces: ['烂菜叶', '绳结', '门板靠墙', '遮棚上的补丁', '摊位压出的地痕'],
     aliases: { 摊: '货摊', 棚: '遮棚', 牌: '招牌', 板: '门板' },
     seasonal: {
-      spring: ['卖花的摊'],
-      winter: ['厚布', '薄布'],
+      spring: ['花摊'],
+      winter: ['厚布'],
     },
     npc: 'has',
     npcNote: '米娅、卢卡，假日下午',
@@ -308,7 +313,7 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
  * 校验器只扫表，不再看 drafts。
  */
 export const LOCKED: { season: string[]; weather: string[] } = {
-  season: ['yard', 'gate', 'town'],
+  season: ['yard', 'gate', 'town', 'commercial'],
   weather: ['yard', 'gate'],
 }
 
