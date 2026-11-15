@@ -26,8 +26,8 @@
 {"location":"yard","layer":"season","season":2,"slot":0,"syntaxId":4,"candidate":1,"skeleton":"比较","text":"剑架上的木剑长短不齐，最长的杵出架外。","selected":false}
 {"location":"yard","layer":"season","season":2,"slot":0,"syntaxId":4,"candidate":2,"skeleton":"方位","text":"水桶扣在剑架上，桶底朝上。","selected":false}
 {"location":"yard","layer":"season","season":2,"slot":0,"syntaxId":4,"candidate":3,"skeleton":"程度","text":"桩列里有一根栽歪，比别的矮半头。","selected":true}
-{"location":"yard","layer":"season","season":2,"slot":1,"syntaxId":11,"candidate":1,"skeleton":"名词","text":"墙根码着几根换下来的旧桩。","selected":false}
-{"location":"yard","layer":"season","season":2,"slot":1,"syntaxId":11,"candidate":2,"skeleton":"程度","text":"折断的木剑搁在旧桩上。","selected":true}
+{"location":"yard","layer":"season","season":2,"slot":1,"syntaxId":11,"candidate":1,"skeleton":"名词","text":"墙根码着几根换下来的旧桩。","selected":true}
+{"location":"yard","layer":"season","season":2,"slot":1,"syntaxId":11,"candidate":2,"skeleton":"程度","text":"折断的木剑搁在旧桩上。","selected":false}
 {"location":"yard","layer":"season","season":2,"slot":1,"syntaxId":11,"candidate":3,"skeleton":"陈述","text":"漏底的水桶倒扣在墙角。","selected":false}
 {"location":"yard","layer":"season","season":2,"slot":2,"syntaxId":15,"candidate":1,"skeleton":"名词","text":"桩脚的土夹着几层碎叶。","selected":true}
 {"location":"yard","layer":"season","season":2,"slot":2,"syntaxId":15,"candidate":2,"skeleton":"数量","text":"剑架的木条换过两次，钉孔挨钉孔。","selected":false}
@@ -52,7 +52,7 @@
 {"location":"yard","layer":"weather","season":0,"slot":0,"syntaxId":1,"candidate":3,"skeleton":"触感","text":"水桶底下一圈泥印，摸上去是干的。","selected":false}
 {"location":"yard","layer":"weather","season":0,"slot":1,"syntaxId":5,"candidate":1,"skeleton":"分段","text":"黄土上踩过去，一段出声，一段没声。","selected":false}
 {"location":"yard","layer":"weather","season":0,"slot":1,"syntaxId":5,"candidate":2,"skeleton":"对照","text":"木剑敲在桩上，一边脆，一边沉。","selected":false}
-{"location":"yard","layer":"weather","season":0,"slot":1,"syntaxId":5,"candidate":3,"skeleton":"并置","text":"扫帚扫过场地，半片沙沙响，半片没声。","selected":true}
+{"location":"yard","layer":"weather","season":0,"slot":1,"syntaxId":5,"candidate":3,"skeleton":"并置","text":"黄土踩上去，一半有响，一半没声。","selected":true}
 {"location":"yard","layer":"weather","season":0,"slot":2,"syntaxId":7,"candidate":1,"skeleton":"单点","text":"只有桩脚那一圈踩下去还软。","selected":false}
 {"location":"yard","layer":"weather","season":0,"slot":2,"syntaxId":7,"candidate":2,"skeleton":"方位","text":"只有背阴那面的木桩还潮。","selected":true}
 {"location":"yard","layer":"weather","season":0,"slot":2,"syntaxId":7,"candidate":3,"skeleton":"数量","text":"只有靠墙的三根桩底下还留着脚印。","selected":false}
@@ -72,8 +72,8 @@
 {"location":"yard","layer":"weather","season":1,"slot":3,"syntaxId":3,"candidate":2,"skeleton":"两处","text":"剑架底下没积水，水都走了墙根。","selected":false}
 {"location":"yard","layer":"weather","season":1,"slot":3,"syntaxId":3,"candidate":3,"skeleton":"数量","text":"靠墙那排桩没泡到水。","selected":true}
 {"location":"yard","layer":"weather","season":2,"slot":0,"syntaxId":9,"candidate":1,"skeleton":"上下","text":"桩顶干了，桩脚还带潮。","selected":false}
-{"location":"yard","layer":"weather","season":2,"slot":0,"syntaxId":9,"candidate":2,"skeleton":"两处","text":"土面踩实了，剑架底下还松。","selected":true}
-{"location":"yard","layer":"weather","season":2,"slot":0,"syntaxId":9,"candidate":3,"skeleton":"转折","text":"落叶底下还潮，旁边踩实的地方干了。","selected":false}
+{"location":"yard","layer":"weather","season":2,"slot":0,"syntaxId":9,"candidate":2,"skeleton":"接缝","text":"剑架的木条干了，接缝里还夹着泥。","selected":true}
+{"location":"yard","layer":"weather","season":2,"slot":0,"syntaxId":9,"candidate":3,"skeleton":"两处","text":"落叶底下还潮，旁边踩实的地方干了。","selected":false}
 {"location":"yard","layer":"weather","season":2,"slot":1,"syntaxId":10,"candidate":1,"skeleton":"程度","text":"黄土只干到一指深，下面发潮。","selected":true}
 {"location":"yard","layer":"weather","season":2,"slot":1,"syntaxId":10,"candidate":2,"skeleton":"数量","text":"桩脚的坑边干了，坑里还是水。","selected":false}
 {"location":"yard","layer":"weather","season":2,"slot":1,"syntaxId":10,"candidate":3,"skeleton":"名词","text":"剑架上的湿痕只剩薄薄一层。","selected":false}

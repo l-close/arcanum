@@ -285,6 +285,7 @@ async function checkSceneText(sceneMaterials, styleRules, schedule, data) {
   ]
 
   checkOverrides(sceneMaterials, styleRules, schedule)
+  checkDraftConsistency(sceneMaterials, drafts, data)
 
   for (const scan of scans) {
     checkQuota(scan, styleRules)
@@ -312,8 +313,24 @@ async function checkSceneText(sceneMaterials, styleRules, schedule, data) {
   }
 }
 
-// ---------- 素材表 ----------
+function checkDraftConsistency(sceneMaterials, drafts, data) {
+  for (const draft of drafts) {
+    if (!draft.selected) continue
+    const locked =
+      draft.layer === 'season' ? sceneMaterials.LOCKED.season : sceneMaterials.LOCKED.weather
+    if (!locked.includes(draft.location)) continue
+    const table = draft.layer === 'season' ? data.SEASON_DESC : data.WEATHER_SCENES
+    const text = readTableCell(draft.layer, table, draft.location, draft.season, draft.slot)
+    if (text !== draft.text) {
+      err(
+        'drafts',
+        `${draft.layer}/${draft.location}/${draft.season}/${draft.slot}: 选中候选与表不一致`,
+      )
+    }
+  }
+}
 
+// ---------- 素材表 ----------
 function checkMaterialTables(sceneMaterials) {
   for (const [id, table] of Object.entries(sceneMaterials.MATERIALS)) {
     const general = new Set(sceneMaterials.generalTokens(table))

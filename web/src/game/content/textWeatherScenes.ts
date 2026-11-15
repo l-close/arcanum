@@ -213,7 +213,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
   yard: {
     spring: {
       sunny: '黄土表面结了一层干壳。',
-      cloudy: '扫帚扫过场地，半片沙沙响，半片没声。',
+      cloudy: '黄土踩上去，一半有响，一半没声。',
       overcast: '只有背阴那面的木桩还潮。',
       rain: '水没到剑架最下面那格。',
     },
@@ -224,7 +224,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
       rain: '靠墙那排桩没泡到水。',
     },
     autumn: {
-      sunny: '土面踩实了，剑架底下还松。',
+      sunny: '剑架的木条干了，接缝里还夹着泥。',
       cloudy: '黄土只干到一指深，下面发潮。',
       overcast: '墙根一带还是潮的。',
       rain: '土踩实了，水只能顺着桩脚走。',
