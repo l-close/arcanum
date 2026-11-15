@@ -149,7 +149,7 @@ export const ITEMS: Record<string, ItemDef> = {
     slot: 'armor',
     medium: false,
     resist: 1,
-    desc: '厚布斗篷，内衬缝着几片写过字的旧符纸。穿上不显眼，却让人安心一点。',
+    desc: '厚布斗篷，内衬缝着几片写过字的旧纸。穿上不显眼，却让人安心一点。',
   },
   studded_leather: {
     id: 'studded_leather',

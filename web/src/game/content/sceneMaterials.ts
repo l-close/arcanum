@@ -256,9 +256,23 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     npc: 'none',
   },
   // 教堂街：钟声和石阶——扫得干净、募捐箱、门口收伞。
-  // 蜡烛是气味来源（“带着蜡烛的味道”），不是街上的摆件。
+  // 蜡烛只出现在用烛场景：烛台、窗台的烛头、蜡烛味。不作通用摆件。
   churchStreet: {
-    objects: ['尖顶', '钟楼', '石阶', '石墙', '教堂的门', '伞', '募捐箱', '教堂的窗', '蜡烛'],
+    objects: [
+      '尖顶',
+      '钟楼',
+      '石阶',
+      '石墙',
+      '教堂的门',
+      '伞',
+      '募捐箱',
+      '教堂的窗',
+      '蜡烛',
+      '烛台',
+      '伞架',
+      '锁',
+      '钟绳',
+    ],
     sounds: ['钟楼'],
     traces: ['脚印', '扫痕', '伞上的水', '蜡烛油'],
     aliases: { 钟: '钟楼', 阶: '石阶', 门: '教堂的门' },
@@ -367,7 +381,7 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
  * 校验器只扫表，不再看 drafts。
  */
 export const LOCKED: { season: string[]; weather: string[] } = {
-  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet'],
+  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet'],
   weather: ['yard', 'gate', 'town'],
 }
 
