@@ -214,6 +214,22 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     npc: 'has',
     npcNote: '米娅、卢卡，假日下午',
   },
+  // 教堂前庭：站在门口看见的——神像、门、台阶、灯。
+  // 教堂街是从街上看见的建筑（钟楼、尖顶、伞、募捐箱），两边不共用主物件。
+  church: {
+    objects: ['神像', '石阶', '教堂的门', '门槛', '长明灯', '教堂的窗', '墙根', '扫帚'],
+    sounds: ['石阶', '教堂的门', '钟楼'],
+    traces: ['扫痕', '湿印', '泥', '花瓣'],
+    aliases: { 阶: '石阶', 门: '教堂的门', 像: '神像' },
+    seasonal: {
+      spring: ['花', '露水'],
+      summer: ['花'],
+      autumn: ['花', '落叶'],
+      winter: ['霜', '雪'],
+    },
+    npc: 'future',
+    npcNote: '守堂的人，未具名',
+  },
   // 学院区：上下坡和抱书的人——坡度、门楼、学生的东西。
   academyStreet: {
     objects: ['坡道', '学院门楼', '门楼的灯', '树', '石墙', '石阶', '书', '外衣'],
@@ -407,7 +423,7 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
  * 校验器只扫表，不再看 drafts。
  */
 export const LOCKED: { season: string[]; weather: string[] } = {
-  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy'],
+  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy', 'church'],
   weather: ['yard', 'gate', 'town'],
 }
 

@@ -91,7 +91,7 @@ export const ALLOWED_NOUNS = [
 ]
 
 /** 场景层魔法密度统计用的词。单字「符」不入表：会误伤护符、符号、符合。 */
-export const MAGIC_TERMS = ['符文', '法阵', '传送', '咒']
+export const MAGIC_TERMS = ['符文', '法阵', '传送', '咒', '长明灯']
 
 /** 行首禁用；两层都查。 */
 export const BANNED_LINE_START = ['风', '天色', '阳光', '日头']

@@ -197,11 +197,11 @@ export const LOCATIONS: Location[] = [
   },
   {
     id: 'church',
-    name: '教堂内堂',
+    name: '教堂前庭',
     parent: 'churchStreet',
     kind: 'venue',
     childLabel: '教堂设施',
-    desc: '门内的光线暗下来，空气里有蜡烛和旧木头的气味。',
+    desc: '石阶从街边抬上来，母神的神像立在门口。门内是祷告厅和救济院。',
   },
   {
     id: 'chapel',
