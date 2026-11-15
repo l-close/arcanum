@@ -25,7 +25,7 @@
 | orphanStreet | 孤儿院 | 已有 | 已锁 | 未开始 | 通过 | 未开始 |
 | churchStreet | 教堂 | 已有 | 已锁 | 未开始 | 通过 | 未开始 |
 | craftDistrict | 工坊区 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
-| academy | 长明学院 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
+| academy | 长明学院 | 已有 | 已锁 | 未开始 | 通过 | 未开始 |
 | orphanage | 孤儿院正厅 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
 | commercial | 商业区 | 已有 | 已锁 | 未开始 | 通过 | 未开始 |
 | church | 教堂内堂 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
@@ -41,7 +41,7 @@
 
 ## 说明
 
-- 素材表已有：`town`、`commercial`、`yard`、`gate`、`academyStreet`、`orphanStreet`、`churchStreet`。
+- 素材表已有：`town`、`commercial`、`yard`、`gate`、`academy`、`academyStreet`、`orphanStreet`、`churchStreet`。
 - `yard`、`gate` 两层都已锁，整体锁定。
 - `town`、`commercial` 季节已锁、天气未开始。
 - 其余 12 行全部 `未开始`。

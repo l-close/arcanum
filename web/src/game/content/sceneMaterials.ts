@@ -227,6 +227,32 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     },
     npc: 'none',
   },
+  // 学院庭院：石墙和藤蔓——门廊、门房、石板。魔法靠地点描述与事件，场景层不留格。
+  academy: {
+    objects: [
+      '石墙',
+      '藤蔓',
+      '石板',
+      '台阶',
+      '门廊',
+      '廊柱',
+      '门房',
+      '学院的门',
+      '排水沟',
+      '扫帚',
+      '灯',
+    ],
+    sounds: ['石板', '台阶', '学院的门', '藤蔓'],
+    traces: ['脚印', '扫过的石板', '石缝里的苔', '水渍'],
+    aliases: { 墙: '石墙', 门: '学院的门', 柱: '廊柱', 沟: '排水沟', 阶: '台阶' },
+    seasonal: {
+      spring: ['露水'],
+      autumn: ['落叶'],
+      winter: ['霜', '雪'],
+    },
+    npc: 'future',
+    npcNote: '门房常驻，未具名',
+  },
   // 孤儿院街：安静和草——墙根、孩子、教堂尖顶从旁边露出来。
   orphanStreet: {
     objects: [
@@ -381,7 +407,7 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
  * 校验器只扫表，不再看 drafts。
  */
 export const LOCKED: { season: string[]; weather: string[] } = {
-  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet'],
+  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy'],
   weather: ['yard', 'gate', 'town'],
 }
 
