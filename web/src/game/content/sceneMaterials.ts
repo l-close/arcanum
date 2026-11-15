@@ -251,6 +251,36 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     npc: 'future',
     npcNote: '门房常驻，未具名',
   },
+  // 后院：孤儿院屋后——生产与生活两用，园地种菜，院子晾衣、码柴。
+  // 痕迹只收「留下的东西」，不收事件（桶倒扣、木剑扔回架那类）。
+  backyard: {
+    objects: ['园地', '土垄', '柴堆', '木箱', '墙根', '晾衣绳'],
+    sounds: ['柴堆', '木箱', '晾衣绳'],
+    traces: ['脚印', '耙痕', '水印', '踩实的土'],
+    aliases: { 地: '园地', 垄: '土垄', 箱: '木箱', 柴: '柴堆', 绳: '晾衣绳' },
+    seasonal: {
+      spring: ['新芽'],
+      summer: ['苗'],
+      autumn: ['枯秆', '落叶'],
+      winter: ['雪', '霜'],
+    },
+    npc: 'none',
+  },
+  // 钟楼：塔门在街边，钟室有窗——天气从窗进来，不从钟口。
+  // 铜钟不生锈，锈在钟梁和铁件上。
+  bellTower: {
+    objects: ['塔门', '长凳', '水壶', '铜钟', '钟绳', '木楼梯', '钟口', '钟室的窗'],
+    sounds: ['铜钟', '钟绳', '木楼梯'],
+    traces: ['灰', '脚印', '锈', '绳痕'],
+    aliases: { 绳: '钟绳', 梯: '木楼梯', 壶: '水壶', 窗: '钟室的窗' },
+    seasonal: {
+      spring: ['露水'],
+      autumn: ['落叶'],
+      winter: ['雪', '霜'],
+    },
+    npc: 'future',
+    npcNote: '守钟人奥托',
+  },
   // 孤儿院街：安静和草——墙根、孩子、教堂尖顶从旁边露出来。
   orphanStreet: {
     objects: [
@@ -401,8 +431,8 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
  * 校验器只扫表，不再看 drafts。
  */
 export const LOCKED: { season: string[]; weather: string[] } = {
-  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy'],
-  weather: ['yard', 'gate', 'town', 'commercial'],
+  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy', 'backyard', 'bellTower'],
+  weather: ['yard', 'gate', 'town', 'commercial', 'backyard', 'bellTower'],
 }
 
 /**

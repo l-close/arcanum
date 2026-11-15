@@ -137,7 +137,7 @@ export const LOCATIONS: Location[] = [
     name: '后院',
     parent: 'orphanage',
     kind: 'room',
-    desc: '后院有一小块菜地，靠墙堆着柴火和旧木箱。',
+    desc: '后院辟出一块园地，靠墙堆着柴火和旧木箱。',
   },
   {
     id: 'office',

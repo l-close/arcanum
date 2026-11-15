@@ -31,8 +31,8 @@
 | commercial | 商业区 | 已有 | 已锁 | 已锁 | 通过 | 通过 |
 | yard | 演武场 | 已有 | 已锁 | 已锁 | 通过 | 通过 |
 | herbGarden | 药草园 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
-| backyard | 后院 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
-| bellTower | 钟楼 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
+| backyard | 后院 | 已有 | 已锁 | 已锁 | 通过 | 通过 |
+| bellTower | 钟楼 | 已有 | 已锁 | 已锁 | 通过 | 通过 |
 | gate | 城门 | 已有 | 已锁 | 已锁 | 通过 | 通过 |
 | outside | 城外 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
 | cemetery | 墓园 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
@@ -48,10 +48,10 @@
 
 ## 说明
 
-- 素材表已有：`town`、`commercial`、`yard`、`gate`、`academy`、`academyStreet`、`orphanStreet`、`churchStreet`。
+- 素材表已有：`town`、`commercial`、`yard`、`gate`、`academy`、`backyard`、`bellTower`、`academyStreet`、`orphanStreet`、`churchStreet`。
 - `yard`、`gate`、`town` 整体锁定。
 - `academyStreet`、`orphanStreet`、`churchStreet`、`academy`、`commercial` 季节已锁、天气未开始。
-- 其余 8 行全部 `未开始`。
+- 其余 6 行全部 `未开始`。
 - `已锁` 不等于整体锁定：`季节` 与 `天气` 都 `已锁`、两层自检都 `通过`，才算整体锁定。
 - 已知弱配（复核时优先）：`yard` 冬·阴（4 数量，写成了程度）、`yard` 冬·雪（11 位置，写成了对比）。
 - baseline 静音项（写该地点时自行核分布）：`gate` 门洞、`town` 喷泉。
