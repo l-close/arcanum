@@ -443,6 +443,18 @@ function checkMaterialCap(scan, styleRules, sceneMaterials) {
     counts.sort((a, b) => b[1] - a[1])
 
     const reference = new Set(styleRules.REFERENCE_TERMS ?? [])
+    const baseline = new Set(styleRules.ANCHOR_BASELINE ?? [])
+    const minCells = styleRules.ANCHOR_MIN_CELLS ?? 5
+    const minRatio = styleRules.ANCHOR_MIN_RATIO ?? 0.75
+    for (const [term, count, anchored] of counts) {
+      if (anchored < minCells || anchored / count < minRatio) continue
+      const key = `${scan.layer}/${location}:${term}`
+      if (baseline.has(key)) {
+        console.log(`INFO [anchor] ${key}: ${count} 格，带方位 ${anchored}`)
+      } else {
+        warn('anchor', `${key}: ${count} 格，带方位 ${anchored}`)
+      }
+    }
     if (styleRules.MATERIAL_TERM_CAP === null) {
       const top = counts
         .slice(0, 3)

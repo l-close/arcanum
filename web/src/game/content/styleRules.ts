@@ -132,6 +132,16 @@ export const ORIENTATION_TERMS = [
   '里',
 ]
 
+/** 锚点组合频次的判定：带方位的格数 ≥5 且占该锚点出现次数的 75%。 */
+export const ANCHOR_MIN_CELLS = 5
+export const ANCHOR_MIN_RATIO = 0.75
+
+/** 已知基线：命中后只打 INFO，不再 warning。只放“该地点本体”这种理由。 */
+export const ANCHOR_BASELINE = [
+  'season/gate:门洞', // 城门是一条通道，方位就是它的本体
+  'season/town:喷泉', // 广场以泉为中心
+]
+
 /** 每层每地点的格数：4 季 × 4 段（天气层是 4 季 × 4 天气）。 */
 export const CELLS_PER_LAYER = 16
 
