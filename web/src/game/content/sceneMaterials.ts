@@ -364,7 +364,7 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
  * 校验器只扫表，不再看 drafts。
  */
 export const LOCKED: { season: string[]; weather: string[] } = {
-  season: ['yard', 'gate', 'town', 'commercial'],
+  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet'],
   weather: ['yard', 'gate', 'town'],
 }
 
