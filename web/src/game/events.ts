@@ -760,6 +760,34 @@ export const EVENTS: GameEvent[] = [
       },
     ],
   },
+  {
+    id: 'commercial_rune_lamp',
+    title: '招牌下的灯',
+    once: true,
+    trigger: { type: 'enter' },
+    locations: ['commercial'],
+    days: 'all',
+    timeRanges: [[at(10), at(17)]],
+    expCapTier: 2,
+    text: [
+      '一家店的招牌下挂着一盏灯，灯罩里侧积的是灰，不是烟油。',
+      '店主正站在门口擦灯罩。',
+      '“这盏不用添油。广场那几盏也是。”',
+    ],
+    choices: [
+      {
+        label: '问多久补刻一次',
+        result: '“说不准。坏了才有人来。”店主把灯罩挂回去，没再多说。',
+        effects: { minutes: 5, exp: { knowledge: 1 } },
+      },
+      {
+        label: '看灯座',
+        result: '灯座上有几道补刻的刀痕，深浅不一。',
+        effects: { minutes: 5, mood: 1 },
+      },
+      { label: '走开', result: '你从招牌下走过去。' },
+    ],
+  },
 ]
 
 export function eventMatches(event: GameEvent, data: GameData, trigger: EventTrigger): boolean {

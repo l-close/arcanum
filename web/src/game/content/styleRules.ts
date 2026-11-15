@@ -71,15 +71,27 @@ export const BANNED_CATEGORIES: BannedCategory[] = [
   {
     key: 'temperature',
     label: '温度',
-    words: ['冷', '暖', '凉', '热', '闷'],
+    words: ['冷', '暖', '凉', '热', '闷', '温'],
   },
 ]
 
 /**
  * 先于禁词匹配替换掉的词。
- * 只放不依赖可见性、也不会和禁词撞义的词；`热气` 不在其中。
+ * 只放专名与物质名：不放程度词（暖光、阴凉、温热）。
  */
-export const ALLOWED_NOUNS = ['热食', '热水', '背阴', '阴影', '阴凉', '阴面']
+export const ALLOWED_NOUNS = [
+  '热食',
+  '热水',
+  '温水',
+  '温室',
+  '保温',
+  '背阴',
+  '阴影',
+  '阴面',
+]
+
+/** 场景层魔法密度统计用的词。单字「符」不入表：会误伤护符、符号、符合。 */
+export const MAGIC_TERMS = ['符文', '法阵', '传送', '咒']
 
 /** 行首禁用；两层都查。 */
 export const BANNED_LINE_START = ['风', '天色', '阳光', '日头']

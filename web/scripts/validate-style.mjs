@@ -290,6 +290,7 @@ async function checkSceneText(sceneMaterials, styleRules, schedule, data) {
   for (const scan of scans) {
     checkQuota(scan, styleRules)
     checkMaterialCap(scan, styleRules, sceneMaterials)
+    checkMagicDensity(scan, styleRules)
     checkBigrams(scan, sceneMaterials, styleRules)
     for (const cell of scan.cells) {
       if (!cell.text) continue
@@ -505,6 +506,22 @@ function checkMaterialCap(scan, styleRules, sceneMaterials) {
           )
         }
       }
+    }
+  }
+}
+
+function checkMagicDensity(scan, styleRules) {
+  const terms = styleRules.MAGIC_TERMS ?? []
+  if (terms.length === 0) return
+  const groups = new Map()
+  for (const cell of scan.cells) {
+    if (!groups.has(cell.location)) groups.set(cell.location, [])
+    groups.get(cell.location).push(cell)
+  }
+  for (const [location, cells] of groups) {
+    const magic = cells.filter((cell) => terms.some((term) => cell.text.includes(term)))
+    if (magic.length > 1) {
+      warn('magic', `${scan.layer}/${location}: ${magic.length} 格带魔法词（上限 1）`)
     }
   }
 }

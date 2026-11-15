@@ -256,6 +256,7 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     npc: 'none',
   },
   // 教堂街：钟声和石阶——扫得干净、募捐箱、门口收伞。
+  // 蜡烛是气味来源（“带着蜡烛的味道”），不是街上的摆件。
   churchStreet: {
     objects: ['尖顶', '钟楼', '石阶', '石墙', '教堂的门', '伞', '募捐箱', '教堂的窗', '蜡烛'],
     sounds: ['钟楼'],
