@@ -46,7 +46,7 @@
 
 季节句和天气句在同一个段落里连着显示，所以它们必须分工，不能各说各的。
 
-| | 季节句（288） | 天气句（288） |
+| | 季节句（256） | 天气句（256） |
 |---|---|---|
 | 管 | 人 + 地点的慢变化 | 物 + 今天的偏差 |
 | 时态 | 习惯性（这个季节通常如此） | 今天的地表状态 |
@@ -458,9 +458,14 @@ alias 是给简称用的，不是给空句用的。不新增道具——新增�
 - 本规范**只覆盖场景层**。事件、告示、NPC 台词尚无成文规则；其余层纳入时间=各自规范成文时。
 - 西镇（`westTown`、`westGate` 等）不在范围内：它们按重建阶段返回描述。
 - 暮格的“人多 / 人少”容差，见第 3 节。
-- **待清理的死文本**：`DESC_BY_TIME` 里与 `SEASON_DESC` 重叠的 12 个地点（town、academy、orphanage、commercial、church、yard、backyard、bellTower、gate、outside、cemetery、forest），加 `forestDeep` 共 **13 处 / 39 行**。
-- 静态 `loc.desc` 已不可达的：已有 `SEASON_DESC` 的 15 个地点，加 `forestDeep`、`craftDistrict`、`herbGarden`，共 **18 条**。
-- `academyStreet`、`orphanStreet`、`churchStreet` 本来就没有 `DESC_BY_TIME` 条目；`potionWorkshop`、`brewery`、`guild`、`bookshop` 靠在用，不在清理清单里。
+- **待清理的死文本**（`locationDesc` 的兜底链是 `SEASON_DESC` → `DESC_BY_TIME` → `loc.desc`，越前面的越遮后面）：
+
+  有 `SEASON_DESC` 的地点，`loc.desc` 不会被渲染，但它仍是写手的参照，必须和实际文本同向。desc 不用来判定内外——判据是玩家站的地方头顶有没有天。
+
+  - 被遮蔽的 `DESC_BY_TIME`：**11 处 / 33 行**——town、academy、commercial、yard、backyard、gate、outside、cemetery、forest、forestDeep、bellTower。
+    其中 `bellTower`：待写 32 格之前替换（现为塔内视角，与户外判据不符）——**这条是该改，不是该删**。
+  - 被遮蔽的 `loc.desc`：**18 条**。只有两张表都没有的地点才轮到它（药剂工坊、炼药室、商会办事处、旧书铺这类无时段表的室内房间）。
+- `academyStreet`、`orphanStreet`、`churchStreet` 本来就没有 `DESC_BY_TIME` 条目；`church`、`orphanage` 是室内地点，`DESC_BY_TIME` 是它们的唯一生效文本，不在清理清单里。
 
 ## 12. 魔法元素
 
@@ -468,7 +473,7 @@ alias 是给简称用的，不是给空句用的。不新增道具——新增�
 
 | 落点 | 对应代码 | 规则 |
 |---|---|---|
-| 场景格 | `SEASON_DESC` / `WEATHER_SCENES` | 仅 18 个户外地点；每地点每层 **≤1 格**，只写后果 |
+| 场景格 | `SEASON_DESC` / `WEATHER_SCENES` | 仅 16 个户外地点；每地点每层 **≤1 格**，只写后果 |
 | 地点描述与事件 | `locations.desc` / `events` | 不限 |
 | 物品与 NPC | `items` / `npcs` | 不限 |
 
@@ -494,7 +499,7 @@ alias 是给简称用的，不是给空句用的。不新增道具——新增�
 
 ### 密度是资产
 
-城市核心长期零魔法，是商业区那盏符文灯事件的分量来源。场景层的魔法总量控制在 288 格里十余格；写进去的收不回来。
+城市核心长期零魔法，是商业区那盏符文灯事件的分量来源。场景层的魔法总量控制在 256 格里十余格（季节 256 + 天气 256，共 512 格）；写进去的收不回来。
 
 ## 校验
 

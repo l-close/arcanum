@@ -1,6 +1,8 @@
 # arcanum 文本批次进度
 
-18 个地点取自 `web/src/game/content/weather.ts` 的 `OUTDOOR`。`id` 是唯一键；`地点` 列由 `locations.ts` 派生，不一致只报警告。
+16 个户外地点取自 `web/src/game/content/weather.ts` 的 `OUTDOOR`：玩家站在那儿，头顶有天，走季节 16 格 + 天气 16 格。`id` 是唯一键；`地点` 列由 `locations.ts` 派生，不一致只报警告。
+
+室内地点（`church`、`orphanage`）不走 32 格：`DESC_BY_TIME` 3 条 + 暮覆盖 1 条。
 
 本表只记进度，不记逐格明细。逐格自检记录跟文本稿走，不进仓库。
 
@@ -26,9 +28,7 @@
 | churchStreet | 教堂 | 已有 | 已锁 | 未开始 | 通过 | 未开始 |
 | craftDistrict | 工坊区 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
 | academy | 长明学院 | 已有 | 已锁 | 未开始 | 通过 | 未开始 |
-| orphanage | 孤儿院正厅 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
 | commercial | 商业区 | 已有 | 已锁 | 未开始 | 通过 | 未开始 |
-| church | 教堂前庭 | 已有 | 已锁 | 未开始 | 通过 | 未开始 |
 | yard | 演武场 | 已有 | 已锁 | 已锁 | 通过 | 通过 |
 | herbGarden | 药草园 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
 | backyard | 后院 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
@@ -39,18 +39,27 @@
 | forest | 森林 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
 | forestDeep | 森林深处 | 未开始 | 未开始 | 未开始 | 未开始 | 未开始 |
 
+## 室内（各 4 条）
+
+| id | 地点 | 时段描述 | 暮覆盖 |
+|---|---|---|---|
+| church | 教堂内堂 | 已有 | 已有 |
+| orphanage | 孤儿院正厅 | 已有 | 已有 |
+
 ## 说明
 
-- 素材表已有：`town`、`commercial`、`yard`、`gate`、`church`、`academy`、`academyStreet`、`orphanStreet`、`churchStreet`。
-- `yard`、`gate` 两层都已锁，整体锁定。
-- `town`、`commercial` 季节已锁、天气未开始。
-- 其余 12 行全部 `未开始`。
+- 素材表已有：`town`、`commercial`、`yard`、`gate`、`academy`、`academyStreet`、`orphanStreet`、`churchStreet`。
+- `yard`、`gate`、`town` 整体锁定。
+- `academyStreet`、`orphanStreet`、`churchStreet`、`academy`、`commercial` 季节已锁、天气未开始。
+- 其余 8 行全部 `未开始`。
 - `已锁` 不等于整体锁定：`季节` 与 `天气` 都 `已锁`、两层自检都 `通过`，才算整体锁定。
 - 已知弱配（复核时优先）：`yard` 冬·阴（4 数量，写成了程度）、`yard` 冬·雪（11 位置，写成了对比）。
+- `bellTower` 的 `DESC_BY_TIME` 仍是塔内视角，写 32 格之前要替换。
 
 ## 校验
 
-- `npm run validate:style` 按 `id` 比对：本表的 id 集合必须正好 18 个，且与 `LOCKED.season` / `LOCKED.weather` 一致。
+- `npm run validate:style` 按 `id` 比对：本表的 id 集合必须正好 16 个（等于 `SCENE_LOCATIONS.length`），且与 `LOCKED.season` / `LOCKED.weather` 一致。
+- 室内表在空行之后的独立小节，解析器只读第一张表，不参与 id 比对。
 - `地点` 列与 `locations.ts` 派生名比对，不一致只报警告。
-- 18 个派生名应互不相同；重复只报警告。
-- 表格缺 `id` 列、行数不是 18、名字带空格，均按“表格格式异常”报错，不静默跳过。
+- 16 个派生名应互不相同；重复只报警告。
+- 表格缺 `id` 列、行数不等于 `SCENE_LOCATIONS.length`、名字带空格，均按“表格格式异常”报错，不静默跳过。

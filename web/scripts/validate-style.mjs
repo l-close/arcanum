@@ -212,8 +212,8 @@ async function checkStatus(sceneMaterials, locations, weather) {
     err('scene', 'SCENE_LOCATIONS 与 weather.ts 的 OUTDOOR 不一致')
   }
 
-  if (rows.length !== 18) {
-    err('TEXT_STATUS', `表格有 ${rows.length} 行，应为 18`)
+  if (rows.length !== expected.size) {
+    err('TEXT_STATUS', `表格有 ${rows.length} 行，应为 ${expected.size}`)
   }
 
   const seen = new Set()
@@ -236,7 +236,7 @@ async function checkStatus(sceneMaterials, locations, weather) {
       warn('TEXT_STATUS', `${row.id}: 地点名「${row.name}」与派生名「${derived}」不一致`)
     }
     if (names.has(derived)) {
-      warn('TEXT_STATUS', `${row.id}: 派生名「${derived}」在 18 个地点中重复`)
+      warn('TEXT_STATUS', `${row.id}: 派生名「${derived}」在 ${expected.size} 个地点中重复`)
     }
     names.add(derived)
 

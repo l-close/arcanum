@@ -67,15 +67,13 @@ export function hitTokens(table: MaterialTable, season: Season): string[] {
 }
 
 
-/** 与 weather.ts 的 OUTDOOR 顺序一致。 */
+/** 户外 16 个：头顶有天的地方。室内地点走 DESC_BY_TIME 3 条 + 暮覆盖 1 条。 */
 export const SCENE_LOCATIONS = [
   'yard',
   'gate',
   'town',
   'commercial',
-  'church',
   'academy',
-  'orphanage',
   'backyard',
   'academyStreet',
   'orphanStreet',
@@ -213,22 +211,6 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     },
     npc: 'has',
     npcNote: '米娅、卢卡，假日下午',
-  },
-  // 教堂前庭：站在门口看见的——神像、门、台阶、灯。
-  // 教堂街是从街上看见的建筑（钟楼、尖顶、伞、募捐箱），两边不共用主物件。
-  church: {
-    objects: ['神像', '石阶', '教堂的门', '门槛', '长明灯', '教堂的窗', '墙根', '扫帚'],
-    sounds: ['石阶', '教堂的门', '钟楼'],
-    traces: ['扫痕', '湿印', '泥', '花瓣'],
-    aliases: { 阶: '石阶', 门: '教堂的门', 像: '神像' },
-    seasonal: {
-      spring: ['花', '露水'],
-      summer: ['花'],
-      autumn: ['花', '落叶'],
-      winter: ['霜', '雪'],
-    },
-    npc: 'future',
-    npcNote: '守堂的人，未具名',
   },
   // 学院区：上下坡和抱书的人——坡度、门楼、学生的东西。
   academyStreet: {
@@ -380,9 +362,7 @@ export const SEASON_MATRIX: Record<SceneLocationId, number[]> = {
   gate: [7, 5, 11, 16, 4, 15, 9, 2, 10, 14, 8, 6, 12, 13, 3, 1],
   town: [6, 8, 4, 15, 10, 12, 11, 13, 16, 9, 1, 3, 2, 14, 5, 7],
   commercial: [3, 2, 4, 1, 7, 6, 8, 9, 11, 10, 12, 15, 13, 16, 14, 5],
-  church: [13, 1, 16, 14, 15, 3, 2, 4, 5, 7, 6, 8, 9, 11, 10, 12],
   academy: [11, 4, 15, 10, 9, 14, 13, 16, 12, 1, 3, 2, 8, 5, 7, 6],
-  orphanage: [2, 11, 1, 7, 6, 8, 9, 5, 10, 12, 14, 13, 16, 15, 4, 3],
   backyard: [13, 16, 14, 5, 3, 2, 4, 1, 7, 6, 8, 9, 11, 10, 12, 15],
   academyStreet: [10, 15, 9, 12, 11, 13, 16, 14, 1, 3, 2, 4, 5, 7, 6, 8],
   orphanStreet: [12, 14, 7, 6, 8, 9, 5, 10, 15, 4, 13, 16, 11, 1, 3, 2],
@@ -402,9 +382,7 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
   gate: [8, 16, 13, 5, 7, 1, 2, 3, 12, 4, 6, 15, 11, 9, 10, 14],
   town: [11, 12, 9, 10, 7, 8, 15, 13, 16, 14, 1, 2, 3, 4, 5, 6],
   commercial: [2, 3, 12, 11, 6, 8, 7, 5, 10, 15, 4, 9, 13, 16, 14, 1],
-  church: [15, 13, 16, 14, 1, 2, 3, 4, 5, 6, 8, 11, 9, 10, 7, 12],
   academy: [10, 9, 4, 7, 11, 15, 13, 16, 14, 1, 2, 3, 12, 5, 6, 8],
-  orphanage: [3, 12, 5, 6, 8, 11, 9, 10, 7, 4, 15, 13, 16, 14, 1, 2],
   backyard: [13, 8, 14, 1, 2, 3, 4, 9, 6, 12, 7, 5, 10, 11, 16, 15],
   academyStreet: [9, 10, 11, 12, 15, 13, 16, 14, 1, 2, 3, 4, 5, 6, 8, 7],
   orphanStreet: [7, 12, 6, 8, 4, 9, 10, 11, 5, 15, 13, 16, 14, 1, 2, 3],
@@ -423,7 +401,7 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
  * 校验器只扫表，不再看 drafts。
  */
 export const LOCKED: { season: string[]; weather: string[] } = {
-  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy', 'church'],
+  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy'],
   weather: ['yard', 'gate', 'town'],
 }
 
@@ -432,6 +410,8 @@ export const LOCKED: { season: string[]; weather: string[] } = {
  * 其余室内继续用 DESC_BY_TIME 的夜句。
  */
 export const EVENING_OVERRIDE: Record<string, string> = {
+  church: '门内点了蜡烛，烛台边摆着几支新的。',
+  orphanage: '桌上摊着补到一半的衣服，针别在布上。',
   canteen: '灶间门口堆着择下的菜叶。',
   orphanCanteen: '水缸的水少了一截。',
   relief: '长椅上叠着几件旧衣。',
