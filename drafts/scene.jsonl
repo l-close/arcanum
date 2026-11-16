@@ -1079,7 +1079,7 @@
 {"location":"forestDeep","layer":"season","season":1,"slot":3,"syntaxId":11,"candidate":1,"skeleton":"一截倒木烂空了","text":"一截倒木烂空了，里面长满菌。","selected":true}
 {"location":"forestDeep","layer":"season","season":1,"slot":3,"syntaxId":11,"candidate":2,"skeleton":"树根底下堆着一堆","text":"树根底下堆着一堆朽了的落枝。","selected":false}
 {"location":"forestDeep","layer":"season","season":1,"slot":3,"syntaxId":11,"candidate":3,"skeleton":"断掉的树干斜靠在","text":"断掉的树干斜靠在另一棵上，没人管。","selected":false}
-{"location":"forestDeep","layer":"season","season":2,"slot":0,"syntaxId":13,"candidate":1,"skeleton":"旧的落叶烂了","text":"旧的落叶烂了，新的盖上去。","selected":true}
+{"location":"forestDeep","layer":"season","season":2,"slot":0,"syntaxId":13,"candidate":1,"skeleton":"旧的落叶烂了","text":"倒木上的旧苔烂了，新苔接着长。","selected":true}
 {"location":"forestDeep","layer":"season","season":2,"slot":0,"syntaxId":13,"candidate":2,"skeleton":"一截倒木烂透","text":"一截倒木烂透，旁边又倒下一棵。","selected":false}
 {"location":"forestDeep","layer":"season","season":2,"slot":0,"syntaxId":13,"candidate":3,"skeleton":"苔从旧倒木挪到新","text":"苔从旧倒木挪到新倒木上。","selected":false}
 {"location":"forestDeep","layer":"season","season":2,"slot":1,"syntaxId":16,"candidate":1,"skeleton":"倒木的粗细","text":"倒木的粗细，两个人合抱不过来。","selected":true}
@@ -1229,7 +1229,7 @@
 {"location":"craftDistrict","layer":"weather","season":2,"slot":1,"syntaxId":10,"candidate":1,"skeleton":"木屑干到一捏就碎","text":"木屑干到一捏就碎，底下那层还潮。","selected":true}
 {"location":"craftDistrict","layer":"weather","season":2,"slot":1,"syntaxId":10,"candidate":2,"skeleton":"炉灰干到一碰就起","text":"炉灰干到一碰就起粉。","selected":false}
 {"location":"craftDistrict","layer":"weather","season":2,"slot":1,"syntaxId":10,"candidate":3,"skeleton":"槽底干到踩上去有","text":"槽底干到踩上去有响。","selected":false}
-{"location":"craftDistrict","layer":"weather","season":2,"slot":2,"syntaxId":11,"candidate":1,"skeleton":"潮气留在槽底","text":"潮气留在槽底，槽边是干的。","selected":true}
+{"location":"craftDistrict","layer":"weather","season":2,"slot":2,"syntaxId":11,"candidate":1,"skeleton":"潮气留在槽底","text":"潮气缩在炉灰堆底下，上面干了。","selected":true}
 {"location":"craftDistrict","layer":"weather","season":2,"slot":2,"syntaxId":11,"candidate":2,"skeleton":"铜招牌背面没干","text":"铜招牌背面没干，正面干了。","selected":false}
 {"location":"craftDistrict","layer":"weather","season":2,"slot":2,"syntaxId":11,"candidate":3,"skeleton":"炉灰堆底下还潮","text":"炉灰堆底下还潮，上面是干的。","selected":false}
 {"location":"craftDistrict","layer":"weather","season":2,"slot":3,"syntaxId":12,"candidate":1,"skeleton":"槽里的水没干","text":"槽里的水没干，边上留着一圈灰印。","selected":true}

@@ -382,7 +382,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     autumn: {
       sunny: '招牌上的灰干得翘了边，钉子那头还紧。',
       cloudy: '木屑干到一捏就碎，底下那层还潮。',
-      overcast: '潮气留在槽底，槽边是干的。',
+      overcast: '潮气缩在炉灰堆底下，上面干了。',
       rain: '槽里的水没干，边上留着一圈灰印。',
     },
     winter: {
