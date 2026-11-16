@@ -497,7 +497,7 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
   gate: [8, 16, 13, 5, 7, 1, 2, 3, 12, 4, 9, 15, 11, 6, 10, 14],
   town: [11, 12, 9, 10, 7, 8, 15, 13, 16, 14, 1, 2, 3, 4, 5, 6],
   commercial: [2, 3, 12, 11, 6, 8, 7, 5, 10, 15, 4, 9, 13, 16, 14, 1],
-  academy: [10, 9, 4, 7, 11, 15, 13, 16, 14, 1, 2, 3, 12, 5, 6, 8],
+  academy: [10, 9, 4, 7, 11, 15, 13, 16, 14, 1, 2, 3, 12, 6, 5, 8],
   backyard: [13, 8, 14, 1, 2, 3, 4, 9, 6, 12, 7, 5, 10, 11, 16, 15],
   academyStreet: [9, 10, 11, 12, 15, 13, 16, 14, 1, 2, 3, 4, 5, 6, 8, 7],
   orphanStreet: [7, 12, 6, 8, 4, 9, 10, 11, 5, 15, 13, 16, 14, 1, 2, 3],
@@ -517,7 +517,7 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
  */
 export const LOCKED: { season: string[]; weather: string[] } = {
   season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy', 'backyard', 'bellTower', 'cemetery', 'forest', 'outside', 'forestDeep', 'craftDistrict', 'herbGarden'],
-  weather: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'backyard', 'bellTower', 'cemetery', 'forest', 'outside', 'forestDeep', 'craftDistrict', 'herbGarden'],
+  weather: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy', 'backyard', 'bellTower', 'cemetery', 'forest', 'outside', 'forestDeep', 'craftDistrict', 'herbGarden'],
 }
 
 /**
