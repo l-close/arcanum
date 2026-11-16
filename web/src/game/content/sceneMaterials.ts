@@ -439,7 +439,7 @@ export const SEASON_MATRIX: Record<SceneLocationId, number[]> = {
 /** 天气层：16 格句式号。 */
 export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
   yard: [1, 5, 7, 16, 2, 6, 12, 3, 9, 10, 14, 8, 15, 13, 4, 11],
-  gate: [8, 16, 13, 5, 7, 1, 2, 3, 12, 4, 6, 15, 11, 9, 10, 14],
+  gate: [8, 16, 13, 5, 7, 1, 2, 3, 12, 4, 9, 15, 11, 6, 10, 14],
   town: [11, 12, 9, 10, 7, 8, 15, 13, 16, 14, 1, 2, 3, 4, 5, 6],
   commercial: [2, 3, 12, 11, 6, 8, 7, 5, 10, 15, 4, 9, 13, 16, 14, 1],
   academy: [10, 9, 4, 7, 11, 15, 13, 16, 14, 1, 2, 3, 12, 5, 6, 8],
