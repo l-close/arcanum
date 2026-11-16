@@ -28,7 +28,10 @@ function shapes(layer) {
 function report(location, layer) {
   const matrix = (layer === 'season' ? sceneMaterials.SEASON_MATRIX : sceneMaterials.WEATHER_MATRIX)[location]
   const src = layer === 'season' ? SEASON_DESC[location] : WEATHER_SCENES[location]
-  if (!matrix || !src) return
+  if (!matrix || !src) {
+    console.log(`\n== ${location} / ${layer}: 没有这张表（不是 16 格地点）`)
+    return
+  }
   const nameOf = shapes(layer)
 
   console.log(`\n== ${location} / ${layer}`)
@@ -51,6 +54,10 @@ function report(location, layer) {
 
 const target = process.argv[2]
 const layerArg = process.argv[3]
+if (layerArg && !['season', 'weather'].includes(layerArg)) {
+  console.error('layer 只能是 season 或 weather')
+  process.exit(1)
+}
 const locations = target ? [target] : sceneMaterials.SCENE_LOCATIONS
 const layers = layerArg ? [layerArg] : ['season', 'weather']
 for (const location of locations) {
