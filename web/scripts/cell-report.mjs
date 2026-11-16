@@ -1,53 +1,59 @@
-// 查一个地点每格的真实句式号：改格之前先跑它，比回查矩阵快。
+// 打印某地点某层的 16 格：格 / 句式号 / 形状名 / 文本。
+// 改某一格之前先跑它，别回查矩阵。
 //
 // 用法：node scripts/cell-report.mjs bellTower weather
 //       node scripts/cell-report.mjs bellTower
+//       node scripts/cell-report.mjs            # 全部地点两层
 
 import { closeStyleData, loadStyleData } from './style-blocks.mjs'
 
 const { sceneMaterials, SEASON_DESC, WEATHER_SCENES } = await loadStyleData()
-const [location, layerArg] = process.argv.slice(2)
 
-if (!location) {
-  console.error('用法：node scripts/cell-report.mjs <location> [season|weather]')
-  process.exit(1)
-}
-
+const SEASONS = ['spring', 'summer', 'autumn', 'winter']
 const SEASON_CN = { spring: '春', summer: '夏', autumn: '秋', winter: '冬' }
 const SLOT_CN = {
   season: ['晨', '昼', '暮', '夜'],
-  weather: ['晴', '多云', '阴', '雨/雪'],
+  weather: ['晴', '多云', '阴', '雨'],
 }
-const SEASONS = ['spring', 'summer', 'autumn', 'winter']
+const WEATHER_KEY = (seasonIndex, slot) =>
+  slot === 0 ? 'sunny' : slot === 1 ? 'cloudy' : slot === 2 ? 'overcast' : seasonIndex === 3 ? 'snow' : 'rain'
 
-for (const layer of layerArg ? [layerArg] : ['season', 'weather']) {
-  const matrix = layer === 'season' ? sceneMaterials.SEASON_MATRIX : sceneMaterials.WEATHER_MATRIX
-  const row = matrix[location]
-  const table = layer === 'season' ? SEASON_DESC[location] : WEATHER_SCENES[location]
-  if (!row || !table) {
-    console.error(`${location}: 没有 ${layer} 的矩阵或文本`)
-    continue
-  }
-  const shapes = new Map(sceneMaterials.SHAPE_ANCHORS[layer].map((shape) => [shape.id, shape.name]))
+function shapes(layer) {
+  const list = layer === 'season' ? sceneMaterials.SEASON_SHAPES : sceneMaterials.WEATHER_SHAPES
+  const map = new Map()
+  for (const shape of list) map.set(shape.id, shape.name)
+  return map
+}
+
+function report(location, layer) {
+  const matrix = (layer === 'season' ? sceneMaterials.SEASON_MATRIX : sceneMaterials.WEATHER_MATRIX)[location]
+  const src = layer === 'season' ? SEASON_DESC[location] : WEATHER_SCENES[location]
+  if (!matrix || !src) return
+  const nameOf = shapes(layer)
 
   console.log(`\n== ${location} / ${layer}`)
-  console.log('  格      句式            文本')
-  let index = 0
-  for (const season of SEASONS) {
-    const cells = layer === 'season' ? table[season] : Object.values(table[season])
+  console.log('  格        号  形状        文本')
+  SEASONS.forEach((season, seasonIndex) => {
     for (let slot = 0; slot < 4; slot += 1) {
-      const id = row[index]
-      const label =
-        layer === 'weather' && season === 'winter' && slot === 3
-          ? '冬·雪'
-          : `${SEASON_CN[season]}·${SLOT_CN[layer][slot]}`
-      const text = cells[slot]
+      const index = seasonIndex * 4 + slot
+      const syntaxId = matrix[index]
+      const text =
+        layer === 'season'
+          ? src[season]?.[slot]
+          : src[season]?.[WEATHER_KEY(seasonIndex, slot)]
+      const slotLabel = slot === 3 && layer === 'weather' && seasonIndex === 3 ? '雪' : SLOT_CN[layer][slot]
       console.log(
-        `  ${label.padEnd(6, '　')} ${String(id).padStart(2)} ${String(shapes.get(id) ?? '').padEnd(6, '　')} ${text}`,
+        `  ${SEASON_CN[season]}·${slotLabel.padEnd(3, '　')} ${String(syntaxId).padStart(2)}  ${(nameOf.get(syntaxId) ?? '?').padEnd(5, '　')}  ${text ?? ''}`,
       )
-      index += 1
     }
-  }
+  })
 }
 
+const target = process.argv[2]
+const layerArg = process.argv[3]
+const locations = target ? [target] : sceneMaterials.SCENE_LOCATIONS
+const layers = layerArg ? [layerArg] : ['season', 'weather']
+for (const location of locations) {
+  for (const layer of layers) report(location, layer)
+}
 await closeStyleData()
