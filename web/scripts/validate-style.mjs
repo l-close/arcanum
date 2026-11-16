@@ -293,6 +293,7 @@ async function checkSceneText(sceneMaterials, styleRules, schedule, data) {
     checkMagicDensity(scan, styleRules)
     checkDeadTokens(scan, styleRules, sceneMaterials)
     checkIso(scan, sceneMaterials, styleRules)
+    checkRhythm(scan)
     checkBigrams(scan, sceneMaterials, styleRules)
     for (const cell of scan.cells) {
       if (!cell.text) continue
@@ -545,6 +546,47 @@ function checkIso(scan, sceneMaterials, styleRules) {
   console.log(`INFO [iso] ${scan.layer}: ${hits.length} 处同构风险`)
   for (const line of hits.slice(0, 20)) console.log(`  ${line}`)
   if (hits.length > 20) console.log(`  …… 其余 ${hits.length - 20} 处省略`)
+}
+
+function checkRhythm(scan) {
+  const SEASON_LABEL = { spring: '春', summer: '夏', autumn: '秋', winter: '冬' }
+  const show = (label) => {
+    const [season, slot] = label.split('/')
+    return `${SEASON_LABEL[season] ?? season}/${slot}`
+  }
+  const groups = new Map()
+  for (const cell of scan.cells) {
+    const key = `${cell.location}/${cell.season}`
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key).push(cell)
+  }
+  const hits = []
+  for (const [key, cells] of groups) {
+    for (let i = 0; i + 1 < cells.length; i += 1) {
+      const a = cells[i].text.slice(0, 3)
+      const b = cells[i + 1].text.slice(0, 3)
+      if (a === b) {
+        hits.push(`${key}: 相邻重复开头「${a}」—— ${show(cells[i].label)}、${show(cells[i + 1].label)}`)
+      }
+    }
+  }
+  // 季节层的时间是循环的：冬·夜之后就是春·晨。
+  if (scan.layer === 'season') {
+    for (const location of new Set(scan.cells.map((cell) => cell.location))) {
+      const winter = groups.get(`${location}/winter`)
+      const spring = groups.get(`${location}/spring`)
+      if (!winter || !spring) continue
+      const a = winter[winter.length - 1].text.slice(0, 3)
+      const b = spring[0].text.slice(0, 3)
+      if (a === b) {
+        hits.push(`${location}/跨季: 相邻重复开头「${a}」—— ${show(winter[winter.length - 1].label)}、${show(spring[0].label)}`)
+      }
+    }
+  }
+  if (hits.length === 0) return
+  const note = scan.layer === 'weather' ? '（设计顺序，非玩家时间顺序）' : ''
+  console.log(`INFO [rhythm] ${scan.layer}: ${hits.length} 处相邻重复${note}`)
+  for (const hit of hits) console.log(`  ${hit}`)
 }
 
 function checkDeadTokens(scan, styleRules, sceneMaterials) {
