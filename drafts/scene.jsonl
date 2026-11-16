@@ -224,7 +224,7 @@
 {"location":"town","layer":"season","season":2,"slot":2,"syntaxId":1,"candidate":1,"skeleton":"石缝","text":"石板路的缝里积了泥。","selected":true}
 {"location":"town","layer":"season","season":2,"slot":2,"syntaxId":1,"candidate":2,"skeleton":"凹口","text":"井沿的凹口又深了一圈。","selected":false}
 {"location":"town","layer":"season","season":2,"slot":2,"syntaxId":1,"candidate":3,"skeleton":"池底","text":"喷泉池底沉了一层叶。","selected":false}
-{"location":"town","layer":"season","season":2,"slot":3,"syntaxId":3,"candidate":1,"skeleton":"湿印","text":"石板路上还留着车轮的湿印。","selected":true}
+{"location":"town","layer":"season","season":2,"slot":3,"syntaxId":3,"candidate":1,"skeleton":"湿印","text":"车轮的湿印从喷泉那边一路过来。","selected":true}
 {"location":"town","layer":"season","season":2,"slot":3,"syntaxId":3,"candidate":2,"skeleton":"鸽食","text":"鸽子食散在喷泉边上，没扫。","selected":false}
 {"location":"town","layer":"season","season":2,"slot":3,"syntaxId":3,"candidate":3,"skeleton":"纸","text":"告示板边角留着撕不干净的纸。","selected":false}
 {"location":"town","layer":"season","season":3,"slot":0,"syntaxId":2,"candidate":1,"skeleton":"池沿","text":"喷泉上盖了木板，池沿缺一块。","selected":true}
