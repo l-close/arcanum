@@ -986,7 +986,7 @@
 {"location":"outside","layer":"season","season":2,"slot":0,"syntaxId":5,"candidate":1,"skeleton":"土路被车轮碾出一","text":"土路被车轮碾出一道浅沟。","selected":true}
 {"location":"outside","layer":"season","season":2,"slot":0,"syntaxId":5,"candidate":2,"skeleton":"岔口那块石头被车","text":"岔口那块石头被车帮蹭得发圆。","selected":false}
 {"location":"outside","layer":"season","season":2,"slot":0,"syntaxId":5,"candidate":3,"skeleton":"草坡被踩出一条斜","text":"草坡被踩出一条斜上的窄路。","selected":false}
-{"location":"outside","layer":"season","season":2,"slot":1,"syntaxId":13,"candidate":1,"skeleton":"旧的辙填了","text":"旧的车辙填了，新的车辙从旁边绕过去。","selected":true}
+{"location":"outside","layer":"season","season":2,"slot":1,"syntaxId":13,"candidate":1,"skeleton":"旧的辙填了","text":"落叶填了旧的车辙，新的从旁边绕过去。","selected":true}
 {"location":"outside","layer":"season","season":2,"slot":1,"syntaxId":13,"candidate":2,"skeleton":"岔口的石头挪了位","text":"岔口的石头挪了位置，旧坑还看得见。","selected":false}
 {"location":"outside","layer":"season","season":2,"slot":1,"syntaxId":13,"candidate":3,"skeleton":"草坡上的路换了方","text":"草坡上的路换了方向，旧路长满了草。","selected":false}
 {"location":"outside","layer":"season","season":2,"slot":2,"syntaxId":16,"candidate":1,"skeleton":"土路并排走得下两","text":"土路并排走得下两辆车。","selected":true}
@@ -1061,7 +1061,7 @@
 {"location":"forestDeep","layer":"season","season":0,"slot":1,"syntaxId":6,"candidate":1,"skeleton":"一根倒木横在两棵","text":"一根倒木横在两棵树中间。","selected":true}
 {"location":"forestDeep","layer":"season","season":0,"slot":1,"syntaxId":6,"candidate":2,"skeleton":"苔长在倒木朝上那","text":"苔长在倒木朝上那面。","selected":false}
 {"location":"forestDeep","layer":"season","season":0,"slot":1,"syntaxId":6,"candidate":3,"skeleton":"菌从落叶底下顶出","text":"菌从落叶底下顶出来。","selected":false}
-{"location":"forestDeep","layer":"season","season":0,"slot":2,"syntaxId":8,"candidate":1,"skeleton":"藤从树干往高处爬","text":"藤从树干往高处爬。","selected":true}
+{"location":"forestDeep","layer":"season","season":0,"slot":2,"syntaxId":8,"candidate":1,"skeleton":"藤从树干往高处爬","text":"新芽从树皮的裂缝里钻出来，朝上长。","selected":true}
 {"location":"forestDeep","layer":"season","season":0,"slot":2,"syntaxId":8,"candidate":2,"skeleton":"水顺着倒木往低处","text":"水顺着倒木往低处淌。","selected":false}
 {"location":"forestDeep","layer":"season","season":0,"slot":2,"syntaxId":8,"candidate":3,"skeleton":"落叶被风推着往低","text":"落叶被风推着往低处堆。","selected":false}
 {"location":"forestDeep","layer":"season","season":0,"slot":3,"syntaxId":4,"candidate":1,"skeleton":"一截落枝卡在倒木","text":"一截落枝卡在倒木底下，没落到地上。","selected":true}
@@ -1079,7 +1079,7 @@
 {"location":"forestDeep","layer":"season","season":1,"slot":3,"syntaxId":11,"candidate":1,"skeleton":"一截倒木烂空了","text":"一截倒木烂空了，里面长满菌。","selected":true}
 {"location":"forestDeep","layer":"season","season":1,"slot":3,"syntaxId":11,"candidate":2,"skeleton":"树根底下堆着一堆","text":"树根底下堆着一堆朽了的落枝。","selected":false}
 {"location":"forestDeep","layer":"season","season":1,"slot":3,"syntaxId":11,"candidate":3,"skeleton":"断掉的树干斜靠在","text":"断掉的树干斜靠在另一棵上，没人管。","selected":false}
-{"location":"forestDeep","layer":"season","season":2,"slot":0,"syntaxId":13,"candidate":1,"skeleton":"旧的落叶烂了","text":"倒木上的旧苔烂了，新苔接着长。","selected":true}
+{"location":"forestDeep","layer":"season","season":2,"slot":0,"syntaxId":13,"candidate":1,"skeleton":"旧的落叶烂了","text":"黄叶盖住旧苔，新苔从底下长。","selected":true}
 {"location":"forestDeep","layer":"season","season":2,"slot":0,"syntaxId":13,"candidate":2,"skeleton":"一截倒木烂透","text":"一截倒木烂透，旁边又倒下一棵。","selected":false}
 {"location":"forestDeep","layer":"season","season":2,"slot":0,"syntaxId":13,"candidate":3,"skeleton":"苔从旧倒木挪到新","text":"苔从旧倒木挪到新倒木上。","selected":false}
 {"location":"forestDeep","layer":"season","season":2,"slot":1,"syntaxId":16,"candidate":1,"skeleton":"倒木的粗细","text":"倒木的粗细，两个人合抱不过来。","selected":true}
@@ -1091,7 +1091,7 @@
 {"location":"forestDeep","layer":"season","season":2,"slot":3,"syntaxId":5,"candidate":1,"skeleton":"倒木被雨水泡得发","text":"倒木被雨水泡得发软。","selected":true}
 {"location":"forestDeep","layer":"season","season":2,"slot":3,"syntaxId":5,"candidate":2,"skeleton":"树根把土顶出一道","text":"树根把土顶出一道缝。","selected":false}
 {"location":"forestDeep","layer":"season","season":2,"slot":3,"syntaxId":5,"candidate":3,"skeleton":"苔厚得踩上去发滑","text":"苔厚得踩上去发滑。","selected":false}
-{"location":"forestDeep","layer":"season","season":3,"slot":0,"syntaxId":3,"candidate":1,"skeleton":"落叶底下还留着潮","text":"落叶底下还留着潮气。","selected":true}
+{"location":"forestDeep","layer":"season","season":3,"slot":0,"syntaxId":3,"candidate":1,"skeleton":"落叶底下还留着潮","text":"落叶底下积着雪，踩下去塌一层。","selected":true}
 {"location":"forestDeep","layer":"season","season":3,"slot":0,"syntaxId":3,"candidate":2,"skeleton":"倒木的凹处存着水","text":"倒木的凹处存着水，上面结了一层冰。","selected":false}
 {"location":"forestDeep","layer":"season","season":3,"slot":0,"syntaxId":3,"candidate":3,"skeleton":"爪印里积着水","text":"爪印里积着水，冻成了硬壳。","selected":false}
 {"location":"forestDeep","layer":"season","season":3,"slot":1,"syntaxId":2,"candidate":1,"skeleton":"倒木断成两截","text":"倒木断成两截，断口是新茬。","selected":true}
@@ -1262,7 +1262,7 @@
 {"location":"herbGarden","layer":"season","season":1,"slot":0,"syntaxId":12,"candidate":1,"skeleton":"药畦到坡地边上就","text":"药畦只排到坡地边。","selected":true}
 {"location":"herbGarden","layer":"season","season":1,"slot":0,"syntaxId":12,"candidate":2,"skeleton":"木牌只插到第三畦","text":"木牌只插到第三畦。","selected":false}
 {"location":"herbGarden","layer":"season","season":1,"slot":0,"syntaxId":12,"candidate":3,"skeleton":"水印到畦头就断了","text":"水印到畦头就断了。","selected":false}
-{"location":"herbGarden","layer":"season","season":1,"slot":1,"syntaxId":1,"candidate":1,"skeleton":"药草的叶子压着叶","text":"药草的叶子压着叶子，挤成一片。","selected":true}
+{"location":"herbGarden","layer":"season","season":1,"slot":1,"syntaxId":1,"candidate":1,"skeleton":"药草的叶子压着叶","text":"药草开花了，叶子压着叶子。","selected":true}
 {"location":"herbGarden","layer":"season","season":1,"slot":1,"syntaxId":1,"candidate":2,"skeleton":"畦边的脚印最密","text":"畦边的脚印最密，一处压着一处。","selected":false}
 {"location":"herbGarden","layer":"season","season":1,"slot":1,"syntaxId":1,"candidate":3,"skeleton":"木牌下的土被浇得","text":"木牌下的土被浇得发实。","selected":false}
 {"location":"herbGarden","layer":"season","season":1,"slot":2,"syntaxId":3,"candidate":1,"skeleton":"药草叶上还挂着水","text":"药草叶上还挂着水。","selected":true}
@@ -1283,7 +1283,7 @@
 {"location":"herbGarden","layer":"season","season":2,"slot":3,"syntaxId":6,"candidate":1,"skeleton":"一块木牌歪在畦头","text":"木牌歪在畦头。","selected":true}
 {"location":"herbGarden","layer":"season","season":2,"slot":3,"syntaxId":6,"candidate":2,"skeleton":"药草靠着木牌长","text":"药草靠着木牌长，把字挡住一半。","selected":false}
 {"location":"herbGarden","layer":"season","season":2,"slot":3,"syntaxId":6,"candidate":3,"skeleton":"坡地边上堆着一堆","text":"坡地边上堆着一堆枯秆。","selected":false}
-{"location":"herbGarden","layer":"season","season":3,"slot":0,"syntaxId":4,"candidate":1,"skeleton":"木牌插反了","text":"木牌插反了，字朝里。","selected":true}
+{"location":"herbGarden","layer":"season","season":3,"slot":0,"syntaxId":4,"candidate":1,"skeleton":"木牌插反了","text":"木牌插反了，字上落着霜。","selected":true}
 {"location":"herbGarden","layer":"season","season":3,"slot":0,"syntaxId":4,"candidate":2,"skeleton":"一捆枯秆横在畦上","text":"一捆枯秆横在畦上，没堆到坡边。","selected":false}
 {"location":"herbGarden","layer":"season","season":3,"slot":0,"syntaxId":4,"candidate":3,"skeleton":"脚印拐到畦里","text":"脚印拐到畦里，不在畦边。","selected":false}
 {"location":"herbGarden","layer":"season","season":3,"slot":1,"syntaxId":9,"candidate":1,"skeleton":"药草归学院","text":"药草归学院，采的人要登记。","selected":true}
