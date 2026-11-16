@@ -200,12 +200,12 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     autumn: {
       sunny: '园地表面硬了，土垄缝里还夹着泥。',
       cloudy: '木箱底下那片地还是潮的。',
-      overcast: '只有柴堆顶上那块是干的。',
+      overcast: '只有柴堆底下那块是干的。',
       rain: '水顺着晾衣绳往下滴，一滴一滴打在园地上。',
     },
     winter: {
       sunny: '土垄冻到一指深。',
-      cloudy: '冻硬的地方从木箱到墙根。',
+      cloudy: '冻硬的那片在木箱和墙根之间，两边还软。',
       overcast: '比柴堆底低的那块地还没冻实。',
       snow: '雪踩上去发松，底下是软的。',
     },
@@ -402,12 +402,12 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     summer: {
       sunny: '畦面中间结了壳，畦沟边上没有。',
       cloudy: '药畦一半干了，一半还是湿的。',
-      overcast: '脚印边上塌下去，印子里还是湿的。',
+      overcast: '畦边留着水印，边上的土塌下去。',
       rain: '畦沟里积着水，畦面上没存住。',
     },
     autumn: {
       sunny: '畦面上只有三处踩上去是硬的。',
-      cloudy: '药草干得发脆，一碰就响。',
+      cloudy: '药草干得沙沙响，碰一下掉渣。',
       overcast: '畦沟里还湿，畦面干了半截。',
       rain: '畦沟深，水都走沟里，畦面上没存住。',
     },

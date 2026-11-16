@@ -87,7 +87,7 @@ export const SEASON_DESC: Record<string, SeasonDesc> = {
       '石阶一共九级。',
       '石阶上少了一把伞。',
       '石阶的边角被扫得磨圆了。',
-      '石阶上留着湿脚印。',
+      '石阶上留着伞上的水。',
     ],
     summer: [
       '募捐箱的锁坏了，箱盖合不严。',
@@ -232,7 +232,7 @@ export const SEASON_DESC: Record<string, SeasonDesc> = {
       '木楼梯拐角积了一层灰。',
     ],
     winter: [
-      '木楼梯上的脚印一层压一层。',
+      '木楼梯上的灰擦了又落。',
       '铜钟挂在横梁上，钟口朝下。',
       '钟室的风下到楼梯口就弱了。',
       '铜钟归教会，钟楼归市政。',

@@ -292,6 +292,7 @@ async function checkSceneText(sceneMaterials, styleRules, schedule, data) {
     checkMaterialCap(scan, styleRules, sceneMaterials)
     checkMagicDensity(scan, styleRules)
     checkDeadTokens(scan, styleRules, sceneMaterials)
+    checkIso(scan, sceneMaterials, styleRules)
     checkBigrams(scan, sceneMaterials, styleRules)
     for (const cell of scan.cells) {
       if (!cell.text) continue
@@ -511,6 +512,39 @@ function checkMaterialCap(scan, styleRules, sceneMaterials) {
       }
     }
   }
+}
+
+function checkIso(scan, sceneMaterials, styleRules) {
+  const common = new Set(styleRules.COMMON_CITY_TOKENS ?? [])
+  const byToken = new Map()
+  const byHead = new Map()
+  for (const cell of scan.cells) {
+    const table = sceneMaterials.MATERIALS[cell.location]
+    if (!table) continue
+    for (const token of sceneMaterials.generalTokens(table)) {
+      if (common.has(token)) continue
+      if (!cell.text.includes(token)) continue
+      const key = `${cell.syntaxId}|${token}`
+      if (!byToken.has(key)) byToken.set(key, [])
+      byToken.get(key).push(cell)
+    }
+    const key = `${cell.syntaxId}|${cell.text.slice(0, 5)}`
+    if (!byHead.has(key)) byHead.set(key, [])
+    byHead.get(key).push(cell)
+  }
+  const hits = []
+  for (const [label, map] of [['token', byToken], ['head', byHead]]) {
+    for (const [key, cells] of map) {
+      const locations = [...new Set(cells.map((cell) => cell.location))]
+      if (locations.length < 2) continue
+      const [syntaxId, needle] = key.split('|')
+      hits.push(`${scan.layer} ${label} 句式${syntaxId}「${needle}」← ${locations.join(' / ')}`)
+    }
+  }
+  if (hits.length === 0) return
+  console.log(`INFO [iso] ${scan.layer}: ${hits.length} 处同构风险`)
+  for (const line of hits.slice(0, 20)) console.log(`  ${line}`)
+  if (hits.length > 20) console.log(`  …… 其余 ${hits.length - 20} 处省略`)
 }
 
 function checkDeadTokens(scan, styleRules, sceneMaterials) {

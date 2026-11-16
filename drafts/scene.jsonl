@@ -440,7 +440,7 @@
 {"location":"churchStreet","layer":"season","season":0,"slot":2,"syntaxId":5,"candidate":1,"skeleton":"石阶","text":"石阶的边角被扫得磨圆了。","selected":true}
 {"location":"churchStreet","layer":"season","season":0,"slot":2,"syntaxId":5,"candidate":2,"skeleton":"钟楼","text":"钟楼的墙根磨出一道槽。","selected":false}
 {"location":"churchStreet","layer":"season","season":0,"slot":2,"syntaxId":5,"candidate":3,"skeleton":"门","text":"教堂的门被推得轻了，不用使劲。","selected":false}
-{"location":"churchStreet","layer":"season","season":0,"slot":3,"syntaxId":3,"candidate":1,"skeleton":"脚印","text":"石阶上留着湿脚印。","selected":true}
+{"location":"churchStreet","layer":"season","season":0,"slot":3,"syntaxId":3,"candidate":1,"skeleton":"脚印","text":"石阶上留着伞上的水。","selected":true}
 {"location":"churchStreet","layer":"season","season":0,"slot":3,"syntaxId":3,"candidate":2,"skeleton":"泥线","text":"石阶边留着雨水冲下的泥线。","selected":false}
 {"location":"churchStreet","layer":"season","season":0,"slot":3,"syntaxId":3,"candidate":3,"skeleton":"水滩","text":"伞架底下积着一小滩水。","selected":false}
 {"location":"churchStreet","layer":"season","season":1,"slot":0,"syntaxId":2,"candidate":1,"skeleton":"石阶","text":"石阶缺了一块，边上用碎石填着。","selected":false}
@@ -653,7 +653,7 @@
 {"location":"backyard","layer":"weather","season":2,"slot":1,"syntaxId":12,"candidate":1,"skeleton":"木箱底下那片地没","text":"木箱底下那片地还是潮的。","selected":true}
 {"location":"backyard","layer":"weather","season":2,"slot":1,"syntaxId":12,"candidate":2,"skeleton":"园地上的水印没干","text":"园地上的水印没干透。","selected":false}
 {"location":"backyard","layer":"weather","season":2,"slot":1,"syntaxId":12,"candidate":3,"skeleton":"土垄底下的土还黏","text":"土垄底下的土还黏。","selected":false}
-{"location":"backyard","layer":"weather","season":2,"slot":2,"syntaxId":7,"candidate":1,"skeleton":"只有柴堆顶上那块","text":"只有柴堆顶上那块是干的。","selected":true}
+{"location":"backyard","layer":"weather","season":2,"slot":2,"syntaxId":7,"candidate":1,"skeleton":"只有柴堆顶上那块","text":"只有柴堆底下那块是干的。","selected":true}
 {"location":"backyard","layer":"weather","season":2,"slot":2,"syntaxId":7,"candidate":2,"skeleton":"只有木箱底下那块","text":"只有木箱底下那块地是干的。","selected":false}
 {"location":"backyard","layer":"weather","season":2,"slot":2,"syntaxId":7,"candidate":3,"skeleton":"只有墙根那一溜没","text":"只有墙根那一溜没湿。","selected":false}
 {"location":"backyard","layer":"weather","season":2,"slot":3,"syntaxId":5,"candidate":1,"skeleton":"水顺着晾衣绳往下","text":"水顺着晾衣绳往下滴，一滴一滴打在园地上。","selected":true}
@@ -662,7 +662,7 @@
 {"location":"backyard","layer":"weather","season":3,"slot":0,"syntaxId":10,"candidate":1,"skeleton":"土垄冻到一指深","text":"土垄冻到一指深。","selected":true}
 {"location":"backyard","layer":"weather","season":3,"slot":0,"syntaxId":10,"candidate":2,"skeleton":"园地冻得硬邦邦的","text":"园地冻得硬邦邦的。","selected":false}
 {"location":"backyard","layer":"weather","season":3,"slot":0,"syntaxId":10,"candidate":3,"skeleton":"木箱底下冻得最实","text":"木箱底下冻得最实。","selected":false}
-{"location":"backyard","layer":"weather","season":3,"slot":1,"syntaxId":11,"candidate":1,"skeleton":"冻硬的地方从木箱","text":"冻硬的地方从木箱到墙根。","selected":true}
+{"location":"backyard","layer":"weather","season":3,"slot":1,"syntaxId":11,"candidate":1,"skeleton":"冻硬的地方从木箱","text":"冻硬的那片在木箱和墙根之间，两边还软。","selected":true}
 {"location":"backyard","layer":"weather","season":3,"slot":1,"syntaxId":11,"candidate":2,"skeleton":"冻硬的地方从园地","text":"冻硬的地方从园地到墙根。","selected":false}
 {"location":"backyard","layer":"weather","season":3,"slot":1,"syntaxId":11,"candidate":3,"skeleton":"木箱边上软了","text":"木箱边上软了，箱底下还冻着。","selected":false}
 {"location":"backyard","layer":"weather","season":3,"slot":2,"syntaxId":16,"candidate":1,"skeleton":"比柴堆底低的那块","text":"比柴堆底低的那块地还没冻实。","selected":true}
@@ -707,7 +707,7 @@
 {"location":"bellTower","layer":"season","season":2,"slot":3,"syntaxId":1,"candidate":1,"skeleton":"木楼梯拐角积了一","text":"木楼梯拐角积了一层灰。","selected":true}
 {"location":"bellTower","layer":"season","season":2,"slot":3,"syntaxId":1,"candidate":2,"skeleton":"塔门的门槛边积了","text":"塔门的门槛边积了一层灰。","selected":false}
 {"location":"bellTower","layer":"season","season":2,"slot":3,"syntaxId":1,"candidate":3,"skeleton":"长凳底下积了碎屑","text":"长凳底下积了碎屑。","selected":false}
-{"location":"bellTower","layer":"season","season":3,"slot":0,"syntaxId":7,"candidate":1,"skeleton":"木楼梯上的脚印一","text":"木楼梯上的脚印一层压一层。","selected":true}
+{"location":"bellTower","layer":"season","season":3,"slot":0,"syntaxId":7,"candidate":1,"skeleton":"木楼梯上的脚印一","text":"木楼梯上的灰擦了又落。","selected":true}
 {"location":"bellTower","layer":"season","season":3,"slot":0,"syntaxId":7,"candidate":2,"skeleton":"长凳上的灰擦了又","text":"长凳上的灰擦了又落。","selected":false}
 {"location":"bellTower","layer":"season","season":3,"slot":0,"syntaxId":7,"candidate":3,"skeleton":"钟绳在横梁上磨出","text":"钟绳在横梁上磨出的绳痕一道挨一道。","selected":false}
 {"location":"bellTower","layer":"season","season":3,"slot":1,"syntaxId":6,"candidate":1,"skeleton":"铜钟挂在横梁上","text":"铜钟挂在横梁上，钟口朝下。","selected":true}
@@ -1313,7 +1313,7 @@
 {"location":"herbGarden","layer":"weather","season":1,"slot":1,"syntaxId":1,"candidate":1,"skeleton":"药畦一半干了","text":"药畦一半干了，一半还是湿的。","selected":true}
 {"location":"herbGarden","layer":"weather","season":1,"slot":1,"syntaxId":1,"candidate":2,"skeleton":"坡地表面干","text":"坡地表面干，畦沟里还存着水。","selected":false}
 {"location":"herbGarden","layer":"weather","season":1,"slot":1,"syntaxId":1,"candidate":3,"skeleton":"木牌正面干了","text":"木牌正面干了，背面还湿。","selected":false}
-{"location":"herbGarden","layer":"weather","season":1,"slot":2,"syntaxId":2,"candidate":1,"skeleton":"脚印边上塌下去","text":"脚印边上塌下去，印子里还是湿的。","selected":true}
+{"location":"herbGarden","layer":"weather","season":1,"slot":2,"syntaxId":2,"candidate":1,"skeleton":"脚印边上塌下去","text":"畦边留着水印，边上的土塌下去。","selected":true}
 {"location":"herbGarden","layer":"weather","season":1,"slot":2,"syntaxId":2,"candidate":2,"skeleton":"脚印留在畦边","text":"脚印留在畦边，边上一圈湿。","selected":false}
 {"location":"herbGarden","layer":"weather","season":1,"slot":2,"syntaxId":2,"candidate":3,"skeleton":"木牌挪过后留着一","text":"木牌挪过后留着一圈湿印。","selected":false}
 {"location":"herbGarden","layer":"weather","season":1,"slot":3,"syntaxId":3,"candidate":1,"skeleton":"畦沟里积着水","text":"畦沟里积着水，畦面上没存住。","selected":true}
@@ -1322,7 +1322,7 @@
 {"location":"herbGarden","layer":"weather","season":2,"slot":0,"syntaxId":4,"candidate":1,"skeleton":"畦面上只有三处踩","text":"畦面上只有三处踩上去是硬的。","selected":true}
 {"location":"herbGarden","layer":"weather","season":2,"slot":0,"syntaxId":4,"candidate":2,"skeleton":"药畦里只有两条沟","text":"药畦里只有两条沟还湿着。","selected":false}
 {"location":"herbGarden","layer":"weather","season":2,"slot":0,"syntaxId":4,"candidate":3,"skeleton":"木牌上只有一角还","text":"木牌上只有一角还是潮的。","selected":false}
-{"location":"herbGarden","layer":"weather","season":2,"slot":1,"syntaxId":5,"candidate":1,"skeleton":"药草干得发脆","text":"药草干得发脆，一碰就响。","selected":true}
+{"location":"herbGarden","layer":"weather","season":2,"slot":1,"syntaxId":5,"candidate":1,"skeleton":"药草干得发脆","text":"药草干得沙沙响，碰一下掉渣。","selected":true}
 {"location":"herbGarden","layer":"weather","season":2,"slot":1,"syntaxId":5,"candidate":2,"skeleton":"脚步踩在畦沟里","text":"脚步踩在畦沟里，一边响一边没声。","selected":false}
 {"location":"herbGarden","layer":"weather","season":2,"slot":1,"syntaxId":5,"candidate":3,"skeleton":"木牌被风吹得敲柱","text":"木牌被风吹得敲柱子，响一下歇一下。","selected":false}
 {"location":"herbGarden","layer":"weather","season":2,"slot":2,"syntaxId":6,"candidate":1,"skeleton":"畦沟里还湿","text":"畦沟里还湿，畦面干了半截。","selected":true}
