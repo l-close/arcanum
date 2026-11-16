@@ -311,6 +311,18 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     },
     npc: 'none',
   },
+  // 工坊区：一条条石窄街——辙是铁轮磨出来的，不是压出来的。
+  // 三季没有季节词，靠材料状态分：春化冻、夏干热、秋备货、冬冻。
+  craftDistrict: {
+    objects: ['窄街', '烟囱', '铜招牌', '作坊门', '货栈'],
+    sounds: ['铜招牌', '作坊门', '风箱'],
+    traces: ['木屑', '车辙', '槽', '炉灰', '铁屑'],
+    aliases: { 街: '窄街', 招牌: '铜招牌', 门: '作坊门' },
+    seasonal: {
+      winter: ['雪', '霜'],
+    },
+    npc: 'none',
+  },
   // 城外：城与野的交界——土路往南分岔，一边墓园一边林子。
   // 土路是土，车辙是压出来的；城墙是从外面回看的城，与城门的门洞不同。
   outside: {
@@ -489,8 +501,8 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
  * 校验器只扫表，不再看 drafts。
  */
 export const LOCKED: { season: string[]; weather: string[] } = {
-  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy', 'backyard', 'bellTower', 'cemetery', 'forest', 'outside', 'forestDeep'],
-  weather: ['yard', 'gate', 'town', 'commercial', 'backyard', 'bellTower', 'cemetery', 'forest', 'outside', 'forestDeep'],
+  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy', 'backyard', 'bellTower', 'cemetery', 'forest', 'outside', 'forestDeep', 'craftDistrict'],
+  weather: ['yard', 'gate', 'town', 'commercial', 'backyard', 'bellTower', 'cemetery', 'forest', 'outside', 'forestDeep', 'craftDistrict'],
 }
 
 /**

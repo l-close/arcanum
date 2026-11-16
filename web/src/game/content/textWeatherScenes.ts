@@ -366,4 +366,30 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
       snow: '雪没到脚踝。',
     },
   },
+  craftDistrict: {
+    spring: {
+      sunny: '炉灰干得起了粉，鞋底蹭过去沙沙响。',
+      cloudy: '槽底干一块湿一块。',
+      overcast: '槽底没干，槽边倒是硬的。',
+      rain: '槽里存着三处水。',
+    },
+    summer: {
+      sunny: '铁屑踩着响，炉灰没声。',
+      cloudy: '炉灰一边干了，一边还湿着。',
+      overcast: '炉灰结成块，一踩就散。',
+      rain: '只有槽底存住了水。',
+    },
+    autumn: {
+      sunny: '招牌上的灰干得翘了边，钉子那头还紧。',
+      cloudy: '木屑干到一捏就碎，底下那层还潮。',
+      overcast: '潮气留在槽底，槽边是干的。',
+      rain: '槽里的水没干，边上留着一圈灰印。',
+    },
+    winter: {
+      sunny: '槽底冻住了，铁轮碾上去直打滑。',
+      cloudy: '冻住的地方到槽口就断了。',
+      overcast: '比槽底浅的地方还没冻实。',
+      snow: '雪压在炉灰上，灰面洇湿一片。',
+    },
+  },
 }
