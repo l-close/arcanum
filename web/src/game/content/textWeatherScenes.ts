@@ -395,27 +395,27 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
   herbGarden: {
     spring: {
       sunny: '比畦面低的沟里，土是硬的。',
-      cloudy: '畦面上踩上去是硬的，畦沟里还发软。',
+      cloudy: '药草叶摸着发硬，底下的土还潮。',
       overcast: '没干的地方到畦沟就断了。',
-      rain: '畦沟里的水没走，土还泡着。',
+      rain: '畦沟里存着水，药草叶上挂着水珠。',
     },
     summer: {
-      sunny: '畦面中间结了壳，畦沟边上没有。',
+      sunny: '坡地下头先硬，上头还软。',
       cloudy: '药畦一半干了，一半还是湿的。',
-      overcast: '畦边留着水印，边上的土塌下去。',
+      overcast: '木牌背面还潮，正面被水冲花了。',
       rain: '畦沟里积着水，畦面上没存住。',
     },
     autumn: {
-      sunny: '畦面上只有三处踩上去是硬的。',
-      cloudy: '药草干得沙沙响，碰一下掉渣。',
+      sunny: '木牌上只剩两处水印，其余干得翘了边。',
+      cloudy: '药草一边干得沙沙响，一边还发软。',
       overcast: '畦沟里还湿，畦面干了半截。',
-      rain: '畦沟深，水都走沟里，畦面上没存住。',
+      rain: '坡地斜，水往低处走，畦沟里没存住。',
     },
     winter: {
-      sunny: '畦面上冻硬了，沟里还软。',
+      sunny: '畦沟先冻上，畦面还没。',
       cloudy: '只有畦面冻了，畦沟里还软。',
-      overcast: '畦沟里的土软到踩下去陷半只鞋。',
-      snow: '雪盖住畦沟，畦面还露着。',
+      overcast: '药草底下的土只冻了一层，一踩就散。',
+      snow: '雪盖住木牌，字还露着。',
     },
   },
 }
