@@ -1169,7 +1169,7 @@
 {"location":"craftDistrict","layer":"season","season":1,"slot":1,"syntaxId":7,"candidate":1,"skeleton":"锤声从作坊门里一","text":"锤声从作坊门里一下接一下。","selected":true}
 {"location":"craftDistrict","layer":"season","season":1,"slot":1,"syntaxId":7,"candidate":2,"skeleton":"铜招牌被风撞得一","text":"铜招牌被风撞得一阵一阵响。","selected":false}
 {"location":"craftDistrict","layer":"season","season":1,"slot":1,"syntaxId":7,"candidate":3,"skeleton":"木屑扫了一层又落","text":"木屑扫了一层又落一层。","selected":false}
-{"location":"craftDistrict","layer":"season","season":1,"slot":2,"syntaxId":6,"candidate":1,"skeleton":"货栈门口堆到齐腰","text":"货栈门口堆到齐腰高。","selected":true}
+{"location":"craftDistrict","layer":"season","season":1,"slot":2,"syntaxId":6,"candidate":1,"skeleton":"货栈门口堆到齐腰","text":"炉灰扫到墙根，风一过又扬起来。","selected":true}
 {"location":"craftDistrict","layer":"season","season":1,"slot":2,"syntaxId":6,"candidate":2,"skeleton":"一只风箱摆在作坊","text":"一只风箱摆在作坊门口。","selected":false}
 {"location":"craftDistrict","layer":"season","season":1,"slot":2,"syntaxId":6,"candidate":3,"skeleton":"铜招牌正对着街心","text":"铜招牌正对着街心。","selected":false}
 {"location":"craftDistrict","layer":"season","season":1,"slot":3,"syntaxId":8,"candidate":1,"skeleton":"烟从烟囱口往街心","text":"烟从烟囱口往街心飘。","selected":true}
@@ -1184,7 +1184,7 @@
 {"location":"craftDistrict","layer":"season","season":2,"slot":2,"syntaxId":10,"candidate":1,"skeleton":"槽的缺口填过铁屑","text":"槽的缺口填过铁屑，又磨平了。","selected":false}
 {"location":"craftDistrict","layer":"season","season":2,"slot":2,"syntaxId":10,"candidate":2,"skeleton":"铜招牌重新钉过","text":"铜招牌重新钉过，钉子比原来粗。","selected":false}
 {"location":"craftDistrict","layer":"season","season":2,"slot":2,"syntaxId":10,"candidate":3,"skeleton":"货栈的门板补过","text":"货栈的门板补过，是堆货压出来的。","selected":true}
-{"location":"craftDistrict","layer":"season","season":2,"slot":3,"syntaxId":12,"candidate":1,"skeleton":"炉灰只扫到街心","text":"炉灰只扫到街心，没扫到对面。","selected":true}
+{"location":"craftDistrict","layer":"season","season":2,"slot":3,"syntaxId":12,"candidate":1,"skeleton":"炉灰只扫到街心","text":"货栈的货堆到门口，只留一条过人。","selected":true}
 {"location":"craftDistrict","layer":"season","season":2,"slot":3,"syntaxId":12,"candidate":2,"skeleton":"槽到街口就断了","text":"槽到街口就断了。","selected":false}
 {"location":"craftDistrict","layer":"season","season":2,"slot":3,"syntaxId":12,"candidate":3,"skeleton":"铜招牌挂到拐角为","text":"铜招牌挂到拐角为止，再往前没有。","selected":false}
 {"location":"craftDistrict","layer":"season","season":3,"slot":0,"syntaxId":15,"candidate":1,"skeleton":"槽里冻住一层","text":"槽里冻住了，上面又落了灰。","selected":true}
