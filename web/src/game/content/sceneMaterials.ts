@@ -517,7 +517,7 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
  */
 export const LOCKED: { season: string[]; weather: string[] } = {
   season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy', 'backyard', 'bellTower', 'cemetery', 'forest', 'outside', 'forestDeep', 'craftDistrict', 'herbGarden'],
-  weather: ['yard', 'gate', 'town', 'commercial', 'backyard', 'bellTower', 'cemetery', 'forest', 'outside', 'forestDeep', 'craftDistrict', 'herbGarden'],
+  weather: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'backyard', 'bellTower', 'cemetery', 'forest', 'outside', 'forestDeep', 'craftDistrict', 'herbGarden'],
 }
 
 /**
