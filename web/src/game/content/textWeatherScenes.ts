@@ -70,7 +70,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     autumn: {
       sunny: '柴火干得发脆，一碰就响。',
       cloudy: '晾衣绳摸上去一手潮，衣服却是干的。',
-      overcast: '没干的地方到巷子中间就断了。',
+      overcast: '巷子中间是干的，靠屋檐那头还湿。',
       rain: '比屋檐低的那段石阶积着水。',
     },
     winter: {
@@ -116,7 +116,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     summer: {
       sunny: '干硬的地方在扫过的石板那一带。',
       cloudy: '石板踩上去发涩，门廊底下还潮。',
-      overcast: '没干的地方到台阶为止。',
+      overcast: '台阶上还湿着，到门廊边就干了。',
       rain: '比台阶低的那片石板积着水。',
     },
     autumn: {
@@ -186,25 +186,25 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
   },
   backyard: {
     spring: {
-      sunny: '园地干到墙根就断了。',
-      cloudy: '柴堆挡着，底下的土还是潮的。',
-      overcast: '土垄靠墙那头还是湿的。',
+      sunny: '干硬的那片到墙根就断了，柴堆底下还软。',
+      cloudy: '柴堆挡着，底下那片还软，边上硬了。',
+      overcast: '土垄靠墙那头还软，踩下去留印。',
       rain: '木箱盖上积了一小片水。',
     },
     summer: {
       sunny: '园地上的脚印干得起了壳。',
       cloudy: '土垄上干一块湿一块。',
-      overcast: '墙根一带还有三处发潮。',
-      rain: '柴堆湿了表层，里头还是干的。',
+      overcast: '墙根一带还有三处是软的，踩下去陷脚。',
+      rain: '柴堆外头湿了，里头还干着，水没渗进去。',
     },
     autumn: {
       sunny: '园地表面硬了，土垄缝里还夹着泥。',
-      cloudy: '木箱底下那片地还是潮的。',
+      cloudy: '木箱底下那片还是潮的，箱板上凝着水珠。',
       overcast: '只有柴堆底下那块是干的。',
       rain: '水顺着晾衣绳往下滴，一滴一滴打在园地上。',
     },
     winter: {
-      sunny: '土垄冻到一指深。',
+      sunny: '土垄冻得发脆，一踩就碎。',
       cloudy: '冻硬的那片在木箱和墙根之间，两边还软。',
       overcast: '比柴堆底低的那块地还没冻实。',
       snow: '雪踩上去发松，底下是软的。',
@@ -232,7 +232,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     winter: {
       sunny: '钟口下沿冻了一圈，钟身没有。',
       cloudy: '塔门关着，门里那块地没冻实。',
-      overcast: '冻硬的地方从长凳到踏板。',
+      overcast: '长凳底下那片没冻实，凳面上冻了。',
       snow: '雪只压在钟梁上，钟口朝下敞着。',
     },
   },
@@ -412,7 +412,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
       rain: '畦沟深，水都走沟里，畦面上没存住。',
     },
     winter: {
-      sunny: '冻硬的地方在畦沟那一带。',
+      sunny: '畦面上冻硬了，沟里还软。',
       cloudy: '只有畦面冻了，畦沟里还软。',
       overcast: '畦沟里的土软到踩下去陷半只鞋。',
       snow: '雪盖住畦沟，畦面还露着。',

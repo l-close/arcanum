@@ -208,7 +208,7 @@ export const SEASON_DESC: Record<string, SeasonDesc> = {
     winter: [
       '墙根堆着几块换下来的旧箱板。',
       '晾衣绳接了一截新的。',
-      '扫过的雪到园地边为止。',
+      '雪只扫到园地边，柴堆那头还盖着。',
       '柴堆底下的旧柴压着新柴。',
     ],
   },
@@ -217,7 +217,7 @@ export const SEASON_DESC: Record<string, SeasonDesc> = {
       '长凳的坐板叠过两块，旧的压在下面。',
       '长凳换过一条腿。',
       '长凳上的灰到中间就断了。',
-      '墙角堆着几截断绳。',
+      '塔门后堆着几截断绳。',
     ],
     summer: [
       '钟绳换过一截，接头系得比原来高。',
@@ -344,7 +344,7 @@ export const SEASON_DESC: Record<string, SeasonDesc> = {
   },
   forestDeep: {
     spring: [
-      '落叶压着落叶，底下的烂了一半。',
+      '落枝压着落叶，底下软得陷脚。',
       '一根倒木横在两棵树中间。',
       '藤从树干往高处爬。',
       '一截落枝卡在倒木底下，没落到地上。',
