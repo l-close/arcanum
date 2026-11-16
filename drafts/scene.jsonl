@@ -310,7 +310,7 @@
 {"location":"town","layer":"weather","season":1,"slot":2,"syntaxId":15,"candidate":3,"skeleton":"池沿","text":"喷泉池沿上有一层水汽，摸上去滑。","selected":false}
 {"location":"town","layer":"weather","season":1,"slot":3,"syntaxId":13,"candidate":1,"skeleton":"台基","text":"积水到池沿为止。","selected":false}
 {"location":"town","layer":"weather","season":1,"slot":3,"syntaxId":13,"candidate":2,"skeleton":"井盖","text":"井盖周围一圈湿，再往外是干的。","selected":false}
-{"location":"town","layer":"weather","season":1,"slot":3,"syntaxId":13,"candidate":3,"skeleton":"灯座","text":"石板路上的水到街灯座底下就断了。","selected":true}
+{"location":"town","layer":"weather","season":1,"slot":3,"syntaxId":13,"candidate":3,"skeleton":"灯座","text":"水到街灯座底下就断了。","selected":true}
 {"location":"town","layer":"weather","season":2,"slot":0,"syntaxId":16,"candidate":1,"skeleton":"第三段","text":"从喷泉往东数第三段石板路干了。","selected":false}
 {"location":"town","layer":"weather","season":2,"slot":0,"syntaxId":16,"candidate":2,"skeleton":"第二个","text":"井沿的凹口干到第二个。","selected":true}
 {"location":"town","layer":"weather","season":2,"slot":0,"syntaxId":16,"candidate":3,"skeleton":"第三块","text":"池沿只剩第三块石头上有湿痕。","selected":false}
@@ -1526,7 +1526,7 @@
 {"location":"academy","layer":"weather","season":3,"slot":0,"syntaxId":12,"candidate":1,"skeleton":"石板冻硬了","text":"石板冻硬了，扫过的那几块结了薄冰。","selected":true}
 {"location":"academy","layer":"weather","season":3,"slot":0,"syntaxId":12,"candidate":2,"skeleton":"台阶上还留着水","text":"台阶上还留着水，冻成硬壳。","selected":false}
 {"location":"academy","layer":"weather","season":3,"slot":0,"syntaxId":12,"candidate":3,"skeleton":"石墙根底下存着水","text":"石墙根底下存着水，面上结了冰。","selected":false}
-{"location":"academy","layer":"weather","season":3,"slot":1,"syntaxId":6,"candidate":1,"skeleton":"石板冻了","text":"石板冻了，门廊底下还软。","selected":true}
+{"location":"academy","layer":"weather","season":3,"slot":1,"syntaxId":6,"candidate":1,"skeleton":"石板冻了","text":"门廊底下还软，石板冻了。","selected":true}
 {"location":"academy","layer":"weather","season":3,"slot":1,"syntaxId":6,"candidate":2,"skeleton":"台阶冻了","text":"台阶冻了，石板上还软。","selected":false}
 {"location":"academy","layer":"weather","season":3,"slot":1,"syntaxId":6,"candidate":3,"skeleton":"石墙冻了","text":"石墙冻了，藤蔓底下没冻。","selected":false}
 {"location":"academy","layer":"weather","season":3,"slot":2,"syntaxId":5,"candidate":1,"skeleton":"台阶踩上去没声","text":"台阶踩上去没声，底下是潮的。","selected":true}

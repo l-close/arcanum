@@ -13,7 +13,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
       sunny: '只有井盖下沿还是湿的。',
       cloudy: '喷泉溅出来的水落在池沿上，那一片聚着水。',
       overcast: '石板路上踩过去发黏。',
-      rain: '石板路上的水到街灯座底下就断了。',
+      rain: '水到街灯座底下就断了。',
     },
     autumn: {
       sunny: '井沿的凹口干到第二个。',
@@ -127,7 +127,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     },
     winter: {
       sunny: '石板冻硬了，扫过的那几块结了薄冰。',
-      cloudy: '石板冻了，门廊底下还软。',
+      cloudy: '门廊底下还软，石板冻了。',
       overcast: '台阶踩上去没声，底下是潮的。',
       snow: '藤蔓挡着，墙根那片雪薄。',
     },
