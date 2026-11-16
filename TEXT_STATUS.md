@@ -48,17 +48,16 @@
 
 ## 说明
 
-- 素材表已有：`town`、`commercial`、`yard`、`gate`、`academy`、`backyard`、`bellTower`、`academyStreet`、`orphanStreet`、`churchStreet`。
-- `yard`、`gate`、`town` 整体锁定。
-- `academyStreet`、`orphanStreet`、`churchStreet`、`academy`、`commercial` 季节已锁、天气未开始。
-- 其余 4 行全部 `未开始`。
+- 素材表已有：全部 16 个户外地点。
+- 整体锁定：`yard`、`gate`、`town`、`commercial`、`craftDistrict`、`backyard`、`bellTower`、`outside`、`cemetery`、`forest`、`forestDeep`、`herbGarden`（12 个）。
+- `academyStreet`、`orphanStreet`、`churchStreet`、`academy` 季节已锁、天气未开始（4 个）。
 - `已锁` 不等于整体锁定：`季节` 与 `天气` 都 `已锁`、两层自检都 `通过`，才算整体锁定。
 - 已知弱配（复核时优先）：`yard` 冬·阴（4 数量，写成了程度）、`yard` 冬·雪（11 位置，写成了对比）、`bellTower` 夏·多云（`是湿的`，为避开 `还潮`／`发潮` 二元组连续换词三次，句子已被稀释）。
 - baseline 静音项（写该地点时自行核分布）：`gate` 门洞、`town` 喷泉。
 - desc 收尾（32 格全部写完后做）：
   - 4 处活文本（药剂工坊、炼药室、商会办事处、旧书铺）先补 3 条 `DESC_BY_TIME`，desc 退成一句简介；
   - 死文本不逐条重写，只在 `locations.ts` 数组上方加一段注释，标明“被遮蔽、未审、仅作参照”。
-- `bellTower` 的 `DESC_BY_TIME` 仍是塔内视角，写 32 格之前要替换。
+- `bellTower` 的 `DESC_BY_TIME` 已替换为塔门口视角。
 
 ## 校验
 
