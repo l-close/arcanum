@@ -13,6 +13,9 @@ export const ENTER_MINUTES = 2
 
 export const ROOM_MINUTES = 1
 
+// desc 不参与渲染：所有地点都有 SEASON_DESC 或 DESC_BY_TIME，兜底链走不到它。
+// 它现在是纯粹的历史文本，只作写作参照，未审过，不承担词表职责（STYLE.md §11）。
+// 新增地点若既无 SEASON_DESC 又无 DESC_BY_TIME，会在 dev 控制台报警。
 export const LOCATIONS: Location[] = [
   {
     id: 'town',

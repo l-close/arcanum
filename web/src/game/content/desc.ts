@@ -90,6 +90,9 @@ export function locationDesc(
   if (period === 2 && EVENING_OVERRIDE[loc.id]) return EVENING_OVERRIDE[loc.id]
   const table = DESC_BY_TIME[loc.id]
   const index = Math.min(period, 2)
+  if (!table && import.meta.env.DEV) {
+    console.warn(`[desc] ${loc.id}: 该地点没有时段表，正在使用 desc 兜底。`)
+  }
   let text = table ? table[index] : loc.desc
   if (west && west.stage === 0) {
     if (loc.id === 'westGate') {
