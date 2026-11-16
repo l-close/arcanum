@@ -100,7 +100,7 @@ import {
   BOAR_HIDE_DROP_CHANCE,
   BOAR_TUSK_DROP_CHANCE,
   FOREST_DEEP_ENCOUNTER_CHANCE,
-  HERB_GATHER_SUCCESS_CHANCE,
+  herbGatherChance,
   COMBAT_BUFF_DURATION_MINUTES,
   COMBAT_BUFF_LABEL,
   combatBuffUntilKey,
@@ -177,6 +177,7 @@ import {
   spellDamageRange,
   spiritCost,
   exitsOf,
+  isLocationOpen,
   ENTER_MINUTES,
   weekday,
   GREENHOUSE_IDENTIFY_EXP,
@@ -944,7 +945,7 @@ function advanceTime(d: GameData, minutes: number): boolean {
   if (beforeDay < YEAR_DAYS && d.day >= YEAR_DAYS) {
     d.flags.year2_started = true
     d.courseMastery = {}
-    const text = '第二学年开始了。边区支援项目在等你。'
+    const text = '第二学年开始了。边区支援项目在等你。学院的炼药室、药草园和传送室也开放了。'
     pushNotice(d, text)
     pushLog(d, text)
   } else if (d.day >= YEAR_DAYS && !d.flags.year2_started) {
@@ -2329,6 +2330,10 @@ export const useGame = create<Store>((set, get) => {
       const edge = exitsOf(data.location).find((e) => e.to === id)
       if (!edge) {
         set({ message: '从这里走不过去。' })
+        return
+      }
+      if (!isLocationOpen(id, currentYear(data.day))) {
+        set({ message: `${to.name}要到二年级才开放。` })
         return
       }
       if (data.location === 'gate' && id === 'outside' && !isGateOpen(data.minutes)) {
@@ -3923,7 +3928,7 @@ export const useGame = create<Store>((set, get) => {
         set({ message: '你太累了，先休息一下。' })
         return
       }
-      const success = Math.random() < HERB_GATHER_SUCCESS_CHANCE
+      const success = Math.random() < herbGatherChance(data.skills.cultivation.tier)
       const herbId = Math.random() < 0.5 ? 'bloodherb' : 'bitterleaf'
       mutate((d) => {
         advanceTime(d, 30)

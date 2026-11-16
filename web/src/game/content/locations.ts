@@ -7,6 +7,8 @@ export type Location = {
   kind: 'area' | 'venue' | 'room' | 'wild'
   childLabel?: string
   desc: string
+  /** 开放的最低学年；不填默认一年级。 */
+  minYear?: number
 }
 
 export const ENTER_MINUTES = 2
@@ -90,6 +92,7 @@ export const LOCATIONS: Location[] = [
     name: '炼药室',
     parent: 'academy',
     kind: 'room',
+    minYear: 2,
     desc: '石台上摆着研钵和几把刀，墙边立着一排药柜。角落里的小炉常年温着，空气里有苦味和炭火气。',
   },
   {
@@ -97,6 +100,7 @@ export const LOCATIONS: Location[] = [
     name: '药草园',
     parent: 'academy',
     kind: 'room',
+    minYear: 2,
     desc: '学院东侧围出一块坡地，几畦药草按颜色分开，木牌上写着名字。',
   },
   {
@@ -273,6 +277,7 @@ export const LOCATIONS: Location[] = [
     name: '传送室',
     parent: 'academy',
     kind: 'room',
+    minYear: 2,
     desc: '房间中央嵌着一圈深色金属纹路，边缘刻着细小的符文。空气里有轻微的嗡鸣。',
   },
   {
@@ -346,6 +351,11 @@ export const LOCATIONS: Location[] = [
 
 export function getLocation(id: string): Location {
   return LOCATIONS.find((l) => l.id === id) ?? LOCATIONS[0]
+}
+
+/** 地点是否对该学年开放。未标注 minYear 的地点默认一年级开放。 */
+export function isLocationOpen(id: string, year: number): boolean {
+  return year >= (getLocation(id).minYear ?? 1)
 }
 
 // ---------- 时段描述 / 天气 ----------

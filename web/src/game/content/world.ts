@@ -255,6 +255,13 @@ export const FOREST_DEEP_ENCOUNTER_CHANCE = 0.2
 
 export const HERB_GATHER_SUCCESS_CHANCE = 0.6
 
+/** 种植每级提高的野外采药成功率。 */
+export const HERB_GATHER_SUCCESS_PER_TIER = 0.03
+
+export function herbGatherChance(cultivationTier: number): number {
+  return Math.min(1, HERB_GATHER_SUCCESS_CHANCE + cultivationTier * HERB_GATHER_SUCCESS_PER_TIER)
+}
+
 export const MATERIAL_SELL_LOCATION = 'shop'
 
 export type SupportPeriod = {

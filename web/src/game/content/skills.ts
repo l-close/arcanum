@@ -36,8 +36,8 @@ export const SKILL_ORDER: SkillKey[] = [
   'sword',
   'nature',
   'divine',
-  'cultivation',
   'alchemy',
+  'cultivation',
 ]
 
 export function tierName(key: SkillKey, tier: number): string {

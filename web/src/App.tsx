@@ -143,6 +143,7 @@ import {
   heartsText,
   isGateOpen,
   isCityArea,
+  isLocationOpen,
   isVacation,
   isTimeWindow,
   lecturePreviewPlan,
@@ -1992,8 +1993,9 @@ function MoveList({ restrictedTarget }: { restrictedTarget?: string | null }) {
     )
   }
 
+  const year = currentYear(data.day)
   const exits = exitsOf(data.location)
-    .filter((e) => e.to !== data.location)
+    .filter((e) => e.to !== data.location && isLocationOpen(e.to, year))
     .map((e) => ({ loc: getLocation(e.to), minutes: e.minutes }))
 
   const children = exits.filter((e) => e.loc.parent === loc.id)
@@ -2998,9 +3000,22 @@ function StatsModal() {
     return tables[key][Math.min(5, Math.max(0, tier))]
   }
 
+  const statLine = (desc: string, bonus?: string) => (
+    <div className="stat-line">
+      <span className="stat-desc">{desc}</span>
+      {bonus && <span className="stat-bonus">{bonus}</span>}
+    </div>
+  )
+
   const attributeCard = (key: 'physique' | 'knowledge' | 'will') => {
     const skill = data.skills[key]
     const pct = skill.tier >= 5 ? 100 : skillPercent(skill.tier, skill.exp)
+    const bonus =
+      key === 'physique'
+        ? `当前：生命 +${skill.tier * 10} · 体力 +${skill.tier * 5}`
+        : key === 'will'
+          ? `当前：精神 +${skill.tier * 5}`
+          : undefined
     return (
       <div className="stat-card" key={key}>
         <div className="stat-card-head">
@@ -3008,7 +3023,7 @@ function StatsModal() {
           <span className="stat-tier">{tierName(key, skill.tier)}</span>
           <span className="stat-pct">{formatPercent(skill.tier, skill.exp)}</span>
         </div>
-        <div className="stat-desc">{attributeDesc(key, skill.tier)}</div>
+        {statLine(attributeDesc(key, skill.tier), bonus)}
         <div className="stat-bar">
           <div className="stat-fill" style={{ width: `${Math.min(100, pct)}%` }} />
         </div>
@@ -3016,20 +3031,44 @@ function StatsModal() {
     )
   }
 
+  const skillDesc: Partial<Record<SkillKey, string>> = {
+    brawl: '徒手或持杖攻击伤害 +2 / 级。',
+    sword: '持剑攻击伤害 +2 / 级。',
+    nature: '影响自然系法术。',
+    divine: '尚未开放成长途径。',
+    alchemy: '炼药成功率 +15% / 级，精制率 +10% / 级。',
+    cultivation: '野外采药成功率 +3% / 级。',
+  }
+
+  const skillBonus: Partial<Record<SkillKey, string>> = {
+    brawl: `当前：+${data.skills.brawl.tier * 2}`,
+    sword: `当前：+${data.skills.sword.tier * 2}`,
+    alchemy: `当前：+${data.skills.alchemy.tier * 15}% · +${data.skills.alchemy.tier * 10}%`,
+    cultivation: `当前：+${data.skills.cultivation.tier * 3}%`,
+  }
+
+  const fireball = SPELLS.fireball
+  const gearSpellPower = Object.values(data.equipment).reduce(
+    (sum, id) => sum + (id ? ITEMS[id]?.spellPower ?? 0 : 0),
+    0,
+  )
+  const runeSpellPower =
+    [data.equipment.mainHand, data.equipment.accessory].some(
+      (id) => !!id && (data.engravings[id] ?? []).includes('spell'),
+    )
+      ? 1
+      : 0
+  const spellPower = gearSpellPower + runeSpellPower
+  const fireballBase =
+    fireball.baseDamage + data.skills.nature.tier * fireball.tierScale + spellPower
+  const fireballFormula = `基础 ${fireball.baseDamage} + 自然系 +${
+    data.skills.nature.tier * fireball.tierScale
+  }${spellPower > 0 ? ` + 法术强度 +${spellPower}` : ''}，浮动 ${fireball.variance}；按目标法抗结算。`
+
   return (
     <ModalShell title="属性" wide onClose={() => setModal(null)}>
       <div className="stat-section">
         <div className="stat-section-title">核心属性</div>
-        {attributeCard('physique')}
-        {attributeCard('knowledge')}
-        {attributeCard('will')}
-        <div className="stat-card">
-          <div className="stat-card-head">
-            <span className="stat-name">年龄</span>
-            <span className="stat-pct">{ageOf(data.day)} 岁</span>
-          </div>
-          <div className="stat-desc">按学年增长。</div>
-        </div>
         {(() => {
           const hpMax = maxHp(data.skills.physique.tier)
           const hpValue = battle ? battle.playerHp : data.hp
@@ -3047,6 +3086,16 @@ function StatsModal() {
             </div>
           )
         })()}
+        <div className="stat-card">
+          <div className="stat-card-head">
+            <span className="stat-name">年龄</span>
+            <span className="stat-pct">{ageOf(data.day)} 岁</span>
+          </div>
+          <div className="stat-desc">按学年增长。</div>
+        </div>
+        {attributeCard('physique')}
+        {attributeCard('knowledge')}
+        {attributeCard('will')}
       </div>
 
       <div className="stat-section">
@@ -3095,6 +3144,10 @@ function StatsModal() {
               <span className="stat-tier">自然系 · 火</span>
             </div>
             <div className="stat-desc">消耗 8 魔力，对单个目标造成伤害。需要主手施法媒介。</div>
+            <div className="stat-current">
+              当前基础伤害：{fireballBase}–{fireballBase + fireball.variance}
+            </div>
+            <div className="stat-formula">{fireballFormula}</div>
           </div>
         ) : (
           <div className="hint">
@@ -3115,6 +3168,7 @@ function StatsModal() {
                 <span className="stat-tier">{tierName(k, skill.tier)}</span>
                 <span className="stat-pct">{formatPercent(skill.tier, skill.exp)}</span>
               </div>
+              {statLine(skillDesc[k] ?? '', skillBonus[k])}
               <div className="stat-bar">
                 <div className="stat-fill" style={{ width: `${Math.min(100, pct)}%` }} />
               </div>
@@ -3122,7 +3176,7 @@ function StatsModal() {
           )
         })}
         <div className="hint">
-          种植暂未开放作物种植，目前通过草药学课程、采药和照料药草积累。
+          种植暂未开放作物种植；目前通过采药、照料药草与温室辨认积累。
         </div>
       </div>
     </ModalShell>

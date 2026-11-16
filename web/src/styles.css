@@ -680,6 +680,29 @@ button:disabled {
 .stat-pct { margin-left: auto; color: var(--muted); font-size: 12px; }
 .stat-desc { color: var(--muted); font-size: 12px; margin: 4px 0 6px; }
 
+.stat-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 16px;
+  flex-wrap: wrap;
+  margin: 4px 0 6px;
+}
+
+.stat-line .stat-desc { margin: 0; min-width: 0; }
+
+.stat-bonus {
+  color: var(--amber);
+  font-size: 12px;
+  text-align: right;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.stat-current { color: var(--gold); font-size: 12px; margin: 4px 0 2px; }
+
+.stat-formula { color: var(--muted); font-size: 12px; margin: 0 0 6px; }
+
 .stat-bar {
   position: relative;
   height: 6px;
