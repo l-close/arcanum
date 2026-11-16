@@ -311,6 +311,21 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     },
     npc: 'none',
   },
+  // 药草园：学院东侧一块坡地——4 件：药草管植株（新芽、花、枯秆都长在它上面），
+  // 药畦管排布，木牌管人名，坡地管高低——水往哪边流。
+  herbGarden: {
+    objects: ['药草', '药畦', '木牌', '坡地'],
+    sounds: ['药草'],
+    traces: ['脚印', '水印', '翻过的土'],
+    aliases: { 草: '药草', 畦: '药畦', 牌: '木牌' },
+    seasonal: {
+      spring: ['新芽'],
+      summer: ['花'],
+      autumn: ['枯秆'],
+      winter: ['雪', '霜'],
+    },
+    npc: 'none',
+  },
   // 工坊区：一条条石窄街——辙是铁轮磨出来的，不是压出来的。
   // 三季没有季节词，靠材料状态分：春化冻、夏干热、秋备货、冬冻。
   craftDistrict: {
@@ -501,8 +516,8 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
  * 校验器只扫表，不再看 drafts。
  */
 export const LOCKED: { season: string[]; weather: string[] } = {
-  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy', 'backyard', 'bellTower', 'cemetery', 'forest', 'outside', 'forestDeep', 'craftDistrict'],
-  weather: ['yard', 'gate', 'town', 'commercial', 'backyard', 'bellTower', 'cemetery', 'forest', 'outside', 'forestDeep', 'craftDistrict'],
+  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy', 'backyard', 'bellTower', 'cemetery', 'forest', 'outside', 'forestDeep', 'craftDistrict', 'herbGarden'],
+  weather: ['yard', 'gate', 'town', 'commercial', 'backyard', 'bellTower', 'cemetery', 'forest', 'outside', 'forestDeep', 'craftDistrict', 'herbGarden'],
 }
 
 /**
