@@ -276,13 +276,13 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
       rain: '车辙里存着水，路面干了辙底还是满的。',
     },
     autumn: {
-      sunny: '土路踩上去发脆，鞋底带起一层壳。',
+      sunny: '城墙根的土先硬，路面上还没。',
       cloudy: '干硬的路面到车辙就断了。',
       overcast: '城墙根那片土比路中间软。',
       rain: '车辙的壁冲塌了一角，泥水往低的那头走。',
     },
     winter: {
-      sunny: '土路冻硬了，鞋底磕上去有响。',
+      sunny: '车辙冻硬了，鞋底磕上去有响。',
       cloudy: '车辙冻上了，辙边的土还松。',
       overcast: '土路中间没冻实，踩下去陷一点。',
       snow: '雪盖了土路，只露着两道车辙。',
@@ -297,19 +297,19 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     },
     summer: {
       sunny: '落叶脆到一踩就碎。',
-      cloudy: '只有倒木顶上那块是干的。',
+      cloudy: '只有树根底下那块还是湿的。',
       overcast: '树冠挡着，树根底下那片没干。',
       rain: '落叶踩上去发黏，底下渗出水。',
     },
     autumn: {
-      sunny: '干壳从落叶表层裂到倒木那头。',
+      sunny: '干壳到倒木那头就断了。',
       cloudy: '比倒木顶低的那层落叶还潮。',
       overcast: '落叶底下潮，面上是脆的。',
       rain: '倒木的凹处积着水，水面漂着两片落叶。',
     },
     winter: {
       sunny: '爪印踩碎了落叶上的薄冰。',
-      cloudy: '倒木底下没冻，上面冻住了。',
+      cloudy: '苔底下的土没冻，叶面上冻住了。',
       overcast: '倒木的凹处还存着水，没冻透。',
       snow: '雪压着落叶，听不见响。',
     },

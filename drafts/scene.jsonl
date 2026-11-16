@@ -1031,7 +1031,7 @@
 {"location":"outside","layer":"weather","season":1,"slot":3,"syntaxId":12,"candidate":1,"skeleton":"车辙里存着水","text":"车辙里存着水，路面干了辙底还是满的。","selected":true}
 {"location":"outside","layer":"weather","season":1,"slot":3,"syntaxId":12,"candidate":2,"skeleton":"城墙根下积着一汪","text":"城墙根下积着一汪水，边上渗进土里。","selected":false}
 {"location":"outside","layer":"weather","season":1,"slot":3,"syntaxId":12,"candidate":3,"skeleton":"草坡上留着一道水","text":"草坡上留着一道水线，从坡顶到坡底。","selected":false}
-{"location":"outside","layer":"weather","season":2,"slot":0,"syntaxId":15,"candidate":1,"skeleton":"土路踩上去发脆","text":"土路踩上去发脆，鞋底带起一层壳。","selected":true}
+{"location":"outside","layer":"weather","season":2,"slot":0,"syntaxId":15,"candidate":1,"skeleton":"土路踩上去发脆","text":"城墙根的土先硬，路面上还没。","selected":true}
 {"location":"outside","layer":"weather","season":2,"slot":0,"syntaxId":15,"candidate":2,"skeleton":"车辙的边硬了","text":"车辙的边硬了，一踩就塌一块。","selected":false}
 {"location":"outside","layer":"weather","season":2,"slot":0,"syntaxId":15,"candidate":3,"skeleton":"草坡的草茬扎脚","text":"草坡的草茬扎脚。","selected":false}
 {"location":"outside","layer":"weather","season":2,"slot":1,"syntaxId":13,"candidate":1,"skeleton":"干硬的路面到车辙","text":"干硬的路面到车辙就断了。","selected":true}
@@ -1043,7 +1043,7 @@
 {"location":"outside","layer":"weather","season":2,"slot":3,"syntaxId":14,"candidate":1,"skeleton":"车辙两边的土硬了","text":"车辙的壁冲塌了一角，泥水往低的那头走。","selected":true}
 {"location":"outside","layer":"weather","season":2,"slot":3,"syntaxId":14,"candidate":2,"skeleton":"草坡朝南那面先干","text":"草坡朝南那面先干。","selected":false}
 {"location":"outside","layer":"weather","season":2,"slot":3,"syntaxId":14,"candidate":3,"skeleton":"土路靠城墙那侧还","text":"土路靠城墙那侧还潮。","selected":false}
-{"location":"outside","layer":"weather","season":3,"slot":0,"syntaxId":1,"candidate":1,"skeleton":"土路冻硬了","text":"土路冻硬了，鞋底磕上去有响。","selected":true}
+{"location":"outside","layer":"weather","season":3,"slot":0,"syntaxId":1,"candidate":1,"skeleton":"土路冻硬了","text":"车辙冻硬了，鞋底磕上去有响。","selected":true}
 {"location":"outside","layer":"weather","season":3,"slot":0,"syntaxId":1,"candidate":2,"skeleton":"车辙冻成两道硬槽","text":"车辙冻成两道硬槽，踩上去硌脚。","selected":false}
 {"location":"outside","layer":"weather","season":3,"slot":0,"syntaxId":1,"candidate":3,"skeleton":"草坡上的草茬冻得","text":"草坡上的草茬冻得发脆，一踩就断。","selected":false}
 {"location":"outside","layer":"weather","season":3,"slot":1,"syntaxId":2,"candidate":1,"skeleton":"车辙冻上了","text":"车辙冻上了，辙边的土还松。","selected":true}
@@ -1118,7 +1118,7 @@
 {"location":"forestDeep","layer":"weather","season":1,"slot":0,"syntaxId":10,"candidate":1,"skeleton":"落叶脆到一踩就碎","text":"落叶脆到一踩就碎。","selected":true}
 {"location":"forestDeep","layer":"weather","season":1,"slot":0,"syntaxId":10,"candidate":2,"skeleton":"苔干到贴在木头上","text":"苔干到贴在木头上，抠不下来。","selected":false}
 {"location":"forestDeep","layer":"weather","season":1,"slot":0,"syntaxId":10,"candidate":3,"skeleton":"落叶层硬到踩上去","text":"落叶层硬到踩上去有响。","selected":false}
-{"location":"forestDeep","layer":"weather","season":1,"slot":1,"syntaxId":7,"candidate":1,"skeleton":"只有倒木顶上那块","text":"只有倒木顶上那块是干的。","selected":true}
+{"location":"forestDeep","layer":"weather","season":1,"slot":1,"syntaxId":7,"candidate":1,"skeleton":"只有倒木顶上那块","text":"只有树根底下那块还是湿的。","selected":true}
 {"location":"forestDeep","layer":"weather","season":1,"slot":1,"syntaxId":7,"candidate":2,"skeleton":"只有树根底下还湿","text":"只有树根底下还湿。","selected":false}
 {"location":"forestDeep","layer":"weather","season":1,"slot":1,"syntaxId":7,"candidate":3,"skeleton":"只有苔厚的那几处","text":"只有苔厚的那几处没干。","selected":false}
 {"location":"forestDeep","layer":"weather","season":1,"slot":2,"syntaxId":8,"candidate":1,"skeleton":"树冠挡着","text":"树冠挡着，树根底下那片没干。","selected":true}
@@ -1127,7 +1127,7 @@
 {"location":"forestDeep","layer":"weather","season":1,"slot":3,"syntaxId":15,"candidate":1,"skeleton":"落叶踩上去发黏","text":"落叶踩上去发黏，底下渗出水。","selected":true}
 {"location":"forestDeep","layer":"weather","season":1,"slot":3,"syntaxId":15,"candidate":2,"skeleton":"倒木表面滑","text":"倒木表面滑，手按上去留个印。","selected":false}
 {"location":"forestDeep","layer":"weather","season":1,"slot":3,"syntaxId":15,"candidate":3,"skeleton":"苔吸饱了水","text":"苔吸饱了水，踩上去陷一点。","selected":false}
-{"location":"forestDeep","layer":"weather","season":2,"slot":0,"syntaxId":13,"candidate":1,"skeleton":"干壳从落叶表层裂","text":"干壳从落叶表层裂到倒木那头。","selected":true}
+{"location":"forestDeep","layer":"weather","season":2,"slot":0,"syntaxId":13,"candidate":1,"skeleton":"干壳从落叶表层裂","text":"干壳到倒木那头就断了。","selected":true}
 {"location":"forestDeep","layer":"weather","season":2,"slot":0,"syntaxId":13,"candidate":2,"skeleton":"脆的地方到树根为","text":"脆的地方到树根为止。","selected":false}
 {"location":"forestDeep","layer":"weather","season":2,"slot":0,"syntaxId":13,"candidate":3,"skeleton":"苔干到倒木的中段","text":"苔干到倒木的中段就断了。","selected":false}
 {"location":"forestDeep","layer":"weather","season":2,"slot":1,"syntaxId":16,"candidate":1,"skeleton":"比倒木顶低的那层","text":"比倒木顶低的那层落叶还潮。","selected":true}
@@ -1142,7 +1142,7 @@
 {"location":"forestDeep","layer":"weather","season":3,"slot":0,"syntaxId":2,"candidate":1,"skeleton":"爪印踩碎了落叶上","text":"爪印踩碎了落叶上的薄冰。","selected":true}
 {"location":"forestDeep","layer":"weather","season":3,"slot":0,"syntaxId":2,"candidate":2,"skeleton":"倒木上的苔冻硬了","text":"倒木上的苔冻硬了，一碰掉渣。","selected":false}
 {"location":"forestDeep","layer":"weather","season":3,"slot":0,"syntaxId":2,"candidate":3,"skeleton":"落叶冻成一片","text":"落叶冻成一片，踩上去响。","selected":false}
-{"location":"forestDeep","layer":"weather","season":3,"slot":1,"syntaxId":3,"candidate":1,"skeleton":"倒木底下没冻","text":"倒木底下没冻，上面冻住了。","selected":true}
+{"location":"forestDeep","layer":"weather","season":3,"slot":1,"syntaxId":3,"candidate":1,"skeleton":"倒木底下没冻","text":"苔底下的土没冻，叶面上冻住了。","selected":true}
 {"location":"forestDeep","layer":"weather","season":3,"slot":1,"syntaxId":3,"candidate":2,"skeleton":"落叶层中间冻了","text":"落叶层中间冻了，底下还软。","selected":false}
 {"location":"forestDeep","layer":"weather","season":3,"slot":1,"syntaxId":3,"candidate":3,"skeleton":"树根那一圈没冻实","text":"树根那一圈没冻实。","selected":false}
 {"location":"forestDeep","layer":"weather","season":3,"slot":2,"syntaxId":12,"candidate":1,"skeleton":"倒木的凹处还存着","text":"倒木的凹处还存着水，没冻透。","selected":true}
