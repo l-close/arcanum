@@ -65,7 +65,14 @@
 
 ### B2 矩阵先行：落笔前打印这一行
 
-写一个地点前，先把该地点该层的 16 个句式号打印出来，对着号写。
+写一个地点前，先把该地点该层的 16 个句式号打印出来，对着号写。在 `web/` 下运行：
+
+```powershell
+node scripts/cell-report.mjs 地点 层
+node scripts/cell-report.mjs academy season
+node scripts/cell-report.mjs academy
+node scripts/cell-report.mjs
+```
 
 **校验器全绿不能当作矩阵没抄错的证据**：校验器校验的表本身是对的，它不知道你在按哪一行设计。抄错行的后果是整层按错号写，而四行四列全绿的置换照样通过——这是设计错误，不是规则不清。
 
