@@ -265,8 +265,8 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
   outside: {
     spring: {
       sunny: '车轮碾过土路，声音是脆的。',
-      cloudy: '路中间干了，车辙里还是湿的。',
-      overcast: '车辙深，洼底的水到这时候还没干。',
+      cloudy: '草坡那头干了，土路中间还湿着。',
+      overcast: '车辙深，洼底的水一直没干。',
       rain: '只有土路中间那一条积着水。',
     },
     summer: {
@@ -278,11 +278,11 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     autumn: {
       sunny: '土路踩上去发脆，鞋底带起一层壳。',
       cloudy: '干硬的路面到车辙就断了。',
-      overcast: '比车辙高出来的那一道硬了。',
-      rain: '车辙两边的土硬了，辙底还软。',
+      overcast: '城墙根那片土比路中间软。',
+      rain: '车辙的壁冲塌了一角，泥水往低的那头走。',
     },
     winter: {
-      sunny: '土路冻硬了，车轮压上去不打滑。',
+      sunny: '土路冻硬了，鞋底磕上去有响。',
       cloudy: '车辙冻上了，辙边的土还松。',
       overcast: '土路中间没冻实，踩下去陷一点。',
       snow: '雪盖了土路，只露着两道车辙。',
