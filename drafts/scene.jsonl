@@ -1346,7 +1346,7 @@
 {"location":"academyStreet","layer":"weather","season":0,"slot":0,"syntaxId":9,"candidate":1,"skeleton":"坡道踩上去发硬","text":"坡道踩上去发硬，树底下那截还软。","selected":true}
 {"location":"academyStreet","layer":"weather","season":0,"slot":0,"syntaxId":9,"candidate":2,"skeleton":"石阶干得发脆","text":"石阶干得发脆，坡道边上还潮。","selected":false}
 {"location":"academyStreet","layer":"weather","season":0,"slot":0,"syntaxId":9,"candidate":3,"skeleton":"书搁在石阶上","text":"书搁在石阶上，书页硬了，封面还软。","selected":false}
-{"location":"academyStreet","layer":"weather","season":0,"slot":1,"syntaxId":10,"candidate":1,"skeleton":"坡道干到大半","text":"坡道干到大半，只剩石墙底下那一条。","selected":true}
+{"location":"academyStreet","layer":"weather","season":0,"slot":1,"syntaxId":10,"candidate":1,"skeleton":"坡道干到大半","text":"石墙底下那一条还湿，坡道干到大半。","selected":true}
 {"location":"academyStreet","layer":"weather","season":0,"slot":1,"syntaxId":10,"candidate":2,"skeleton":"石阶干到第三级","text":"石阶干到第三级，往上还湿。","selected":false}
 {"location":"academyStreet","layer":"weather","season":0,"slot":1,"syntaxId":10,"candidate":3,"skeleton":"树下干到根","text":"树下干到根，往外一圈还潮。","selected":false}
 {"location":"academyStreet","layer":"weather","season":0,"slot":2,"syntaxId":11,"candidate":1,"skeleton":"潮气留在石阶上","text":"潮气留在石阶上，坡道是干的。","selected":true}
@@ -1382,7 +1382,7 @@
 {"location":"academyStreet","layer":"weather","season":3,"slot":0,"syntaxId":5,"candidate":1,"skeleton":"坡道冻硬了","text":"坡道冻硬了，踩上去响。","selected":true}
 {"location":"academyStreet","layer":"weather","season":3,"slot":0,"syntaxId":5,"candidate":2,"skeleton":"石阶冻了","text":"石阶冻了，鞋底磕上去有响。","selected":false}
 {"location":"academyStreet","layer":"weather","season":3,"slot":0,"syntaxId":5,"candidate":3,"skeleton":"外衣冻硬了","text":"外衣冻硬了，一抖就响。","selected":false}
-{"location":"academyStreet","layer":"weather","season":3,"slot":1,"syntaxId":6,"candidate":1,"skeleton":"石阶冻了","text":"坡道冻住了，石阶上还软。","selected":true}
+{"location":"academyStreet","layer":"weather","season":3,"slot":1,"syntaxId":6,"candidate":1,"skeleton":"石阶冻了","text":"石阶上还软，坡道冻住了。","selected":true}
 {"location":"academyStreet","layer":"weather","season":3,"slot":1,"syntaxId":6,"candidate":2,"skeleton":"坡道冻了","text":"坡道冻了，树下还软。","selected":false}
 {"location":"academyStreet","layer":"weather","season":3,"slot":1,"syntaxId":6,"candidate":3,"skeleton":"石墙冻了","text":"石墙冻了，石阶上没冻。","selected":false}
 {"location":"academyStreet","layer":"weather","season":3,"slot":2,"syntaxId":8,"candidate":1,"skeleton":"树挡着","text":"树挡着，树根底下那片没冻实。","selected":true}
@@ -1403,7 +1403,7 @@
 {"location":"orphanStreet","layer":"weather","season":0,"slot":3,"syntaxId":8,"candidate":1,"skeleton":"屋檐短","text":"屋檐短，水直接落在巷子里。","selected":true}
 {"location":"orphanStreet","layer":"weather","season":0,"slot":3,"syntaxId":8,"candidate":2,"skeleton":"屋顶斜","text":"屋顶斜，水都往墙根淌。","selected":false}
 {"location":"orphanStreet","layer":"weather","season":0,"slot":3,"syntaxId":8,"candidate":3,"skeleton":"烟囱挡着","text":"烟囱挡着，那一片干得慢。","selected":false}
-{"location":"orphanStreet","layer":"weather","season":1,"slot":0,"syntaxId":4,"candidate":1,"skeleton":"巷子里只有三处踩","text":"巷子里只有三处踩上去是硬的。","selected":true}
+{"location":"orphanStreet","layer":"weather","season":1,"slot":0,"syntaxId":4,"candidate":1,"skeleton":"巷子里只有三处踩","text":"只有三处踩上去是硬的，屋檐底下那几块还软。","selected":true}
 {"location":"orphanStreet","layer":"weather","season":1,"slot":0,"syntaxId":4,"candidate":2,"skeleton":"墙根下还有两处踩","text":"墙根下还有两处踩着发软。","selected":false}
 {"location":"orphanStreet","layer":"weather","season":1,"slot":0,"syntaxId":4,"candidate":3,"skeleton":"屋檐下只有一条是","text":"屋檐下只有一条是干的。","selected":false}
 {"location":"orphanStreet","layer":"weather","season":1,"slot":1,"syntaxId":9,"candidate":1,"skeleton":"巷子干了","text":"巷子干了，墙根那条还湿着。","selected":true}
@@ -1442,7 +1442,7 @@
 {"location":"churchStreet","layer":"weather","season":0,"slot":0,"syntaxId":12,"candidate":1,"skeleton":"石阶上留着水","text":"石阶上留着水，扫过的地方干了一半。","selected":true}
 {"location":"churchStreet","layer":"weather","season":0,"slot":0,"syntaxId":12,"candidate":2,"skeleton":"石阶上存着水","text":"石阶上存着水，扫过的痕还在。","selected":false}
 {"location":"churchStreet","layer":"weather","season":0,"slot":0,"syntaxId":12,"candidate":3,"skeleton":"伞架底下存着水","text":"伞架底下存着水，边上的石阶干了。","selected":false}
-{"location":"churchStreet","layer":"weather","season":0,"slot":1,"syntaxId":14,"candidate":1,"skeleton":"石阶靠墙那条干了","text":"石阶靠墙那条干了，靠钟楼那头还湿。","selected":true}
+{"location":"churchStreet","layer":"weather","season":0,"slot":1,"syntaxId":14,"candidate":1,"skeleton":"石阶靠墙那条干了","text":"靠钟楼那头还湿，石阶靠墙这条干了。","selected":true}
 {"location":"churchStreet","layer":"weather","season":0,"slot":1,"syntaxId":14,"candidate":2,"skeleton":"石阶这头干了","text":"石阶这头干了，靠教堂门那头还湿。","selected":false}
 {"location":"churchStreet","layer":"weather","season":0,"slot":1,"syntaxId":14,"candidate":3,"skeleton":"石墙底下干了","text":"石墙底下干了，石阶中间还湿。","selected":false}
 {"location":"churchStreet","layer":"weather","season":0,"slot":2,"syntaxId":1,"candidate":1,"skeleton":"募捐箱的锁上了潮","text":"募捐箱的锁上了潮，钥匙转不动。","selected":true}
@@ -1469,7 +1469,7 @@
 {"location":"churchStreet","layer":"weather","season":2,"slot":1,"syntaxId":11,"candidate":1,"skeleton":"干硬的在钟楼底下","text":"干硬的在钟楼底下，湿的留在石阶上。","selected":true}
 {"location":"churchStreet","layer":"weather","season":2,"slot":1,"syntaxId":11,"candidate":2,"skeleton":"湿的留在伞架底下","text":"湿的留在伞架底下，石阶上干了。","selected":false}
 {"location":"churchStreet","layer":"weather","season":2,"slot":1,"syntaxId":11,"candidate":3,"skeleton":"干硬的靠石墙那侧","text":"干硬的靠石墙那侧，湿的在石阶中间。","selected":false}
-{"location":"churchStreet","layer":"weather","season":2,"slot":2,"syntaxId":9,"candidate":1,"skeleton":"石阶扫过了","text":"石阶扫过了，踩上去还是软的。","selected":true}
+{"location":"churchStreet","layer":"weather","season":2,"slot":2,"syntaxId":9,"candidate":1,"skeleton":"石阶扫过了","text":"踩上去还是软的，扫过的地方留着扫痕。","selected":true}
 {"location":"churchStreet","layer":"weather","season":2,"slot":2,"syntaxId":9,"candidate":2,"skeleton":"石墙看着干","text":"石墙看着干，摸上去还是潮的。","selected":false}
 {"location":"churchStreet","layer":"weather","season":2,"slot":2,"syntaxId":9,"candidate":3,"skeleton":"石阶上没积水","text":"石阶上没积水，踩上去还是发滑。","selected":false}
 {"location":"churchStreet","layer":"weather","season":2,"slot":3,"syntaxId":10,"candidate":1,"skeleton":"石阶上的水没退","text":"石阶上的水没退，鞋底踩过去打滑。","selected":true}
@@ -1490,10 +1490,10 @@
 {"location":"academy","layer":"weather","season":0,"slot":0,"syntaxId":10,"candidate":1,"skeleton":"石板干到一踩就响","text":"石板干到一踩就响。","selected":true}
 {"location":"academy","layer":"weather","season":0,"slot":0,"syntaxId":10,"candidate":2,"skeleton":"石板干到鞋底发涩","text":"石板干到鞋底发涩。","selected":false}
 {"location":"academy","layer":"weather","season":0,"slot":0,"syntaxId":10,"candidate":3,"skeleton":"门廊底下的石板干","text":"门廊底下的石板干到踩上去有响。","selected":false}
-{"location":"academy","layer":"weather","season":0,"slot":1,"syntaxId":9,"candidate":1,"skeleton":"石板干了","text":"石板干了，石墙根那条还湿。","selected":true}
+{"location":"academy","layer":"weather","season":0,"slot":1,"syntaxId":9,"candidate":1,"skeleton":"石板干了","text":"中间干了，石墙根那条还湿。","selected":true}
 {"location":"academy","layer":"weather","season":0,"slot":1,"syntaxId":9,"candidate":2,"skeleton":"石墙干了","text":"石墙干了，门廊底下还潮。","selected":false}
 {"location":"academy","layer":"weather","season":0,"slot":1,"syntaxId":9,"candidate":3,"skeleton":"台阶干了","text":"台阶干了，石板上还湿着。","selected":false}
-{"location":"academy","layer":"weather","season":0,"slot":2,"syntaxId":4,"candidate":1,"skeleton":"石板上还有三处没","text":"石板上还有两处没干。","selected":true}
+{"location":"academy","layer":"weather","season":0,"slot":2,"syntaxId":4,"candidate":1,"skeleton":"石板上还有三处没","text":"台阶边还有两处没干。","selected":true}
 {"location":"academy","layer":"weather","season":0,"slot":2,"syntaxId":4,"candidate":2,"skeleton":"台阶上只有两处是","text":"台阶上只有两处是硬的。","selected":false}
 {"location":"academy","layer":"weather","season":0,"slot":2,"syntaxId":4,"candidate":3,"skeleton":"门廊底下还有一处","text":"门廊底下还有一处存着水。","selected":false}
 {"location":"academy","layer":"weather","season":0,"slot":3,"syntaxId":7,"candidate":1,"skeleton":"只有门廊底下那块","text":"只有门廊底下那块没积水。","selected":true}

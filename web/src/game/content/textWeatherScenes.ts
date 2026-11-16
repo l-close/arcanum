@@ -31,7 +31,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
   academyStreet: {
     spring: {
       sunny: '坡道踩上去发硬，树底下那截还软。',
-      cloudy: '坡道干到大半，只剩石墙底下那一条。',
+      cloudy: '石墙底下那一条还湿，坡道干到大半。',
       overcast: '潮气留在石阶上，坡道是干的。',
       rain: '石阶上存着水，一脚踩下去溅开。',
     },
@@ -49,7 +49,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     },
     winter: {
       sunny: '坡道冻硬了，踩上去响。',
-      cloudy: '坡道冻住了，石阶上还软。',
+      cloudy: '石阶上还软，坡道冻住了。',
       overcast: '树挡着，树根底下那片没冻实。',
       snow: '只有石阶上没积住雪。',
     },
@@ -62,7 +62,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
       rain: '屋檐短，水直接落在巷子里。',
     },
     summer: {
-      sunny: '巷子里只有三处踩上去是硬的。',
+      sunny: '只有三处踩上去是硬的，屋檐底下那几块还软。',
       cloudy: '巷子干了，墙根那条还湿着。',
       overcast: '屋檐下的草底下软到陷脚。',
       rain: '水积在巷子靠墙那头。',
@@ -83,7 +83,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
   churchStreet: {
     spring: {
       sunny: '石阶上留着水，扫过的地方干了一半。',
-      cloudy: '石阶靠墙那条干了，靠钟楼那头还湿。',
+      cloudy: '靠钟楼那头还湿，石阶靠墙这条干了。',
       overcast: '募捐箱的锁上了潮，钥匙转不动。',
       rain: '伞架底下积着水，伞上的水还在滴。',
     },
@@ -96,7 +96,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     autumn: {
       sunny: '扫过一遍，石阶踩上去发脆。',
       cloudy: '干硬的在钟楼底下，湿的留在石阶上。',
-      overcast: '石阶扫过了，踩上去还是软的。',
+      overcast: '踩上去还是软的，扫过的地方留着扫痕。',
       rain: '石阶上的水没退，鞋底踩过去打滑。',
     },
     winter: {
@@ -109,8 +109,8 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
   academy: {
     spring: {
       sunny: '石板干到一踩就响。',
-      cloudy: '石板干了，石墙根那条还湿。',
-      overcast: '石板上还有两处没干。',
+      cloudy: '中间干了，石墙根那条还湿。',
+      overcast: '台阶边还有两处没干。',
       rain: '只有门廊底下那块没积水。',
     },
     summer: {
