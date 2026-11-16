@@ -311,6 +311,34 @@ export const MATERIALS: Partial<Record<SceneLocationId, MaterialTable>> = {
     },
     npc: 'none',
   },
+  // 城外：城与野的交界——土路往南分岔，一边墓园一边林子。
+  // 土路是土，车辙是压出来的；城墙是从外面回看的城，与城门的门洞不同。
+  outside: {
+    objects: ['土路', '岔口', '草坡', '林子', '城墙'],
+    sounds: ['土路', '林子'],
+    traces: ['车辙', '脚印', '蹄印', '压出的沟'],
+    aliases: { 路: '土路', 坡: '草坡' },
+    seasonal: {
+      spring: ['新草'],
+      autumn: ['落叶'],
+      winter: ['雪', '霜'],
+    },
+    npc: 'none',
+  },
+  // 森林深处：没人来过——没有路，没有脚印，只有爪印、倒木、苔和菌。
+  // 5 件：树管高处，倒木管横躺的阻挡，苔与菌管「没人来过」，落叶管地面厚度。
+  forestDeep: {
+    objects: ['树', '倒木', '落叶', '苔', '菌'],
+    sounds: ['树', '落叶'],
+    traces: ['爪印', '落枝', '裂口'],
+    aliases: { 木: '倒木', 叶: '落叶' },
+    seasonal: {
+      spring: ['新芽'],
+      autumn: ['黄叶'],
+      winter: ['雪', '霜'],
+    },
+    npc: 'none',
+  },
   // 孤儿院街：安静和草——墙根、孩子、教堂尖顶从旁边露出来。
   orphanStreet: {
     objects: [
@@ -461,8 +489,8 @@ export const WEATHER_MATRIX: Record<SceneLocationId, number[]> = {
  * 校验器只扫表，不再看 drafts。
  */
 export const LOCKED: { season: string[]; weather: string[] } = {
-  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy', 'backyard', 'bellTower', 'cemetery', 'forest'],
-  weather: ['yard', 'gate', 'town', 'commercial', 'backyard', 'bellTower', 'cemetery', 'forest'],
+  season: ['yard', 'gate', 'town', 'commercial', 'academyStreet', 'orphanStreet', 'churchStreet', 'academy', 'backyard', 'bellTower', 'cemetery', 'forest', 'outside', 'forestDeep'],
+  weather: ['yard', 'gate', 'town', 'commercial', 'backyard', 'bellTower', 'cemetery', 'forest', 'outside', 'forestDeep'],
 }
 
 /**
