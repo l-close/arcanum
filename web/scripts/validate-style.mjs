@@ -294,6 +294,7 @@ async function checkSceneText(sceneMaterials, styleRules, schedule, data) {
     checkDeadTokens(scan, styleRules, sceneMaterials)
     checkIso(scan, sceneMaterials, styleRules)
     checkRhythm(scan)
+    checkColumn(scan, sceneMaterials)
     checkBigrams(scan, sceneMaterials, styleRules)
     for (const cell of scan.cells) {
       if (!cell.text) continue
@@ -586,6 +587,51 @@ function checkRhythm(scan) {
   if (hits.length === 0) return
   const note = scan.layer === 'weather' ? '（设计顺序，非玩家时间顺序）' : ''
   console.log(`INFO [rhythm] ${scan.layer}: ${hits.length} 处相邻重复${note}`)
+  for (const hit of hits) console.log(`  ${hit}`)
+}
+
+function seasonCn(label) {
+  const map = { spring: '春', summer: '夏', autumn: '秋', winter: '冬' }
+  const [season, slot] = label.split('/')
+  return `${map[season] ?? season}/${slot}`
+}
+
+/** 文本里最早出现的表内 token；同位置取更长的。 */
+function firstToken(text, table, sceneMaterials) {
+  const tokens = [...sceneMaterials.generalTokens(table), ...Object.keys(table.aliases ?? {})]
+  let best = null
+  for (const token of tokens) {
+    const index = text.indexOf(token)
+    if (index < 0) continue
+    if (!best || index < best.index || (index === best.index && token.length > best.token.length)) {
+      best = { token, index }
+    }
+  }
+  return best ? best.token : null
+}
+
+function checkColumn(scan, sceneMaterials) {
+  const columns = new Map()
+  for (const cell of scan.cells) {
+    const table = sceneMaterials.MATERIALS[cell.location]
+    if (!table) continue
+    const token = firstToken(cell.text, table, sceneMaterials)
+    if (!token) continue
+    const slot = cell.label.split('/')[1]
+    const key = `${cell.location}/${slot}/${token}`
+    if (!columns.has(key)) columns.set(key, [])
+    columns.get(key).push(cell)
+  }
+  const hits = []
+  for (const [key, cells] of columns) {
+    if (cells.length < 3) continue
+    const [location, slot, token] = key.split('/')
+    hits.push(
+      `${location}/${slot} 首个 token「${token}」× ${cells.length} —— ${cells.map((c) => seasonCn(c.label)).join('、')}`,
+    )
+  }
+  if (hits.length === 0) return
+  console.log(`INFO [column] ${scan.layer}: ${hits.length} 处跨季同 token 开头`)
   for (const hit of hits) console.log(`  ${hit}`)
 }
 

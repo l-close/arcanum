@@ -198,7 +198,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
       rain: '柴堆外头湿了，里头还干着，水没渗进去。',
     },
     autumn: {
-      sunny: '园地表面硬了，土垄缝里还夹着泥。',
+      sunny: '土垄硬得一捏就散。',
       cloudy: '木箱底下那片还是潮的，箱板上凝着水珠。',
       overcast: '只有柴堆底下那块是干的。',
       rain: '水顺着晾衣绳往下滴，一滴一滴打在园地上。',
@@ -215,7 +215,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
       sunny: '塔门里还有三处发潮。',
       cloudy: '只有长凳面上没湿。',
       overcast: '铜钟上凝了一层水，一摸留个手印。',
-      rain: '木楼梯踩上去发黏。',
+      rain: '木楼梯上积着水，踩上去发黏。',
     },
     summer: {
       sunny: '塔门里的地硬了，门外那级是湿的。',
@@ -231,7 +231,7 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     },
     winter: {
       sunny: '钟口下沿冻了一圈，钟身没有。',
-      cloudy: '塔门关着，门里那块地没冻实。',
+      cloudy: '塔门外那级冻了，门里还软。',
       overcast: '长凳底下那片没冻实，凳面上冻了。',
       snow: '雪只压在钟梁上，钟口朝下敞着。',
     },
@@ -329,13 +329,13 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
     },
     autumn: {
       sunny: '硬壳从坡顶裂到碑脚。',
-      cloudy: '石墙这侧踩上去是硬的，墙外那头还软。',
+      cloudy: '碑面摸上去发涩，碑脚的土还是软的。',
       overcast: '草根底下的土软，踩下去留个浅印。',
       rain: '只有碑座底下那块没积水。',
     },
     winter: {
       sunny: '坡地上还有三处没冻硬。',
-      cloudy: '屋后这片踩着发硬，碑脚那圈还软。',
+      cloudy: '屋后的地比碑脚那片冻得实。',
       overcast: '冻硬的地方到石墙根就断了。',
       snow: '雪盖到碑座那么高，碑顶还露在外面。',
     },
@@ -348,19 +348,19 @@ export const WEATHER_SCENES: Record<string, SeasonSceneTable> = {
       rain: '湿到树桩那一圈就断了，再往外是干的。',
     },
     summer: {
-      sunny: '小路比林子里的地硬。',
+      sunny: '树桩的截面比树皮先结壳。',
       cloudy: '树底下干，灌木底下还潮。',
       overcast: '树桩的截面上积着水。',
       rain: '落叶上留着水冲出的沟。',
     },
     autumn: {
-      sunny: '小路踩上去发脆，林子深处没声。',
+      sunny: '树底下没声，小路上踩上去发脆。',
       cloudy: '树挡着，树底下的落叶还潮，路那边脆了。',
       overcast: '落叶踩上去是软的，没有脆响。',
       rain: '小路上积着水，树桩顶上干着。',
     },
     winter: {
-      sunny: '小路上只有三处踩上去是硬的。',
+      sunny: '灌木底下还有两处是软的，其余踩上去发脆。',
       cloudy: '树桩底下还留着一圈软的。',
       overcast: '小路冻上了，落叶底下还是软的。',
       snow: '雪没到脚踝。',
