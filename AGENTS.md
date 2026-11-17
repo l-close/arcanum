@@ -20,6 +20,12 @@ npm.cmd run validate:content
 
 `npm.cmd run build` 会先自动运行 `prebuild`，也就是内容校验与文本规范校验。
 
+## 发布
+
+- 完整发布流程见根目录 `RELEASE.md`。
+- APK 由 GitHub Actions 构建：推送 `apk-vX.Y.Z` 标签即可，本机不需要 JDK / Android SDK。
+- 已发布的版本号和标签不回头修改。
+
 ## 内容改动规范
 
 任何修改 `web/src/game/content/` 下文件的任务，完成后必须：
