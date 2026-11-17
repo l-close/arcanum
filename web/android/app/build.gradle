@@ -9,7 +9,7 @@ android {
         applicationId "io.github.lclose.arcanum"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 58
+        versionCode 59
         versionName "2.29.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
