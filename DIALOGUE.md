@@ -7,7 +7,7 @@
 
 有说话人、有回应、一次推进一个关系的文本。
 
-现在只有单向台词：`content/npcs.ts` 的 `lines` 按 `far / familiar / close` 三档各存一串，
+现在只有单向台词：`web/src/game/content/npcs.ts` 的 `lines` 按 `far / familiar / close` 三档各存一串，
 交谈时取 `lines[count % lines.length]` 念一句，没有回应、没有分支。
 10 个 NPC，每人 3 档各 4 条，共 120 条。
 
