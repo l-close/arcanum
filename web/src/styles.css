@@ -1142,7 +1142,7 @@ button:disabled {
 
 .book-section { margin-bottom: 14px; }
 .book-section:last-child { margin-bottom: 0; }
-.book-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
+.book-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
 .book-slot {
   min-height: 66px;
   border: 1px solid var(--line);

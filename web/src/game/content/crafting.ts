@@ -41,6 +41,24 @@ export const CRAFT_RECIPES: CraftRecipe[] = [
     minutes: 45,
     desc: '薄皮裁成鞋面，鞋帮里垫一层处理过的凝胶，走起来更轻。',
   },
+  {
+    id: 'hide_shield',
+    name: '皮盾',
+    result: 'hide_shield',
+    materials: { beast_hide: 2, boar_tusk: 1 },
+    cost: 20,
+    minutes: 45,
+    desc: '把浸过胶的皮蒙在木框上，四角用牙扣固定。',
+  },
+  {
+    id: 'hunter_cloak',
+    name: '猎人斗篷',
+    result: 'hunter_cloak',
+    materials: { beast_hide: 3, slime_gel: 3 },
+    cost: 31,
+    minutes: 60,
+    desc: '把薄皮缝在斗篷肩背，接缝处压一层凝胶。',
+  },
 ]
 
 export const CRAFT_TEXTS = [

@@ -35,6 +35,8 @@ export const SHOP_STOCKS: Record<string, Record<string, number>> = {
   westMarket: {
     stimulant: 2,
     dry_ration: 4,
+    west_lore: 1,
+    erosion_notes: 1,
   },
   bookshop: {
     brawl_manual: 1,
@@ -44,6 +46,8 @@ export const SHOP_STOCKS: Record<string, Record<string, number>> = {
     frontier_notes: 1,
     hearth_tales: 1,
     old_letters: 1,
+    bell_tower_notes: 1,
+    herb_atlas: 1,
   },
   potionWorkshop: {
     sharp_draught: 2,
@@ -67,6 +71,10 @@ export const CRAFTED_POTIONS = new Set([
   'stimulant',
   'stimulant_fine',
   'antidote_fine',
+  'mana_potion',
+  'mana_potion_fine',
+  'regen_potion',
+  'regen_potion_fine',
 ])
 
 export const WORKSHOP_HERBS = new Set(['bloodherb', 'bitterleaf'])
@@ -192,6 +200,30 @@ export const RECIPES: RecipeDef[] = [
     successBase: 105,
     fineBase: 20,
     desc: '毒牙磨成粉，和苦叶一起煎。味道很冲，但能把毒压下去。',
+  },
+  {
+    id: 'regen_potion',
+    name: '再生药水',
+    level: 2,
+    unlockExp: 200,
+    inputs: { bloodherb: 2, slime_gel: 2 },
+    standard: 'regen_potion',
+    fine: 'regen_potion_fine',
+    successBase: 105,
+    fineBase: 20,
+    desc: '止血草和凝胶一起熬，喝下去伤口会慢慢收拢。',
+  },
+  {
+    id: 'mana_potion',
+    name: '魔力药剂',
+    level: 2,
+    unlockExp: 240,
+    inputs: { bitterleaf: 2, slime_gel: 1 },
+    standard: 'mana_potion',
+    fine: 'mana_potion_fine',
+    successBase: 105,
+    fineBase: 20,
+    desc: '苦叶和凝胶滤出的药液，喝下去魔力恢复得更快。',
   },
 ]
 

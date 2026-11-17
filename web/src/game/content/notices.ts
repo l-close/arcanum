@@ -52,7 +52,47 @@ const PLAZA_NOTICES_BASE: PlazaNotice[] = [
   {
     id: 'tavern_job',
     title: '酒馆招工',
-    text: '酒馆招晚间帮工，包一顿晚饭，工钱面议。',
+    text: '酒馆招晚间帮工，负责端送与清理。工钱面议，供一餐。',
+  },
+  {
+    id: 'guild_hiring',
+    title: '商会招工',
+    text: '商会招募临时帮工，负责搬运与清点。工钱日结，至商会办事处登记。',
+  },
+  {
+    id: 'workshop_herbs',
+    title: '工坊收药',
+    text: '药剂工坊收购止血草与苦叶，按品相计价，长期有效。',
+  },
+  {
+    id: 'greenhouse_stock',
+    title: '温室供药',
+    text: '温室本周供应常见药草，数量有限，售完即止。',
+  },
+  {
+    id: 'weapon_orders',
+    title: '武具店接单',
+    text: '武具店接受打造订单。来料请先交柜台过目，按件计工。',
+  },
+  {
+    id: 'rune_orders',
+    title: '符文刻印',
+    text: '符文工坊接受武器与护甲刻印，需自备刻印材料。',
+  },
+  {
+    id: 'academy_exam',
+    title: '学院月考',
+    text: '学院本月月考临近，讲堂与演武场将按课程安排使用。',
+  },
+  {
+    id: 'cemetery_notice',
+    title: '墓园提醒',
+    text: '墓园开放至黄昏。请勿在闭园后逗留，勿移动墓碑前的供物。',
+  },
+  {
+    id: 'rite_prep',
+    title: '圣祷准备',
+    text: '教堂征集周日圣祷的布置人手，需提前半小时到场。',
   },
   {
     id: 'herb_buy',
@@ -96,6 +136,11 @@ const PLAZA_NOTICES_WEST: PlazaNotice[] = [
     id: 'west_delay',
     title: '西境商队延期',
     text: '因道路不宁，原定本周出发的西境商队延期三日。已登记的货物与人员请等候通知。',
+  },
+  {
+    id: 'west_tower_watch',
+    title: '哨塔换岗',
+    text: '西镇哨塔夜间换岗，镇外路口请结伴通行。',
   },
 ]
 

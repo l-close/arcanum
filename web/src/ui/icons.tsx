@@ -290,10 +290,12 @@ export function ItemIcon({ id, size = 32 }: { id: string; size?: number }) {
     case 'knight_sword':
       return <SwordIcon size={size} />
     case 'leather_armor':
+    case 'hide_shield':
       return <ArmorIcon size={size} />
     case 'studded_leather':
       return <StuddedArmorIcon size={size} />
     case 'travel_cloak':
+    case 'hunter_cloak':
       return <CloakIcon size={size} />
     case 'apprentice_charm':
       return <CharmIcon size={size} />
@@ -304,6 +306,7 @@ export function ItemIcon({ id, size = 32 }: { id: string; size?: number }) {
     case 'light_boots':
       return <BootsIcon size={size} />
     case 'mana_potion':
+    case 'mana_potion_fine':
       return <ManaPotionIcon size={size} />
     case 'salve':
     case 'salve_fine':
@@ -323,6 +326,7 @@ export function ItemIcon({ id, size = 32 }: { id: string; size?: number }) {
     case 'antidote_fine':
       return <HealingPotionIcon size={size} />
     case 'regen_potion':
+    case 'regen_potion_fine':
       return <HealingPotionIcon size={size} />
     case 'dry_ration':
       return <DryRationIcon size={size} />
@@ -353,6 +357,10 @@ export function ItemIcon({ id, size = 32 }: { id: string; size?: number }) {
     case 'star_primer':
     case 'hearth_tales':
     case 'old_letters':
+    case 'west_lore':
+    case 'erosion_notes':
+    case 'bell_tower_notes':
+    case 'herb_atlas':
       return <BookIcon size={size} />
     default:
       return (

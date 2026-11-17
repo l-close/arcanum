@@ -48,7 +48,7 @@ export const POISON_TICKS = 60
 export const BLEED_MAX_STACKS = 5
 export const BLEED_DAMAGE_PER_STACK = 3
 
-export const REGEN_MAX_STACKS = 5
+export const REGEN_MAX_STACKS = 6
 export const REGEN_HEAL_PER_STACK = 2
 
 export type AttackKind = 'brawl' | 'sword'
@@ -286,7 +286,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
         battleDesc: '登场时获得 3 层再生，层数不会减少；每次行动结束恢复 6 点生命。',
       },
     ],
-    regen: { initial: 3, max: 5, healPer: 2, persistent: true },
+    regen: { initial: 3, max: REGEN_MAX_STACKS, healPer: 2, persistent: true },
   },
   gray_wolf: {
     id: 'gray_wolf',

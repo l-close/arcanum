@@ -174,7 +174,11 @@ export function validateContent(): ContentIssue[] {
   }
 
   for (const [id, book] of Object.entries(BOOKS)) {
+    const item = ITEMS[id]
     if (!itemIds.has(id)) error('books', `${id}: 对应物品不存在`)
+    else if (item.desc !== book.desc) {
+      error('books', `${id}: 物品与书籍描述不一致`)
+    }
     if (!(book.category in BOOK_CATEGORY_LABEL)) {
       error('books', `${id}: 分类 ${book.category} 无效`)
     }
