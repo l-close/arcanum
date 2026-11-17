@@ -7,12 +7,12 @@ const PLAZA_NOTICES_BASE: PlazaNotice[] = [
   {
     id: 'gate_hours',
     title: '城门时刻',
-    text: '自即日起，城门 22:00 关闭，次日 06:00 开启。夜间入城请走侧门，并出示文书。\n——城门卫队',
+    text: '城门 22:00 关闭，次日 06:00 开启。夜间入城请走侧门，并出示文书。\n——城门卫队',
   },
   {
     id: 'night_patrol',
     title: '夜间巡逻',
-    text: '近日城南夜间有窃案，骑士团将加派巡骑。请居民夜间关好门窗。',
+    text: '城南夜间有窃案，骑士团已加派巡骑。请居民夜间关好门窗。',
   },
   {
     id: 'lost_bag',
@@ -22,12 +22,12 @@ const PLAZA_NOTICES_BASE: PlazaNotice[] = [
   {
     id: 'road_repair',
     title: '道路修补',
-    text: '中央广场东侧石板将修补三日，行人请绕行。',
+    text: '中央广场东侧石板修补中，行人请绕行。',
   },
   {
     id: 'prayer',
     title: '圣祷公告',
-    text: '本周日 09:00–11:00 于教堂举行圣祷，欢迎信徒参加。',
+    text: '每周日 09:00–11:00 于教堂举行圣祷，欢迎信徒参加。',
   },
   {
     id: 'relief_donation',
@@ -47,7 +47,7 @@ const PLAZA_NOTICES_BASE: PlazaNotice[] = [
   {
     id: 'weekend_market',
     title: '周末集市',
-    text: '本周六 09:00–17:00 于中央广场设集市，招募摊主与帮工。',
+    text: '每逢周六 09:00–17:00 于中央广场设集市，招募摊主与帮工。',
   },
   {
     id: 'tavern_job',
@@ -67,7 +67,7 @@ const PLAZA_NOTICES_BASE: PlazaNotice[] = [
   {
     id: 'greenhouse_stock',
     title: '温室供药',
-    text: '温室本周供应常见药草，数量有限，售完即止。',
+    text: '温室供应常见药草，数量有限，售完即止。',
   },
   {
     id: 'weapon_orders',
@@ -82,7 +82,7 @@ const PLAZA_NOTICES_BASE: PlazaNotice[] = [
   {
     id: 'academy_exam',
     title: '学院月考',
-    text: '学院本月月考临近，讲堂与演武场将按课程安排使用。',
+    text: '月考按课程表在原课时进行，讲堂与演武场按课程安排使用。',
   },
   {
     id: 'cemetery_notice',
@@ -130,12 +130,12 @@ const PLAZA_NOTICES_WEST: PlazaNotice[] = [
   {
     id: 'west_labor',
     title: '商会招募搬运帮工',
-    text: '西境物资装车，需临时帮工。明日 08:00–10:00，工钱日结，管一顿早饭。',
+    text: '西境物资装车，需临时帮工。08:00–10:00 到商会办事处集合，工钱日结，管一顿早饭。',
   },
   {
     id: 'west_delay',
     title: '西境商队延期',
-    text: '因道路不宁，原定本周出发的西境商队延期三日。已登记的货物与人员请等候通知。',
+    text: '因道路不宁，西境商队延期出发。已登记的货物与人员请等候通知。',
   },
   {
     id: 'west_tower_watch',
