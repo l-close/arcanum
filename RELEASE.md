@@ -110,6 +110,19 @@ build            tsc 与 vite 构建通过
 
 `validate:style` 会打印大量 INFO，INFO 不是错误。error 必须修完再发布。
 
+### 标签与 versionCode
+
+先同步远端标签，再判断：
+
+```powershell
+git fetch --tags
+git tag -l "vX.Y.Z" "apk-vX.Y.Z"        # 有输出 = 已经发过，升版本
+git ls-remote --tags origin | Select-String "apk-v"
+```
+
+本地标签可能是旧副本。2.29.1 那次本地比远端少两个标签，`git tag` 回答「不存在」，
+而 2.29.0 的 APK 早已用掉 `versionCode 58`——照本地判断就会沿用 58，与已发布版本撞号，覆盖安装失败。
+
 ## 5. 标准发布
 
 ```powershell
