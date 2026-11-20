@@ -114,6 +114,24 @@ export type BookState = {
   bonusClaimed?: boolean
 }
 
+export type ChangmingRole =
+  | 'lantern'
+  | 'keeper'
+  | 'storyteller'
+  | 'watch'
+  | 'singer'
+  | 'logistics'
+
+export type ChangmingState = {
+  scene: string | null
+  role: ChangmingRole | null
+  prep: 0 | 1 | 2
+  choice: string | null
+  incident: string | null
+  freeVisits: string[]
+  done: boolean
+}
+
 export type GameData = {
   version: number
   day: number
@@ -174,6 +192,7 @@ export type GameData = {
   prologueSeen: boolean
   storyStep: number
   storyDone: boolean
+  changming: ChangmingState
 }
 
 export type Player = { name: string; gender: Gender }

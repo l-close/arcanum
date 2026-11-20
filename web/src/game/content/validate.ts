@@ -34,6 +34,16 @@ import {
 } from './index'
 import { EVENTS } from '../events'
 import { STORY } from '../story'
+import {
+  CHANGMING_LINKS,
+  CHANGMING_ROLE_DESC,
+  CHANGMING_ROLE_LABEL,
+  CHANGMING_ROLE_ROOM,
+  CHANGMING_ROLE_ROOM_LABEL,
+  CHANGMING_ROLES,
+  CHANGMING_SCENES,
+  CHANGMING_START,
+} from '../changming'
 
 export type ContentIssue = {
   level: 'error' | 'warning'
@@ -548,6 +558,66 @@ export function validateContent(): ContentIssue[] {
       if (choice.next !== undefined && !STORY[choice.next]) {
         error('story', `${scene.id}: 选项 next ${choice.next} 不存在`)
       }
+    }
+  }
+
+  const changmingIds = new Set(Object.keys(CHANGMING_SCENES))
+  if (!changmingIds.has(CHANGMING_START)) {
+    error('changming', `起始场景 ${CHANGMING_START} 不存在`)
+  }
+  for (const role of CHANGMING_ROLES) {
+    if (!CHANGMING_ROLE_LABEL[role]) error('changming', `${role}: 缺少角色名`)
+    if (!CHANGMING_ROLE_DESC[role]) error('changming', `${role}: 缺少角色说明`)
+    if (!locationIds.has(CHANGMING_ROLE_ROOM[role])) {
+      error('changming', `${role}: 准备地点 ${CHANGMING_ROLE_ROOM[role]} 不存在`)
+    }
+    if (!CHANGMING_ROLE_ROOM_LABEL[role]) {
+      error('changming', `${role}: 缺少准备地点显示名`)
+    }
+    if (!changmingIds.has(`prep_${role}`)) {
+      error('changming', `${role}: 缺少准备场景 prep_${role}`)
+    }
+    if (!changmingIds.has(`role_${role}`)) {
+      error('changming', `${role}: 缺少当晚场景 role_${role}`)
+    }
+    if (!changmingIds.has(`role_${role}_after`)) {
+      error('changming', `${role}: 缺少当晚后续场景 role_${role}_after`)
+    }
+  }
+  for (const id of changmingIds) {
+    if (!CHANGMING_LINKS[id]) {
+      error('changming', `${id}: 缺少静态场景边`)
+      continue
+    }
+    for (const next of CHANGMING_LINKS[id]) {
+      if (!changmingIds.has(next)) {
+        error('changming', `${id}: next ${next} 不存在`)
+      }
+    }
+  }
+  for (const id of Object.keys(CHANGMING_LINKS)) {
+    if (!changmingIds.has(id)) {
+      error('changming', `静态边引用了不存在的场景 ${id}`)
+    }
+  }
+  const changmingRoots = [
+    CHANGMING_START,
+    'arrival_late',
+    ...CHANGMING_ROLES.map((role) => `prep_${role}`),
+    'prep_done',
+    'prep_again',
+  ]
+  const reachable = new Set<string>()
+  const queue = [...changmingRoots]
+  while (queue.length > 0) {
+    const id = queue.pop()!
+    if (reachable.has(id) || !changmingIds.has(id)) continue
+    reachable.add(id)
+    for (const next of CHANGMING_LINKS[id] ?? []) queue.push(next)
+  }
+  for (const id of changmingIds) {
+    if (!reachable.has(id)) {
+      error('changming', `${id}: 从入口不可达`)
     }
   }
 

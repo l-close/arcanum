@@ -193,7 +193,20 @@ import {
 import type { SaveBundle } from './game/save'
 import { EVENTS, choiceBlockedReason, eventById, eventEffectSummary } from './game/events'
 import { STORY } from './game/story'
-import type { ExamPackage, GameData, Gender, SkillKey } from './game/types'
+import type { ChangmingRole, ExamPackage, GameData, Gender, SkillKey } from './game/types'
+import {
+  CHANGMING_DAY,
+  CHANGMING_END_MINUTES,
+  CHANGMING_PREP_DEADLINE,
+  CHANGMING_ROLE_DESC,
+  CHANGMING_ROLE_LABEL,
+  CHANGMING_ROLE_ROOM,
+  CHANGMING_ROLE_ROOM_LABEL,
+  CHANGMING_ROLES,
+  CHANGMING_SCENES,
+  CHANGMING_START_MINUTES,
+  canPrepChangming,
+} from './game/changming'
 import type { Location } from './game/content'
 import { ItemIcon } from './ui/icons'
 import { APP_VERSION } from './version'
@@ -379,6 +392,7 @@ function GameScreen() {
   const clearNotice = useGame((s) => s.clearNotice)
   const clearMessage = useGame((s) => s.clearMessage)
   const checkExamPackages = useGame((s) => s.checkExamPackages)
+  const checkChangming = useGame((s) => s.checkChangming)
   const [npcId, setNpcId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -388,6 +402,21 @@ function GameScreen() {
   useEffect(() => {
     checkExamPackages()
   }, [data.location, data.day, data.minutes, modal, pendingEvent, battle, checkExamPackages])
+
+  useEffect(() => {
+    checkChangming()
+  }, [
+    data.location,
+    data.day,
+    data.minutes,
+    data.storyStep,
+    data.changming.scene,
+    data.changming.done,
+    modal,
+    pendingEvent,
+    battle,
+    checkChangming,
+  ])
 
   const loc = getLocation(data.location)
   const weather = weatherOf(data.day)
@@ -458,6 +487,8 @@ function GameScreen() {
             <BattleView />
           ) : data.guild.escort ? (
             <EscortView />
+          ) : data.changming.scene ? (
+            <ChangmingView />
           ) : (
             <>
               <div className="countdown">
@@ -554,6 +585,7 @@ function GameScreen() {
       {modal === 'westBoard' && <WestBoardModal />}
       {modal === 'westRecord' && <WestRecordModal />}
       {modal === 'academyBoard' && <AcademyBoardModal />}
+      {modal === 'changmingConfirm' && <ChangmingConfirmModal />}
       {modal === 'guildBoard' && <GuildBoardModal />}
       {modal === 'workshopOrders' && <WorkshopOrdersModal />}
       {modal === 'commissions' && <CommissionsModal />}
@@ -1062,6 +1094,61 @@ function StorySceneView() {
   )
 }
 
+function ChangmingView() {
+  const data = useGame((s) => s.data)
+  const choose = useGame((s) => s.changmingChoose)
+  const cont = useGame((s) => s.changmingContinue)
+  const scene = data.changming.scene ? CHANGMING_SCENES[data.changming.scene] : null
+  if (!scene) return null
+  const paragraphs = scene.text(data)
+  const choices = scene.choices?.(data) ?? []
+  return (
+    <div className="story changming-view">
+      <div className="event-title">长明夜</div>
+      <div className="story-text">
+        {paragraphs.map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
+      </div>
+      {choices.length > 0 ? (
+        <div className="story-choices">
+          {choices.map((c, i) => (
+            <button key={i} className="story-choice" onClick={() => choose(i, scene.id)}>
+              {c.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <button className="primary-btn story-continue" onClick={() => cont(scene.id)}>
+          {scene.id === 'ending' ? '结束' : '继续'}
+        </button>
+      )}
+    </div>
+  )
+}
+
+function ChangmingConfirmModal() {
+  const role = useGame((s) => s.pendingChangmingRole)
+  const choose = useGame((s) => s.chooseChangmingRole)
+  const cancel = useGame((s) => s.cancelChangmingPrep)
+  if (!role) return null
+  return (
+    <ModalShell title="长明夜准备" onClose={cancel}>
+      <p className="package-text">你选择成为「{CHANGMING_ROLE_LABEL[role]}」。</p>
+      <p className="hint">{CHANGMING_ROLE_DESC[role]}</p>
+      <p className="hint">长明夜的角色选定后不能更改。准备场景会立即开始。</p>
+      <div className="row-head">
+        <button className="primary-btn" onClick={() => choose(role)}>
+          确认
+        </button>
+        <button className="mini-btn" onClick={cancel}>
+          返回
+        </button>
+      </div>
+    </ModalShell>
+  )
+}
+
 function EventView() {
   const data = useGame((s) => s.data)
   const pendingEvent = useGame((s) => s.pendingEvent)
@@ -1254,6 +1341,8 @@ function Actions({
   const storyRoute = useGame((s) => s.storyRoute)
   const storyWait = useGame((s) => s.storyWait)
   const wait = useGame((s) => s.wait)
+  const beginChangmingPrep = useGame((s) => s.beginChangmingPrep)
+  const startChangmingAgain = useGame((s) => s.startChangmingAgain)
   const loc = data.location
   const examDay = isExamDay(data.day)
   const examCourses = examDay ? examCoursesForYear(currentYear(data.day)) : []
@@ -1402,10 +1491,55 @@ function Actions({
     )
   }
 
+  const changmingPrepActions = () => {
+    if (segment || examDay) return null
+    const current = data.changming
+    if (current.role) {
+      if (CHANGMING_ROLE_ROOM[current.role] !== loc) return null
+      if (current.prep === 1) {
+        if (!canPrepChangming(data, 30)) {
+          return <div className="hint">长明夜准备已经结束。</div>
+        }
+        return (
+          <ActionBtn
+            onClick={startChangmingAgain}
+            label="再练一次 · 长明夜准备"
+            cost="30 分钟"
+          />
+        )
+      }
+      if (current.prep === 2) {
+        return <div className="hint">长明夜准备已经完成。</div>
+      }
+      return null
+    }
+    if (!canPrepChangming(data, 60)) return null
+    const roleButton = (role: ChangmingRole, label: string) => (
+      <ActionBtn
+        key={role}
+        onClick={() => beginChangmingPrep(role)}
+        label={label}
+        cost="1 小时 · 长明夜准备"
+      />
+    )
+    if (loc === 'canteen') return <>{roleButton('lantern', '帮忙做灯')}{roleButton('logistics', '准备热饮')}</>
+    if (loc === 'academy') return roleButton('keeper', '试主灯')
+    if (loc === 'library') return roleButton('storyteller', '翻学院旧事')
+    if (loc === 'yard') return roleButton('watch', '记巡夜路线')
+    if (loc === 'lecture') return roleButton('singer', '练短歌')
+    return null
+  }
+
   return (
     <div className="actions">
       <div className="section-title">行动</div>
       {classHint && <div className="class-hint">{classHint}</div>}
+      {canPrepChangming(data, 60) && loc === 'academy' && !data.changming.role && (
+        <div className="hint">
+          长明夜准备：食堂（灯匠 / 后勤）、前庭（守灯人）、藏书阁（讲述者）、演武场（巡夜）、讲堂（领唱）。
+        </div>
+      )}
+      {changmingPrepActions()}
       {examDay && loc !== 'lecture' && loc !== 'yard' && (
         <div className="hint">今天是月考日。考试在讲堂与演武场进行。</div>
       )}
@@ -4402,6 +4536,38 @@ function AcademyBoardModal() {
             </div>
           ))}
         </div>
+      )}
+
+      {year === 1 && data.day <= CHANGMING_DAY && (
+        <>
+          <div className="section-title">长明夜</div>
+          <p className="package-text">
+            {formatDate(CHANGMING_DAY)} · {formatTime(CHANGMING_START_MINUTES)} · 学院前庭
+          </p>
+          <div className="board-lines">
+            {CHANGMING_ROLES.map((role) => (
+              <div className="board-line" key={role}>
+                <span>{CHANGMING_ROLE_LABEL[role]}</span>
+                <span className="muted">{CHANGMING_ROLE_ROOM_LABEL[role]}</span>
+              </div>
+            ))}
+          </div>
+          <p className="hint">
+            准备需 1 小时，最晚在长明夜当天 17:00 前完成。之后还能再花 30 分钟练一次。
+          </p>
+          {data.changming.done ||
+          (data.day === CHANGMING_DAY && data.minutes >= CHANGMING_END_MINUTES) ? (
+            <p className="hint">长明夜已经结束。</p>
+          ) : data.changming.role ? (
+            <p className="hint">
+              你已选定：{CHANGMING_ROLE_LABEL[data.changming.role]}。角色确认后不能更改。
+            </p>
+          ) : data.day === CHANGMING_DAY && data.minutes >= CHANGMING_PREP_DEADLINE ? (
+            <p className="hint">准备已经结束。今晚 18:00 到学院前庭。</p>
+          ) : (
+            <p className="hint">到对应地点开始准备。角色确认后不能更改。</p>
+          )}
+        </>
       )}
 
       {year >= 2 && (

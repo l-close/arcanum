@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type {
   BattleState,
   BattleSubmenu,
+  ChangmingRole,
   CombatBuffKey,
   CombatBuffs,
   CommissionState,
@@ -146,6 +147,7 @@ import {
   currentMeal,
   mealWindowHint,
   currentYear,
+  dayInYear,
   examDaysForYear,
   examPackageTime,
   examCoursesForYear,
@@ -243,6 +245,20 @@ import {
 } from './events'
 import { deleteSave, loadGame, saveGame } from './save'
 import { STORY, type StoryEffects } from './story'
+import {
+  CHANGMING_DAY,
+  CHANGMING_END_MINUTES,
+  CHANGMING_LATE_MINUTES,
+  CHANGMING_ROLE_LABEL,
+  CHANGMING_ROLE_ROOM,
+  CHANGMING_ROLES,
+  CHANGMING_SCENES,
+  CHANGMING_START,
+  CHANGMING_START_MINUTES,
+  canPrepChangming,
+  prepExp,
+} from './changming'
+import type { ChangmingEffects } from './changming'
 
 function makeSkills(): Record<SkillKey, Skill> {
   return {
@@ -332,6 +348,15 @@ export function freshData(): GameData {
     prologueSeen: false,
     storyStep: 0,
     storyDone: false,
+    changming: {
+      scene: null,
+      role: null,
+      prep: 0,
+      choice: null,
+      incident: null,
+      freeVisits: [],
+      done: false,
+    },
   }
 }
 
@@ -647,6 +672,29 @@ export function normalizeData(raw: GameData): GameData {
     notice: raw.notice ?? '',
     storyStep: raw.storyStep ?? -1,
     storyDone: raw.storyDone ?? true,
+    changming: {
+      scene:
+        raw.changming?.scene && CHANGMING_SCENES[raw.changming.scene]
+          ? raw.changming.scene
+          : null,
+      role:
+        raw.changming?.role && CHANGMING_ROLES.includes(raw.changming.role)
+          ? raw.changming.role
+          : null,
+      prep: raw.changming?.prep === 2 ? 2 : raw.changming?.prep === 1 ? 1 : 0,
+      choice: raw.changming?.choice ?? null,
+      incident: raw.changming?.incident ?? null,
+      freeVisits: Array.isArray(raw.changming?.freeVisits)
+        ? Array.from(
+            new Set(
+              raw.changming.freeVisits.filter((id) =>
+                ['free_lecture', 'free_courtyard', 'free_corridor', 'free_canteen'].includes(id),
+              ),
+            ),
+          )
+        : [],
+      done: !!raw.changming?.done,
+    },
   }
   resetWestPeriod(data)
   syncGuildWeek(data)
@@ -1173,7 +1221,20 @@ function applyStoryEffects(d: GameData, e?: StoryEffects): void {
   if (e.location) d.location = e.location
 }
 
-type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'brew' | 'workshop' | 'engrave' | 'starChart' | 'calendar' | 'commissions' | 'workshopOrders' | 'bestiary' | null
+function applyChangmingEffects(d: GameData, e?: ChangmingEffects): void {
+  if (!e) return
+  if (e.mood) d.mood = clamp(d.mood + e.mood, 0, 100)
+  if (e.exp) {
+    ;(Object.keys(e.exp) as SkillKey[]).forEach((k) => addExp(d, k, e.exp![k] ?? 0))
+  }
+  if (e.affinity) {
+    Object.entries(e.affinity).forEach(([k, v]) => {
+      d.affinity[k] = clamp((d.affinity[k] ?? 0) + v, 0, 100)
+    })
+  }
+}
+
+type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'brew' | 'workshop' | 'engrave' | 'starChart' | 'calendar' | 'commissions' | 'workshopOrders' | 'bestiary' | 'changmingConfirm' | null
 
 type TitlePanel = 'saves' | 'export' | 'import' | null
 
@@ -1198,6 +1259,7 @@ type Store = {
   storyTarget: number | null
   pendingEvent: string | null
   eventResult: string | null
+  pendingChangmingRole: ChangmingRole | null
   battle: BattleState | null
   battleStart: BattleStartSnapshot | null
   battleBonusCopper: number
@@ -1219,6 +1281,14 @@ type Store = {
 
   eventChoose: (index: number) => void
   eventContinue: () => void
+
+  beginChangmingPrep: (role: ChangmingRole) => void
+  cancelChangmingPrep: () => void
+  chooseChangmingRole: (role: ChangmingRole) => void
+  startChangmingAgain: () => void
+  checkChangming: () => void
+  changmingChoose: (index: number, sceneId?: string) => void
+  changmingContinue: (sceneId?: string) => void
 
   takeExam: (courseId: string, prep: boolean, early: boolean) => void
   startExam: (courseId: string) => void
@@ -1551,6 +1621,7 @@ export const useGame = create<Store>((set, get) => {
     storyTarget: null,
     pendingEvent: null,
     eventResult: null,
+    pendingChangmingRole: null,
     battle: null,
     battleStart: null,
     activePackageId: null,
@@ -1573,6 +1644,7 @@ export const useGame = create<Store>((set, get) => {
         storyTarget: null,
         pendingEvent: null,
         eventResult: null,
+        pendingChangmingRole: null,
         battle: null,
         battleStart: null,
         activePackageId: null,
@@ -1598,6 +1670,7 @@ export const useGame = create<Store>((set, get) => {
         storyTarget: null,
         pendingEvent: null,
         eventResult: null,
+        pendingChangmingRole: null,
         battle: null,
         battleStart: null,
         activePackageId: null,
@@ -1711,6 +1784,159 @@ export const useGame = create<Store>((set, get) => {
 
     eventContinue: () => {
       set({ pendingEvent: null, eventResult: null, message: '' })
+    },
+
+    beginChangmingPrep: (role) => {
+      const { data } = get()
+      if (!canPrepChangming(data, 60) || data.changming.role) return
+      if (data.location !== CHANGMING_ROLE_ROOM[role]) return
+      if (data.changming.scene) return
+      set({ pendingChangmingRole: role, modal: 'changmingConfirm', message: '' })
+    },
+
+    cancelChangmingPrep: () => {
+      set({ pendingChangmingRole: null, modal: null })
+    },
+
+    chooseChangmingRole: (role) => {
+      const { data } = get()
+      if (!canPrepChangming(data, 60)) {
+        set({
+          modal: null,
+          pendingChangmingRole: null,
+          message: '长明夜准备已经结束。',
+        })
+        return
+      }
+      if (data.changming.role || data.changming.scene) {
+        set({ modal: null, pendingChangmingRole: null })
+        return
+      }
+      if (data.location !== CHANGMING_ROLE_ROOM[role]) {
+        set({
+          modal: null,
+          pendingChangmingRole: null,
+          message: '这里不是这个角色的准备地点。',
+        })
+        return
+      }
+      const next = structuredClone(data)
+      next.changming.role = role
+      next.changming.prep = 0
+      next.changming.scene = `prep_${role}`
+      next.changming.choice = null
+      set({ data: next, modal: null, pendingChangmingRole: null, message: '' })
+    },
+
+    startChangmingAgain: () => {
+      const { data } = get()
+      const role = data.changming.role
+      if (!role || !canPrepChangming(data, 30)) return
+      if (data.changming.prep !== 1 || data.changming.scene) return
+      if (data.location !== CHANGMING_ROLE_ROOM[role]) return
+      const next = structuredClone(data)
+      next.changming.scene = 'prep_again'
+      set({ data: next, message: '' })
+    },
+
+    checkChangming: () => {
+      const { data, battle, pendingEvent, modal, storyTarget } = get()
+      if (battle || pendingEvent || modal !== null || storyTarget !== null) return
+      if (data.storyStep >= 0 || data.changming.scene || data.changming.done) return
+      if (currentYear(data.day) !== 1 || dayInYear(data.day) !== CHANGMING_DAY) return
+      if (data.location !== 'academy') return
+      if (data.minutes < CHANGMING_START_MINUTES || data.minutes >= CHANGMING_END_MINUTES) return
+      const next = structuredClone(data)
+      next.changming.scene =
+        data.minutes < CHANGMING_LATE_MINUTES ? CHANGMING_START : 'arrival_late'
+      set({ data: next, message: '', modal: null })
+    },
+
+    changmingChoose: (index, sceneId) => {
+      const { data } = get()
+      if (!data.changming.scene) return
+      if (sceneId && data.changming.scene !== sceneId) return
+      const scene = CHANGMING_SCENES[data.changming.scene]
+      const choices = scene?.choices?.(data)
+      const picked = choices?.[index]
+      if (!scene || !picked) return
+      const next = structuredClone(data)
+      applyChangmingEffects(next, picked.effects)
+      if (picked.setChoice) next.changming.choice = picked.setChoice
+      if (picked.setIncident) next.changming.incident = picked.setIncident
+      if (picked.addFreeVisit && !next.changming.freeVisits.includes(picked.addFreeVisit)) {
+        next.changming.freeVisits.push(picked.addFreeVisit)
+      }
+      if (
+        next.changming.prep === 2 &&
+        next.changming.role &&
+        picked.next.startsWith('role_')
+      ) {
+        addExp(next, prepExp[next.changming.role], 1)
+      }
+      next.changming.scene = picked.next
+      set({ data: next, message: '' })
+    },
+
+    changmingContinue: (sceneId) => {
+      const { data } = get()
+      if (!data.changming.scene) return
+      if (sceneId && data.changming.scene !== sceneId) return
+
+      if (data.changming.scene === 'prep_done') {
+        const role = data.changming.role
+        if (!role) return
+        const next = structuredClone(data)
+        next.changming.scene = null
+        next.changming.prep = 1
+        next.changming.choice = null
+        advanceTime(next, 60)
+        next.mood = clamp(next.mood + 1, 0, 100)
+        const text = `你为长明夜做了准备。今晚的角色是${CHANGMING_ROLE_LABEL[role]}。`
+        pushLog(next, text)
+        set({ data: next, message: text })
+        return
+      }
+
+      if (data.changming.scene === 'prep_again') {
+        if (!data.changming.role) return
+        const next = structuredClone(data)
+        next.changming.scene = null
+        next.changming.prep = 2
+        next.changming.choice = null
+        advanceTime(next, 30)
+        next.mood = clamp(next.mood + 1, 0, 100)
+        const text = `你又准备了一次。长明夜当晚，你会更熟练一些。`
+        pushLog(next, text)
+        set({ data: next, message: text })
+        return
+      }
+
+      const scene = CHANGMING_SCENES[data.changming.scene]
+      if (!scene) {
+        set({ data: { ...data, changming: { ...data.changming, scene: null, done: true } } })
+        return
+      }
+      const nextId = scene.next?.(data)
+      if (!nextId) {
+        const next = structuredClone(data)
+        next.changming.scene = null
+        next.changming.done = true
+        next.changming.choice = null
+        next.changming.incident = null
+        next.changming.freeVisits = []
+        next.changming.role = null
+        next.changming.prep = 0
+        next.minutes = 21 * 60 + 30
+        next.location = 'academy'
+        next.mood = clamp(next.mood + 2, 0, 100)
+        pushLog(next, '长明夜结束了。你回到学院前庭。')
+        set({ data: next, message: '' })
+        return
+      }
+      const next = structuredClone(data)
+      next.changming.scene = nextId
+      set({ data: next, message: '' })
     },
 
     startExam: (courseId) => {
@@ -4811,6 +5037,7 @@ export const useGame = create<Store>((set, get) => {
         storyTarget: null,
         pendingEvent: null,
         eventResult: null,
+        pendingChangmingRole: null,
         battle: null,
         battleStart: null,
         activePackageId: null,
