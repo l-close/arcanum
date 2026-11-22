@@ -26,6 +26,11 @@ npm.cmd run validate:content
 - APK 由 GitHub Actions 构建：推送 `apk-vX.Y.Z` 标签即可，本机不需要 JDK / Android SDK。
 - 已发布的版本号和标签不回头修改。
 
+## 提交
+
+- 每次完成更新并通过校验后立即提交，不把改动留在工作区。
+- 提交前先看 `git status`，只暂存本次相关的文件。
+
 ## 内容改动规范
 
 任何修改 `web/src/game/content/` 下文件的任务，完成后必须：
