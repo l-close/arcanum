@@ -393,6 +393,7 @@ function GameScreen() {
   const clearMessage = useGame((s) => s.clearMessage)
   const checkExamPackages = useGame((s) => s.checkExamPackages)
   const checkChangming = useGame((s) => s.checkChangming)
+  const checkBirthday = useGame((s) => s.checkBirthday)
   const [npcId, setNpcId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -416,6 +417,22 @@ function GameScreen() {
     pendingEvent,
     battle,
     checkChangming,
+  ])
+
+  useEffect(() => {
+    checkBirthday()
+  }, [
+    data.location,
+    data.day,
+    data.minutes,
+    data.storyDone,
+    data.storyStep,
+    data.birthday.celebratedYear,
+    data.changming.scene,
+    modal,
+    pendingEvent,
+    battle,
+    checkBirthday,
   ])
 
   const loc = getLocation(data.location)
@@ -4879,6 +4896,7 @@ function DebugModal() {
   const exp = useGame((s) => s.debugExp)
   const hour = useGame((s) => s.debugHour)
   const day = useGame((s) => s.debugDay)
+  const birthday = useGame((s) => s.debugBirthday)
   const spell = useGame((s) => s.debugSpell)
   const heal = useGame((s) => s.debugHeal)
   const reset = useGame((s) => s.resetGame)
@@ -4903,6 +4921,7 @@ function DebugModal() {
         <button className="choice-btn" onClick={exp}>全技能经验 +50</button>
         <button className="choice-btn" onClick={hour}>时间 +1 小时</button>
         <button className="choice-btn" onClick={day}>跳到第二天早上</button>
+        <button className="choice-btn" onClick={birthday}>跳到生日当天</button>
         <button className="choice-btn" onClick={spell}>学会火球术</button>
         <button className="choice-btn" onClick={heal}>生命回满</button>
         <button className="choice-btn" onClick={() => setModal('eventPicker')}>选择事件…</button>

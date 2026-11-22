@@ -14,7 +14,6 @@ export const OUTDOOR = new Set([
   'commercial',
   'yard',
   'herbGarden',
-  'backyard',
   'bellTower',
   'gate',
   'outside',

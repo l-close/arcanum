@@ -148,6 +148,8 @@ export type GameData = {
   affinity: Record<string, number>
   familiarity: Record<string, number>
   flags: Record<string, boolean>
+  /** 孤儿院把捡到主角的那天当作生日；这里只记过了哪一年。 */
+  birthday: { celebratedYear: number }
   weekly: { week: number; backyard: number }
   backyard: { day: number; count: number }
   rite: { day: number; phases: string[] }

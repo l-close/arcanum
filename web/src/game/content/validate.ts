@@ -11,6 +11,7 @@ import {
   CRAFT_RECIPES,
   ENEMIES,
   EQUIPMENT_SLOTS,
+  FOUND_DAY,
   GREENHOUSE_HERB_PRICES,
   GREENHOUSE_HERB_STOCK,
   GUILD_ESCORTS,
@@ -26,6 +27,7 @@ import {
   SHOP_STOCKS,
   SKILL_ORDER,
   SPELLS,
+  YEAR_DAYS,
   WEST_COMMISSIONS,
   WEST_GENERICS,
   commissionSourceLocation,
@@ -509,6 +511,14 @@ export function validateContent(): ContentIssue[] {
     for (const loc of event.locations ?? []) {
       if (!locationIds.has(loc)) error('events', `${event.id}: 地点 ${loc} 不存在`)
     }
+    for (const choice of event.choices) {
+      for (const [id, qty] of Object.entries(choice.effects?.items ?? {})) {
+        if (!ITEMS[id]) error('events', `${event.id}: 奖励物品 ${id} 不存在`)
+        if (!Number.isInteger(qty) || qty <= 0) {
+          error('events', `${event.id}: 奖励物品 ${id} 数量无效`)
+        }
+      }
+    }
     if (event.requires?.npc && !npcIds.has(event.requires.npc)) {
       error('events', `${event.id}: NPC ${event.requires.npc} 不存在`)
     }
@@ -539,6 +549,10 @@ export function validateContent(): ContentIssue[] {
     if (event.expCapTier !== undefined && event.expCapTier < 0) {
       error('events', `${event.id}: expCapTier 为负`)
     }
+  }
+
+  if (!Number.isInteger(FOUND_DAY) || FOUND_DAY < 0 || FOUND_DAY >= YEAR_DAYS) {
+    error('birthday', `FOUND_DAY ${FOUND_DAY} 不在 0–${YEAR_DAYS - 1}`)
   }
 
   for (const scene of STORY) {

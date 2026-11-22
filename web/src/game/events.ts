@@ -1,4 +1,4 @@
-import { SKILL_LABEL, currentMeal, npcById, npcLocationAt, weekday } from './content'
+import { BIRTHDAY_EVENT_ID, ITEMS, SKILL_LABEL, currentMeal, npcById, npcLocationAt, weekday } from './content'
 import type { CourseId, MealKey, MealName } from './content'
 import type { GameData, SkillKey } from './types'
 
@@ -28,6 +28,7 @@ export type EventEffects = {
   money?: number
   exp?: Partial<Record<SkillKey, number>>
   affinity?: Record<string, number>
+  items?: Record<string, number>
   flag?: string
   meal?: MealKey
 }
@@ -81,6 +82,12 @@ export function eventEffectSummary(
       parts.push(`${npc?.short ?? key}好感 ${signed(value)}`)
     }
   }
+  if (effects.items) {
+    for (const [id, qty] of Object.entries(effects.items)) {
+      if (qty <= 0) continue
+      parts.push(`${ITEMS[id]?.name ?? id} ×${qty}`)
+    }
+  }
   if (effects.meal) {
     parts.push(effects.meal === 'breakfast' ? '视为早餐' : effects.meal === 'lunch' ? '视为午餐' : '视为晚餐')
   }
@@ -98,6 +105,8 @@ export type GameEvent = {
   mealWindows?: MealName[]
   weight?: number
   once?: boolean
+  /** 只能由代码强制触发，不进随机事件池。 */
+  forcedOnly?: true
   expCapTier?: number
   requires?: {
     npc?: string
@@ -788,9 +797,52 @@ export const EVENTS: GameEvent[] = [
       { label: '走开', result: '你从招牌下走过去。' },
     ],
   },
+  {
+    id: BIRTHDAY_EVENT_ID,
+    title: '纸包',
+    forcedOnly: true,
+    trigger: { type: 'enter' },
+    locations: [],
+    text: [
+      '今天是诺拉捡到你的那天。她一直把这一天当作你的生日。',
+      '诺拉从门里出来，手里拿着一个用旧账纸包好的东西。她看见你，先上下打量了一眼。',
+      '“过来。”她说。她把纸包塞进你手里，没有立刻松手。',
+      '“今天是捡到你的日子。”她说得很平，“拿着。别弄丢了。”',
+      '你还没来得及开口，她已经把手收回去，像是怕你多问。',
+      '“拆吧。”她靠在门边，没有走，“我在这儿。”',
+      '纸包不重。解开麻绳，旧账纸里是几块烤饼干、一小截用旧布条编的发带，还有一张折了两折的字条。字条上是卢卡的字：「生日快乐。别弄丢。回学院还我。」',
+      '饼干还是脆的。发带的颜色和制服不太搭。',
+    ],
+    choices: [
+      {
+        label: '掰一块给她',
+        result:
+          '你掰下一块，先递到她手边。诺拉看了一眼，说“我不吃甜的”，还是接过去咬了一小口。你这才吃自己那块。饼干烤得很干，糖放得不多，嚼到最后有一点焦味。“下次少放点糖。”她说。她自己没有再拿。',
+        effects: {
+          stamina: 2,
+          mood: 2,
+          affinity: { nora: 2 },
+          items: { birthday_cookie: 3 },
+        },
+      },
+      {
+        label: '把发带系在手腕上',
+        result:
+          '你把发带在手腕上绕了两圈，系紧，又松开一格。袖口放下来，刚好遮住一半。诺拉看了一眼：“颜色太扎眼。”但她没有让你摘。',
+        effects: { mood: 3, affinity: { mia: 1 }, items: { birthday_cookie: 3 } },
+      },
+      {
+        label: '把字条收进课本',
+        result:
+          '你把字条折回原来的两折，夹进课本最里面那页。诺拉问：“谁写的？”你说卢卡。她“哦”了一声，没再问。',
+        effects: { spirit: 2, affinity: { luca: 1 }, items: { birthday_cookie: 3 } },
+      },
+    ],
+  },
 ]
 
 export function eventMatches(event: GameEvent, data: GameData, trigger: EventTrigger): boolean {
+  if (event.forcedOnly) return false
   if (event.once && data.events.seen.includes(event.id)) return false
 
   if (event.requires) {

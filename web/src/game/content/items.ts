@@ -379,6 +379,16 @@ export const ITEMS: Record<string, ItemDef> = {
     desc: '硬得能敲响的干粮。恢复 8 点体力。',
     effect: { stamina: 8 },
   },
+  birthday_cookie: {
+    id: 'birthday_cookie',
+    name: '烤饼干',
+    type: 'consumable',
+    quality: 'common',
+    price: 0,
+    medium: false,
+    desc: '诺拉烤的饼干，糖放得不多，边缘有一点焦。恢复 6 点体力。',
+    effect: { stamina: 6 },
+  },
   slime_gel: {
     id: 'slime_gel',
     name: '史莱姆凝胶',

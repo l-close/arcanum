@@ -131,6 +131,10 @@ import {
   TAVERN_WORK_START,
   TIER_REQ,
   YEAR_DAYS,
+  FOUND_DAY,
+  BIRTHDAY_EVENT_ID,
+  BIRTHDAY_LOCATIONS,
+  BIRTHDAY_NOTICE,
   absoluteMinutes,
   isTimeWindow,
   shopStockAt,
@@ -291,6 +295,7 @@ export function freshData(): GameData {
     affinity: {},
     familiarity: {},
     flags: {},
+    birthday: { celebratedYear: 0 },
     weekly: { week: 0, backyard: 0 },
     backyard: { day: 0, count: 0 },
     rite: { day: -1, phases: [] },
@@ -469,6 +474,7 @@ export function normalizeData(raw: GameData): GameData {
     spells: raw.spells ?? [],
     affinity: raw.affinity ?? {},
     familiarity: raw.familiarity ?? {},
+    birthday: { celebratedYear: raw.birthday?.celebratedYear ?? 0 },
     weekly: raw.weekly ?? { week: 0, backyard: 0 },
     backyard: raw.backyard ?? { day: 0, count: 0 },
     rite: raw.rite ?? { day: -1, phases: [] },
@@ -1193,6 +1199,11 @@ function applyEventEffects(d: GameData, e?: EventEffects, expCapTier?: number): 
     })
   }
   if (e.flag) d.flags[e.flag] = true
+  if (e.items) {
+    Object.entries(e.items).forEach(([id, qty]) => {
+      if (qty > 0) d.inventory[id] = (d.inventory[id] ?? 0) + qty
+    })
+  }
   if (e.meal) {
     if (d.meals.day !== d.day) {
       d.meals = { day: d.day, breakfast: false, lunch: false, dinner: false }
@@ -1287,6 +1298,7 @@ type Store = {
   chooseChangmingRole: (role: ChangmingRole) => void
   startChangmingAgain: () => void
   checkChangming: () => void
+  checkBirthday: () => void
   changmingChoose: (index: number, sceneId?: string) => void
   changmingContinue: (sceneId?: string) => void
 
@@ -1397,6 +1409,7 @@ type Store = {
   debugSpell: () => void
   debugHeal: () => void
   debugEvent: (id: string) => void
+  debugBirthday: () => void
   resetGame: () => void
 }
 
@@ -1496,6 +1509,13 @@ export const useGame = create<Store>((set, get) => {
     if (pendingEvent) return
     if (!data.storyDone || data.storyStep >= 0) return
     if (storyTarget !== null) return
+    if (
+      data.birthday.celebratedYear < currentYear(data.day) &&
+      dayInYear(data.day) === FOUND_DAY &&
+      BIRTHDAY_LOCATIONS.includes(data.location)
+    ) {
+      return
+    }
 
     const today = data.events.day === data.day ? data.events.today : []
     if (today.length >= EVENT_DAILY_CAP) return
@@ -1783,6 +1803,14 @@ export const useGame = create<Store>((set, get) => {
     },
 
     eventContinue: () => {
+      const { data, pendingEvent } = get()
+      if (pendingEvent === BIRTHDAY_EVENT_ID) {
+        const next = structuredClone(data)
+        next.birthday.celebratedYear = currentYear(next.day)
+        set({ data: next, pendingEvent: null, eventResult: null, message: '' })
+        saveGame('auto', get().player, next)
+        return
+      }
       set({ pendingEvent: null, eventResult: null, message: '' })
     },
 
@@ -1850,6 +1878,29 @@ export const useGame = create<Store>((set, get) => {
       next.changming.scene =
         data.minutes < CHANGMING_LATE_MINUTES ? CHANGMING_START : 'arrival_late'
       set({ data: next, message: '', modal: null })
+    },
+
+    checkBirthday: () => {
+      const { data, battle, pendingEvent, modal, storyTarget, screen } = get()
+      if (screen !== 'game') return
+      if (battle || pendingEvent || modal !== null || storyTarget !== null) return
+      if (!data.storyDone || data.storyStep >= 0) return
+      if (data.changming.scene) return
+      if (currentYear(data.day) <= data.birthday.celebratedYear) return
+      if (dayInYear(data.day) !== FOUND_DAY) return
+      if (!BIRTHDAY_LOCATIONS.includes(data.location)) {
+        if (!data.notice.includes(BIRTHDAY_NOTICE)) {
+          const next = structuredClone(data)
+          pushNotice(next, BIRTHDAY_NOTICE)
+          set({ data: next })
+        }
+        return
+      }
+      const next = structuredClone(data)
+      if (next.notice.includes(BIRTHDAY_NOTICE)) {
+        next.notice = next.notice.replace(BIRTHDAY_NOTICE, '').replace(/\s+/g, ' ').trim()
+      }
+      set({ data: next, pendingEvent: BIRTHDAY_EVENT_ID, eventResult: null, message: '' })
     },
 
     changmingChoose: (index, sceneId) => {
@@ -5017,6 +5068,19 @@ export const useGame = create<Store>((set, get) => {
       d.hp = maxHp(d.skills.physique.tier)
       pushLog(d, '（调试）跳到第二天早上。')
       return '跳到第二天早上。'
+    }),
+    debugBirthday: () => mutate((d) => {
+      const year = currentYear(d.day)
+      let target = (year - 1) * YEAR_DAYS + FOUND_DAY
+      if (target < d.day) target += YEAR_DAYS
+      const targetMinutes = target * 1440 + 6 * 60
+      const now = d.day * 1440 + d.minutes
+      if (targetMinutes > now) advanceTime(d, targetMinutes - now)
+      d.minutes = 6 * 60
+      d.location = 'dorm'
+      d.birthday.celebratedYear = currentYear(d.day) - 1
+      pushLog(d, '（调试）跳到生日当天。')
+      return '（调试）跳到生日当天。'
     }),
     debugEvent: (id) => {
       const event = eventById(id)
