@@ -125,6 +125,7 @@ import {
   currentMeal,
   mealWindowHint,
   currentYear,
+  dayInYear,
   ageOf,
   daysUntil,
   examThresholdForDay,
@@ -165,6 +166,8 @@ import {
   ritePrepAt,
   semesterLabel,
   semesterState,
+  SEMESTER_DAYS,
+  HOLIDAY_DAYS,
   shopStockAt,
   socialTier,
   skillPercent,
@@ -394,6 +397,7 @@ function GameScreen() {
   const checkExamPackages = useGame((s) => s.checkExamPackages)
   const checkChangming = useGame((s) => s.checkChangming)
   const checkBirthday = useGame((s) => s.checkBirthday)
+  const checkVacation = useGame((s) => s.checkVacation)
   const [npcId, setNpcId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -435,6 +439,10 @@ function GameScreen() {
     checkBirthday,
   ])
 
+  useEffect(() => {
+    checkVacation()
+  }, [data.day, checkVacation])
+
   const loc = getLocation(data.location)
   const weather = weatherOf(data.day)
   const weatherText = weatherScene(data.location, data.day)
@@ -447,6 +455,12 @@ function GameScreen() {
   const examTotal = nextExamTotal(data.day, data.minutes)
   const examDays = examTotal === null ? null : daysUntil(examTotal, data.day, data.minutes)
   const semState = semesterState(data.day)
+  const vacationDay =
+    semState === 'summer'
+      ? dayInYear(data.day) - SEMESTER_DAYS + 1
+      : semState === 'winter'
+        ? dayInYear(data.day) - (SEMESTER_DAYS * 2 + HOLIDAY_DAYS) + 1
+        : null
   const supportPeriod = supportPeriodAt(data.day)
   const inScene = data.storyStep >= 0 && data.storyStep < STORY.length && storyTarget === null
   const inTransition = storyTarget !== null
@@ -513,7 +527,11 @@ function GameScreen() {
                 <span>距离还款：{rentDays === 0 ? '今天' : `${rentDays} 天`}</span>
                 <span>
                   {semState === 'summer' || semState === 'winter'
-                    ? '假期中'
+                    ? `${semState === 'summer' ? '暑假' : '寒假'}第 ${vacationDay} 天 · ${
+                        (vacationDay ?? 0) >= HOLIDAY_DAYS
+                          ? '最后一天'
+                          : `还剩 ${HOLIDAY_DAYS - (vacationDay ?? 0)} 天`
+                      }`
                     : semState === 'after'
                       ? '本学年已结束'
                       : `距离下一次考试：${examDays === null ? '本学期已结束' : examDays === 0 ? '今天' : `${examDays} 天`}`}
@@ -1341,6 +1359,8 @@ function Actions({
   const helpBackyard = useGame((s) => s.helpBackyard)
   const teleport = useGame((s) => s.teleport)
   const helpOrphanKids = useGame((s) => s.helpOrphanKids)
+  const helpOrphanage = useGame((s) => s.helpOrphanage)
+  const tutorKids = useGame((s) => s.tutorKids)
   const joinRite = useGame((s) => s.joinRite)
   const prepareRite = useGame((s) => s.prepareRite)
   const sweepGrave = useGame((s) => s.sweepGrave)
@@ -1889,14 +1909,33 @@ function Actions({
             </>
           )
         })()}
-      {loc === 'orphanage' &&
-        (isVacation(data.day) ? (
-          data.vacation.day === data.day && data.vacation.kids ? (
+      {loc === 'orphanage' && isVacation(data.day) && (
+        <>
+          {data.vacation.day === data.day && data.vacation.help ? (
+            <div className="hint">今天已经帮过忙了。</div>
+          ) : (
+            <ActionBtn
+              onClick={helpOrphanage}
+              label="帮孤儿院干活"
+              cost="1 小时 · 体力 -4 · 心情 +1 · 体质经验 +1"
+            />
+          )}
+          {data.vacation.day === data.day && data.vacation.tutor ? (
+            <div className="hint">今天已经给孩子们补过课了。</div>
+          ) : (
+            <ActionBtn
+              onClick={tutorKids}
+              label="给孩子们补课"
+              cost="1 小时 · 精神 -2 · 学识经验 +2"
+            />
+          )}
+          {data.vacation.day === data.day && data.vacation.kids ? (
             <div className="hint">今天已经陪过孩子们了。</div>
           ) : (
             <ActionBtn onClick={helpOrphanKids} label="陪孩子们" cost="1 小时 · 体力 -3 · 心情 +2" />
-          )
-        ) : null)}
+          )}
+        </>
+      )}
       {loc === 'chapel' && ritePrep && (
         <ActionBtn
           onClick={prepareRite}

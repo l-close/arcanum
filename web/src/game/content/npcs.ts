@@ -119,6 +119,8 @@ export const NPCS: NpcDef[] = [
       { location: 'chapel', days: 'all', start: 18 * 60, end: 21 * 60, chance: 1, onlyDay: WINTER_RITE_DAY },
       { location: 'chapel', days: 'all', start: 19 * 60, end: 22 * 60, chance: 1, onlyDay: SUMMER_RITE_DAY },
       { location: 'chapel', days: 'sunday', start: 9 * 60, end: 11 * 60, chance: 1 },
+      { location: 'orphanCanteen', days: 'all', start: 7 * 60, end: 8 * 60, chance: 1, only: 'vacation' },
+      { location: 'orphanCanteen', days: 'all', start: 18 * 60, end: 19 * 60, chance: 1, only: 'vacation' },
       { location: 'office', days: 'all', start: 6 * 60 + 30, end: 21 * 60 + 30, chance: 0.95 },
     ],
     status: '她正低头核对册子，笔尖停在半空。',
@@ -222,6 +224,8 @@ export const NPCS: NpcDef[] = [
     short: '莉薇娅',
     title: '药剂工坊柜台',
     schedule: [
+      { location: 'herbGarden', days: 'all', start: 9 * 60, end: 12 * 60, only: 'vacation' },
+      { location: 'commercial', days: 'all', start: 14 * 60, end: 17 * 60, only: 'vacation' },
       { location: 'potionWorkshop', days: 'all', start: 10 * 60, end: 18 * 60, chance: 0.75 },
     ],
     status: '她把一叠订单按顺序码好，抬眼看你。',

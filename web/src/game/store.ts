@@ -165,6 +165,7 @@ import {
   getLocation,
   isGateOpen,
   isVacation,
+  isSummer,
   lecturePreviewPlan,
   masteryCourseForSkill,
   maxHp,
@@ -299,7 +300,7 @@ export function freshData(): GameData {
     weekly: { week: 0, backyard: 0 },
     backyard: { day: 0, count: 0 },
     rite: { day: -1, phases: [] },
-    vacation: { day: 0, kids: false },
+    vacation: { day: 0, kids: false, help: false, tutor: false, noticeDay: 0 },
     training: { week: 0, skills: [] },
     social: { day: 0, counts: {} },
     courseMastery: {},
@@ -478,12 +479,17 @@ export function normalizeData(raw: GameData): GameData {
     weekly: raw.weekly ?? { week: 0, backyard: 0 },
     backyard: raw.backyard ?? { day: 0, count: 0 },
     rite: raw.rite ?? { day: -1, phases: [] },
-    vacation:
-      raw.vacation ??
-      (raw as GameData & { summer?: { day: number; kids: boolean } }).summer ?? {
-        day: 0,
-        kids: false,
-      },
+    vacation: (() => {
+      const legacy = (raw as GameData & { summer?: GameData['vacation'] }).summer
+      const v = raw.vacation ?? legacy
+      return {
+        day: v?.day ?? 0,
+        kids: v?.kids ?? false,
+        help: v?.help ?? false,
+        tutor: v?.tutor ?? false,
+        noticeDay: v?.noticeDay ?? 0,
+      }
+    })(),
     training: raw.training ?? { week: 0, skills: [] },
     social: {
       day: raw.social?.day ?? 0,
@@ -1030,6 +1036,12 @@ function pushLog(d: GameData, text: string): void {
   if (d.log.length > 200) d.log.splice(0, d.log.length - 200)
 }
 
+function ensureVacationDay(d: GameData): void {
+  if (d.vacation.day !== d.day) {
+    d.vacation = { ...d.vacation, day: d.day, kids: false, help: false, tutor: false }
+  }
+}
+
 function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
@@ -1299,6 +1311,7 @@ type Store = {
   startChangmingAgain: () => void
   checkChangming: () => void
   checkBirthday: () => void
+  checkVacation: () => void
   changmingChoose: (index: number, sceneId?: string) => void
   changmingContinue: (sceneId?: string) => void
 
@@ -1365,6 +1378,8 @@ type Store = {
   openStarChart: () => void
   helpBackyard: () => void
   helpOrphanKids: () => void
+  helpOrphanage: () => void
+  tutorKids: () => void
   joinRite: () => void
   prepareRite: () => void
   sweepGrave: () => void
@@ -1901,6 +1916,29 @@ export const useGame = create<Store>((set, get) => {
         next.notice = next.notice.replace(BIRTHDAY_NOTICE, '').replace(/\s+/g, ' ').trim()
       }
       set({ data: next, pendingEvent: BIRTHDAY_EVENT_ID, eventResult: null, message: '' })
+    },
+
+    checkVacation: () => {
+      const { data } = get()
+      if (data.vacation.noticeDay === data.day) return
+      const d = dayInYear(data.day)
+      const text =
+        d === 84
+          ? '暑假开始了。接下来 28 天没有课。'
+          : d === 111
+            ? '明天开学。'
+            : d === 196
+              ? '寒假开始了。'
+              : d === 223
+                ? '明天开学。'
+                : null
+      if (!text) return
+      const next = structuredClone(data)
+      next.vacation.noticeDay = data.day
+      pushNotice(next, text)
+      pushLog(next, text)
+      set({ data: next })
+      saveGame('auto', get().player, next)
     },
 
     changmingChoose: (index, sceneId) => {
@@ -4016,7 +4054,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       mutate((d) => {
-        if (d.vacation.day !== d.day) d.vacation = { day: d.day, kids: false }
+        ensureVacationDay(d)
         advanceTime(d, 60)
         d.stamina = clamp(d.stamina - 3, 0, maxStamina(d.skills.physique.tier))
         d.mood = clamp(d.mood + 2, 0, 100)
@@ -4025,6 +4063,77 @@ export const useGame = create<Store>((set, get) => {
         pushLog(d, '你陪孤儿院的孩子们玩了一会儿。')
         return '你陪孩子们玩了一会儿。他们吵着要你明天再来。'
       })
+    },
+
+    helpOrphanage: () => {
+      const { data } = get()
+      if (data.location !== 'orphanage') {
+        set({ message: '这里没有你能帮的活。', modal: null })
+        return
+      }
+      if (!isVacation(data.day)) {
+        set({ message: '孩子们现在都在学院。', modal: null })
+        return
+      }
+      if (data.vacation.day === data.day && data.vacation.help) {
+        set({ message: '今天已经帮过忙了。', modal: null })
+        return
+      }
+      if (data.stamina < 4) {
+        set({ message: '你太累了，先休息一下。', modal: null })
+        return
+      }
+      const summer = isSummer(data.day)
+      mutate((d) => {
+        ensureVacationDay(d)
+        advanceTime(d, 60)
+        d.stamina = clamp(d.stamina - 4, 0, maxStamina(d.skills.physique.tier))
+        d.mood = clamp(d.mood + 1, 0, 100)
+        d.affinity.nora = Math.min(100, (d.affinity.nora ?? 0) + 1)
+        addExp(d, 'physique', 1)
+        d.vacation.help = true
+        const text = summer
+          ? '你帮诺拉把漏雨的屋檐补了一段，又搬了几趟柴。'
+          : '你帮诺拉把门口的雪扫开，又劈了一摞柴。'
+        pushLog(d, text)
+        return text
+      })
+      set({ modal: null })
+    },
+
+    tutorKids: () => {
+      const { data } = get()
+      if (data.location !== 'orphanage') {
+        set({ message: '这里没有孩子要补课。', modal: null })
+        return
+      }
+      if (!isVacation(data.day)) {
+        set({ message: '孩子们现在都在学院。', modal: null })
+        return
+      }
+      if (data.vacation.day === data.day && data.vacation.tutor) {
+        set({ message: '今天已经给孩子们补过课了。', modal: null })
+        return
+      }
+      if (data.spirit <= 2) {
+        set({ message: '精神不足，先休息一下。', modal: null })
+        return
+      }
+      const summer = isSummer(data.day)
+      mutate((d) => {
+        ensureVacationDay(d)
+        advanceTime(d, 60)
+        d.spirit = clamp(d.spirit - 2, 0, maxSpirit(d.skills.will.tier))
+        d.mood = clamp(d.mood + 1, 0, 100)
+        addExp(d, 'knowledge', 2)
+        d.vacation.tutor = true
+        const text = summer
+          ? '你把孩子们叫到桌边，教他们认了几个字。'
+          : '你陪孩子们把假期作业过了一遍，最小的那个总算会写自己的名字了。'
+        pushLog(d, text)
+        return text
+      })
+      set({ modal: null })
     },
 
     joinRite: () => {

@@ -1,4 +1,4 @@
-import { BIRTHDAY_EVENT_ID, ITEMS, SKILL_LABEL, currentMeal, npcById, npcLocationAt, weekday } from './content'
+import { BIRTHDAY_EVENT_ID, ITEMS, SKILL_LABEL, currentMeal, npcById, npcLocationAt, semesterState, weekday } from './content'
 import type { CourseId, MealKey, MealName } from './content'
 import type { GameData, SkillKey } from './types'
 
@@ -113,6 +113,10 @@ export type GameEvent = {
     affinity?: { npc: string; min: number }
     flag?: string
     notFlag?: string
+    /** 只在对应假期触发。 */
+    vacation?: 'summer' | 'winter'
+    /** 只在学期内触发，假期不出现。 */
+    school?: true
   }
   text: string[]
   choices: EventChoice[]
@@ -129,6 +133,7 @@ export const EVENTS: GameEvent[] = [
     days: 'workday',
     timeRanges: [[at(8), at(9)]],
     expCapTier: 2,
+    requires: { school: true },
     text: [
       '你比上课早到了一会儿。讲堂里还空着，黑板上留着上一节课的板书：半行古文，旁边几个被涂改过的字。',
     ],
@@ -190,6 +195,7 @@ export const EVENTS: GameEvent[] = [
     locations: ['library'],
     days: 'workday',
     timeRanges: [[at(7, 30), at(8, 30)]],
+    requires: { school: true },
     text: [
       '藏书阁最里面那排，卢卡趴在桌上睡着了。摊开的书还压在胳膊底下，旁边的笔记只写了一半。',
     ],
@@ -271,8 +277,8 @@ export const EVENTS: GameEvent[] = [
     title: '演武场的木剑',
     trigger: { type: 'enter' },
     locations: ['yard'],
-    days: 'workday',
-    timeRanges: [[at(15), at(15, 29)]],
+    days: 'all',
+    timeRanges: [[at(8), at(20)]],
     expCapTier: 2,
     text: [
       '演武场边上的木架上多了一把木剑，握柄被磨得发亮，剑身上有几道深浅不一的刻痕。',
@@ -288,7 +294,7 @@ export const EVENTS: GameEvent[] = [
         result: '你把木剑摆正，和其他器材对齐。',
         effects: { minutes: 5, mood: 1 },
       },
-      { label: '不管', result: '你看了一眼，转身去等上课。' },
+      { label: '不管', result: '你看了一眼，转身走开。' },
     ],
   },
   {
@@ -798,6 +804,208 @@ export const EVENTS: GameEvent[] = [
     ],
   },
   {
+    id: 'summer_plaza_kids',
+    title: '广场上的孩子',
+    trigger: { type: 'enter' },
+    locations: ['orphanage'],
+    days: 'all',
+    timeRanges: [[at(9), at(17)]],
+    requires: { vacation: 'summer' },
+    text: [
+      '诺拉把三个孩子交到你手上，说今天不用急着回来。',
+      '最小的那个已经拽着你的袖子往门口走，另外两个在台阶上等你。',
+    ],
+    choices: [
+      {
+        label: '给他们买点吃的',
+        result:
+          '你在广场边的小摊上买了几块糖。孩子们分得很仔细，连纸袋底的碎屑都倒进嘴里。',
+        effects: { minutes: 30, money: -2, mood: 2 },
+      },
+      {
+        label: '陪他们跑一圈',
+        result:
+          '你带着他们绕着喷泉跑。最小的那个跑不动了，另外两个就一左一右架着他。',
+        effects: { minutes: 30, stamina: -2, mood: 2 },
+      },
+      {
+        label: '只走一圈',
+        result: '你们沿着广场慢慢走了一圈。孩子们看见鸽子就停下来，你也就跟着停。',
+        effects: { minutes: 20, mood: 1 },
+      },
+    ],
+  },
+  {
+    id: 'summer_mia_commercial',
+    title: '商业区的米娅',
+    trigger: { type: 'enter' },
+    locations: ['commercial'],
+    days: 'all',
+    timeRanges: [[at(14), at(17)]],
+    requires: { npc: 'mia', vacation: 'summer' },
+    text: [
+      '米娅靠在旧书铺的遮棚下，手里转着一枚铜币。看见你，她把铜币弹起来又接住。',
+      '“放假比上课还无聊。”她说，“你也是来闲逛的？”',
+    ],
+    choices: [
+      {
+        label: '陪她逛',
+        result: '你们从街头逛到街尾。米娅在每个摊子前都要停一下，最后什么也没买。',
+        effects: { minutes: 30, mood: 2, affinity: { mia: 1 } },
+      },
+      {
+        label: '帮她挑东西',
+        result:
+          '她看中两根发带，拿不定主意。你说左边那根更耐脏，她就买了左边。',
+        effects: { minutes: 15, mood: 1, affinity: { mia: 1 } },
+      },
+      {
+        label: '先走',
+        result: '你说还有事。米娅摆摆手，又靠回遮棚下。',
+        effects: { minutes: 5 },
+      },
+    ],
+  },
+  {
+    id: 'summer_luca_library',
+    title: '藏书阁的卢卡',
+    trigger: { type: 'enter' },
+    locations: ['library'],
+    days: 'all',
+    timeRanges: [[at(9), at(11)]],
+    requires: { npc: 'luca', vacation: 'summer' },
+    expCapTier: 2,
+    text: [
+      '藏书阁里只有最里面那排还坐着人。卢卡面前摊着两本书，手边压着一张写满字的纸。',
+      '他抬头看了你一眼，把其中一本往旁边挪了挪。',
+    ],
+    choices: [
+      {
+        label: '一起看',
+        result:
+          '你在他对面坐下。他看的那本讲的是旧城的水道，你在旁边跟着读了两页。',
+        effects: {
+          minutes: 30,
+          spirit: -1,
+          exp: { knowledge: 1 },
+          affinity: { luca: 1 },
+        },
+      },
+      {
+        label: '问他为什么来',
+        result: '“宿舍太吵。”他说完就低下头，像是怕你继续问。',
+        effects: { minutes: 10, mood: 1, affinity: { luca: 1 } },
+      },
+      {
+        label: '不打扰',
+        result: '你从书架另一侧绕过去，没有出声。',
+        effects: { minutes: 5 },
+      },
+    ],
+  },
+  {
+    id: 'winter_snow_chores',
+    title: '扫雪',
+    trigger: { type: 'enter' },
+    locations: ['orphanage', 'backyard'],
+    days: 'all',
+    timeRanges: [[at(6), at(10)]],
+    requires: { vacation: 'winter' },
+    text: [
+      '门口的雪堆了半尺。诺拉已经扫出一小段，正扶着墙喘气。',
+      '孩子们挤在门里看，谁也没敢先踩出去。',
+    ],
+    choices: [
+      {
+        label: '接过扫帚',
+        result:
+          '你把诺拉替下来，一直扫到台阶下。她在后面把雪堆到两边，没再说话。',
+        effects: { minutes: 30, stamina: -3, mood: 1, affinity: { nora: 1 } },
+      },
+      {
+        label: '只扫门前',
+        result: '你把门前那一小块清出来，剩下的留给太阳。',
+        effects: { minutes: 15, stamina: -1 },
+      },
+      {
+        label: '叫孩子们一起',
+        result:
+          '你给孩子们分了小铲子。他们干得乱七八糟，但门口很快清出来了。',
+        effects: { minutes: 30, stamina: -2, mood: 2, affinity: { nora: 1 } },
+      },
+    ],
+  },
+  {
+    id: 'winter_lanterns',
+    title: '孩子们做灯',
+    trigger: { type: 'enter' },
+    locations: ['orphanCanteen'],
+    days: 'all',
+    timeRanges: [[at(17), at(20)]],
+    requires: { vacation: 'winter' },
+    text: [
+      '孩子们把长桌拼在一起，糊灯纸的浆糊抹得到处都是。最小的那个举着一盏歪掉的灯，等你夸。',
+      '诺拉从门口看了一眼，没有过来管。',
+    ],
+    choices: [
+      {
+        label: '帮他们糊纸',
+        result:
+          '你接手最歪的那盏，把纸角一层层压平。孩子们围在旁边，谁都想伸手。',
+        effects: { minutes: 30, stamina: -1, mood: 2 },
+      },
+      {
+        label: '讲长明夜',
+        result:
+          '你讲了学院那晚的灯。孩子们听得安静下来，手里的灯纸也忘了剪。',
+        effects: { minutes: 20, mood: 1, spirit: 1 },
+      },
+      {
+        label: '看着',
+        result: '你靠在门边看他们忙。灯纸糊坏了几张，笑声倒是没停。',
+        effects: { minutes: 10, mood: 1 },
+      },
+    ],
+  },
+  {
+    id: 'winter_ledger',
+    title: '年末的账本',
+    trigger: { type: 'enter' },
+    locations: ['office'],
+    days: 'all',
+    timeRanges: [[at(14), at(18)]],
+    requires: { npc: 'nora', vacation: 'winter' },
+    expCapTier: 2,
+    text: [
+      '院长室的桌上摊着三本册子。诺拉低头核对着数字，笔尖停在半空。',
+      '“年末的账。”她说，“差一点就对不上。”',
+    ],
+    choices: [
+      {
+        label: '帮她算',
+        result:
+          '你把她标出来的几行重新加了一遍，找出两处抄错。诺拉看了很久，才说：“行，比我快。”',
+        effects: {
+          minutes: 30,
+          spirit: -2,
+          exp: { knowledge: 1 },
+          affinity: { nora: 1 },
+        },
+      },
+      {
+        label: '问她累不累',
+        result:
+          '她说不累，手却没有再碰账本。你给她倒了杯水，她接过去喝了一口。',
+        effects: { minutes: 10, mood: 1, affinity: { nora: 1 } },
+      },
+      {
+        label: '不打扰',
+        result: '你把门带上，让她自己算。',
+        effects: { minutes: 5 },
+      },
+    ],
+  },
+  {
     id: BIRTHDAY_EVENT_ID,
     title: '纸包',
     forcedOnly: true,
@@ -844,6 +1052,10 @@ export const EVENTS: GameEvent[] = [
 export function eventMatches(event: GameEvent, data: GameData, trigger: EventTrigger): boolean {
   if (event.forcedOnly) return false
   if (event.once && data.events.seen.includes(event.id)) return false
+
+  const semester = semesterState(data.day)
+  if (event.requires?.school && (semester === 'summer' || semester === 'winter')) return false
+  if (event.requires?.vacation && semester !== event.requires.vacation) return false
 
   if (event.requires) {
     if (event.requires.npc) {

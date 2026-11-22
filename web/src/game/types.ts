@@ -153,7 +153,7 @@ export type GameData = {
   weekly: { week: number; backyard: number }
   backyard: { day: number; count: number }
   rite: { day: number; phases: string[] }
-  vacation: { day: number; kids: boolean }
+  vacation: { day: number; kids: boolean; help: boolean; tutor: boolean; noticeDay: number }
   training: { week: number; skills: SkillKey[] }
   social: { day: number; counts: Record<string, number> }
   courseMastery: Record<string, number>
