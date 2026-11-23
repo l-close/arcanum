@@ -132,6 +132,14 @@ export type ChangmingState = {
   done: boolean
 }
 
+export type GardenPlot = {
+  crop: 'cabbage' | null
+  growth: number
+  plantedDay: number
+  lastGrowDay: number
+  fertilizedDay: number
+}
+
 export type GameData = {
   version: number
   day: number
@@ -152,6 +160,7 @@ export type GameData = {
   birthday: { celebratedYear: number }
   weekly: { week: number; backyard: number }
   backyard: { day: number; count: number }
+  garden: { plots: GardenPlot[] }
   rite: { day: number; phases: string[] }
   vacation: { day: number; kids: boolean; help: boolean; tutor: boolean; noticeDay: number }
   training: { week: number; skills: SkillKey[] }

@@ -10,6 +10,7 @@ import type {
   ExamPackage,
   ExamResult,
   GameData,
+  GardenPlot,
   Gender,
   GuildState,
   Player,
@@ -27,6 +28,27 @@ import {
   DRINKS,
   ENEMIES,
   ITEMS,
+  CABBAGE_GROWTH,
+  CABBAGE_ID,
+  CABBAGE_SEED_ID,
+  CABBAGE_SOUP_ID,
+  CABBAGE_YIELD,
+  FERTILIZER_ID,
+  FERTILIZE_GROWTH,
+  FERTILIZE_MINUTES,
+  FERTILIZE_STAMINA,
+  GARDEN_PLOTS,
+  HARVEST_MINUTES,
+  HARVEST_STAMINA,
+  PLANT_MINUTES,
+  PLANT_STAMINA,
+  WATER_MINUTES,
+  WATER_STAMINA,
+  COOK_MINUTES,
+  COOK_STAMINA,
+  COOK_OPEN_START,
+  COOK_OPEN_END,
+  weatherOf,
   BOOKS,
   BOOKSHELF_SIZE,
   SEARCHABLE_BOOKS,
@@ -299,6 +321,7 @@ export function freshData(): GameData {
     birthday: { celebratedYear: 0 },
     weekly: { week: 0, backyard: 0 },
     backyard: { day: 0, count: 0 },
+    garden: { plots: emptyGardenPlots() },
     rite: { day: -1, phases: [] },
     vacation: { day: 0, kids: false, help: false, tutor: false, noticeDay: 0 },
     training: { week: 0, skills: [] },
@@ -478,6 +501,7 @@ export function normalizeData(raw: GameData): GameData {
     birthday: { celebratedYear: raw.birthday?.celebratedYear ?? 0 },
     weekly: raw.weekly ?? { week: 0, backyard: 0 },
     backyard: raw.backyard ?? { day: 0, count: 0 },
+    garden: normalizeGarden(raw.garden),
     rite: raw.rite ?? { day: -1, phases: [] },
     vacation: (() => {
       const legacy = (raw as GameData & { summer?: GameData['vacation'] }).summer
@@ -1042,6 +1066,31 @@ function ensureVacationDay(d: GameData): void {
   }
 }
 
+function emptyGardenPlot(): GardenPlot {
+  return { crop: null, growth: 0, plantedDay: -1, lastGrowDay: -1, fertilizedDay: -1 }
+}
+
+function emptyGardenPlots(): GardenPlot[] {
+  return Array.from({ length: GARDEN_PLOTS }, () => emptyGardenPlot())
+}
+
+function normalizeGarden(raw?: GameData['garden']): GameData['garden'] {
+  const source = raw?.plots ?? []
+  return {
+    plots: Array.from({ length: GARDEN_PLOTS }, (_, index) => {
+      const plot = source[index]
+      if (!plot || plot.crop !== 'cabbage') return emptyGardenPlot()
+      return {
+        crop: 'cabbage' as const,
+        growth: clamp(Number(plot.growth ?? 0), 0, CABBAGE_GROWTH),
+        plantedDay: Number.isFinite(plot.plantedDay) ? plot.plantedDay : 0,
+        lastGrowDay: Number.isFinite(plot.lastGrowDay) ? plot.lastGrowDay : -1,
+        fertilizedDay: Number.isFinite(plot.fertilizedDay) ? plot.fertilizedDay : -1,
+      }
+    }),
+  }
+}
+
 function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
@@ -1257,7 +1306,7 @@ function applyChangmingEffects(d: GameData, e?: ChangmingEffects): void {
   }
 }
 
-type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'brew' | 'workshop' | 'engrave' | 'starChart' | 'calendar' | 'commissions' | 'workshopOrders' | 'bestiary' | 'changmingConfirm' | null
+type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'brew' | 'workshop' | 'engrave' | 'starChart' | 'calendar' | 'commissions' | 'workshopOrders' | 'bestiary' | 'changmingConfirm' | 'garden' | 'cook' | null
 
 type TitlePanel = 'saves' | 'export' | 'import' | null
 
@@ -1312,6 +1361,7 @@ type Store = {
   checkChangming: () => void
   checkBirthday: () => void
   checkVacation: () => void
+  checkGarden: () => void
   changmingChoose: (index: number, sceneId?: string) => void
   changmingContinue: (sceneId?: string) => void
 
@@ -1377,6 +1427,13 @@ type Store = {
   askCalendar: () => void
   openStarChart: () => void
   helpBackyard: () => void
+  plantCabbage: (plot: number) => void
+  waterPlot: (plot: number) => void
+  waterAll: () => void
+  fertilizePlot: (plot: number) => void
+  harvestPlot: (plot: number) => void
+  harvestAll: () => void
+  cookCabbageSoup: (all: boolean) => void
   helpOrphanKids: () => void
   helpOrphanage: () => void
   tutorKids: () => void
@@ -1937,6 +1994,24 @@ export const useGame = create<Store>((set, get) => {
       next.vacation.noticeDay = data.day
       pushNotice(next, text)
       pushLog(next, text)
+      set({ data: next })
+      saveGame('auto', get().player, next)
+    },
+
+    checkGarden: () => {
+      const { data } = get()
+      if (weatherOf(data.day) !== 'rain') return
+      let changed = false
+      const next = structuredClone(data)
+      for (const plot of next.garden.plots) {
+        if (!plot.crop || plot.growth >= CABBAGE_GROWTH) continue
+        if (plot.lastGrowDay === data.day) continue
+        plot.growth = Math.min(CABBAGE_GROWTH, plot.growth + 1)
+        plot.lastGrowDay = data.day
+        changed = true
+      }
+      if (!changed) return
+      pushLog(next, '雨把菜地浇透了。')
       set({ data: next })
       saveGame('auto', get().player, next)
     },
@@ -4033,6 +4108,260 @@ export const useGame = create<Store>((set, get) => {
         return '你打理了后院。诺拉塞给你 5 枚铜币。'
       })
       maybeEvent({ type: 'after', action: 'backyard' })
+    },
+
+    plantCabbage: (index) => {
+      const { data } = get()
+      if (data.location !== 'backyard') {
+        set({ message: '这里不是后院。' })
+        return
+      }
+      const plot = data.garden.plots[index]
+      if (!plot) return
+      if (plot.crop) {
+        set({ message: '这块地已经种了白菜。' })
+        return
+      }
+      if ((data.inventory[CABBAGE_SEED_ID] ?? 0) <= 0) {
+        set({ message: '没有白菜种子。' })
+        return
+      }
+      if (data.stamina < PLANT_STAMINA) {
+        set({ message: '体力不足，先休息一下。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, PLANT_MINUTES)
+        d.stamina = clamp(d.stamina - PLANT_STAMINA, 0, maxStamina(d.skills.physique.tier))
+        d.inventory[CABBAGE_SEED_ID] = (d.inventory[CABBAGE_SEED_ID] ?? 0) - 1
+        if (d.inventory[CABBAGE_SEED_ID] <= 0) delete d.inventory[CABBAGE_SEED_ID]
+        d.garden.plots[index] = {
+          crop: 'cabbage',
+          growth: 0,
+          plantedDay: d.day,
+          lastGrowDay: -1,
+          fertilizedDay: -1,
+        }
+        const text = '你翻松一块地，把白菜种子埋了下去。'
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    waterPlot: (index) => {
+      const { data } = get()
+      if (data.location !== 'backyard') {
+        set({ message: '这里不是后院。' })
+        return
+      }
+      const plot = data.garden.plots[index]
+      if (!plot?.crop) {
+        set({ message: '这块地还没种东西。' })
+        return
+      }
+      if (plot.growth >= CABBAGE_GROWTH) {
+        set({ message: '这块地已经可以收获了。' })
+        return
+      }
+      if (weatherOf(data.day) === 'rain') {
+        set({ message: '今天下雨，菜园已经自动浇过水了。' })
+        return
+      }
+      if (plot.lastGrowDay === data.day) {
+        set({ message: '这块地今天已经浇过了。' })
+        return
+      }
+      if (data.stamina < WATER_STAMINA) {
+        set({ message: '体力不足，先休息一下。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, WATER_MINUTES)
+        d.stamina = clamp(d.stamina - WATER_STAMINA, 0, maxStamina(d.skills.physique.tier))
+        const target = d.garden.plots[index]
+        if (!target?.crop) return '这块地还没种东西。'
+        target.growth = Math.min(CABBAGE_GROWTH, target.growth + 1)
+        target.lastGrowDay = d.day
+        const text = '你给白菜浇了水。'
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    waterAll: () => {
+      const { data } = get()
+      if (data.location !== 'backyard') {
+        set({ message: '这里不是后院。' })
+        return
+      }
+      if (weatherOf(data.day) === 'rain') {
+        set({ message: '今天下雨，菜园已经自动浇过水了。' })
+        return
+      }
+      const targets = data.garden.plots
+        .map((plot, index) => ({ plot, index }))
+        .filter(
+          ({ plot }) => plot.crop && plot.growth < CABBAGE_GROWTH && plot.lastGrowDay !== data.day,
+        )
+      if (targets.length === 0) {
+        set({ message: '没有需要浇水的菜地。' })
+        return
+      }
+      const stamina = targets.length * WATER_STAMINA
+      if (data.stamina < stamina) {
+        set({ message: `体力不足，全部浇水需要 ${stamina} 点。` })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, targets.length * WATER_MINUTES)
+        d.stamina = clamp(d.stamina - stamina, 0, maxStamina(d.skills.physique.tier))
+        for (const { index } of targets) {
+          const target = d.garden.plots[index]
+          if (!target?.crop || target.growth >= CABBAGE_GROWTH) continue
+          target.growth = Math.min(CABBAGE_GROWTH, target.growth + 1)
+          target.lastGrowDay = d.day
+        }
+        const text = `你浇了 ${targets.length} 块菜地。`
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    fertilizePlot: (index) => {
+      const { data } = get()
+      if (data.location !== 'backyard') {
+        set({ message: '这里不是后院。' })
+        return
+      }
+      const plot = data.garden.plots[index]
+      if (!plot?.crop) {
+        set({ message: '这块地还没种东西。' })
+        return
+      }
+      if (plot.growth >= CABBAGE_GROWTH) {
+        set({ message: '这块地已经可以收获了。' })
+        return
+      }
+      if (plot.fertilizedDay === data.day) {
+        set({ message: '这块地今天已经施过肥了。' })
+        return
+      }
+      if ((data.inventory[FERTILIZER_ID] ?? 0) <= 0) {
+        set({ message: '没有肥料。' })
+        return
+      }
+      if (data.stamina < FERTILIZE_STAMINA) {
+        set({ message: '体力不足，先休息一下。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, FERTILIZE_MINUTES)
+        d.stamina = clamp(d.stamina - FERTILIZE_STAMINA, 0, maxStamina(d.skills.physique.tier))
+        d.inventory[FERTILIZER_ID] = (d.inventory[FERTILIZER_ID] ?? 0) - 1
+        if (d.inventory[FERTILIZER_ID] <= 0) delete d.inventory[FERTILIZER_ID]
+        const target = d.garden.plots[index]
+        if (!target?.crop) return '这块地还没种东西。'
+        target.growth = Math.min(CABBAGE_GROWTH, target.growth + FERTILIZE_GROWTH)
+        target.fertilizedDay = d.day
+        const text = '你给白菜施了肥。'
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    harvestPlot: (index) => {
+      const { data } = get()
+      if (data.location !== 'backyard') {
+        set({ message: '这里不是后院。' })
+        return
+      }
+      const plot = data.garden.plots[index]
+      if (!plot?.crop || plot.growth < CABBAGE_GROWTH) {
+        set({ message: '这块地的白菜还没长好。' })
+        return
+      }
+      if (data.stamina < HARVEST_STAMINA) {
+        set({ message: '体力不足，先休息一下。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, HARVEST_MINUTES)
+        d.stamina = clamp(d.stamina - HARVEST_STAMINA, 0, maxStamina(d.skills.physique.tier))
+        d.inventory[CABBAGE_ID] = (d.inventory[CABBAGE_ID] ?? 0) + CABBAGE_YIELD
+        addExp(d, 'cultivation', 2)
+        d.garden.plots[index] = emptyGardenPlot()
+        const text = `你收了一块白菜，得到 ${CABBAGE_YIELD} 个白菜。`
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    harvestAll: () => {
+      const { data } = get()
+      if (data.location !== 'backyard') {
+        set({ message: '这里不是后院。' })
+        return
+      }
+      const targets = data.garden.plots
+        .map((plot, index) => ({ plot, index }))
+        .filter(({ plot }) => plot.crop && plot.growth >= CABBAGE_GROWTH)
+        .map(({ index }) => index)
+      if (targets.length === 0) {
+        set({ message: '没有可以收获的菜地。' })
+        return
+      }
+      const stamina = targets.length * HARVEST_STAMINA
+      if (data.stamina < stamina) {
+        set({ message: `体力不足，全部收获需要 ${stamina} 点。` })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, targets.length * HARVEST_MINUTES)
+        d.stamina = clamp(d.stamina - stamina, 0, maxStamina(d.skills.physique.tier))
+        d.inventory[CABBAGE_ID] = (d.inventory[CABBAGE_ID] ?? 0) + CABBAGE_YIELD * targets.length
+        addExp(d, 'cultivation', 2 * targets.length)
+        for (const index of targets) d.garden.plots[index] = emptyGardenPlot()
+        const text = `你收了 ${targets.length} 块白菜，得到 ${CABBAGE_YIELD * targets.length} 个白菜。`
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    cookCabbageSoup: (all) => {
+      const { data } = get()
+      if (data.location !== 'orphanCanteen') {
+        set({ message: '这里没有灶台。' })
+        return
+      }
+      if (!isTimeWindow(data.minutes, COOK_OPEN_START, COOK_OPEN_END)) {
+        set({ message: '灶台已经熄了。' })
+        return
+      }
+      const have = data.inventory[CABBAGE_ID] ?? 0
+      const possible = Math.floor(have / 2)
+      const count = all ? possible : have >= 2 ? 1 : 0
+      if (count <= 0) {
+        set({ message: '白菜不够，2 个白菜才能做一份。' })
+        return
+      }
+      const stamina = count * COOK_STAMINA
+      if (data.stamina < stamina) {
+        set({ message: all ? '体力不足，先做一份吧。' : '体力不足，先休息一下。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, count * COOK_MINUTES)
+        d.stamina = clamp(d.stamina - stamina, 0, maxStamina(d.skills.physique.tier))
+        d.inventory[CABBAGE_ID] = (d.inventory[CABBAGE_ID] ?? 0) - count * 2
+        if (d.inventory[CABBAGE_ID] <= 0) delete d.inventory[CABBAGE_ID]
+        d.inventory[CABBAGE_SOUP_ID] = (d.inventory[CABBAGE_SOUP_ID] ?? 0) + count
+        const text =
+          count === 1
+            ? '你在食堂借灶做了一份白菜汤。'
+            : `你在食堂借灶做了 ${count} 份白菜汤。`
+        pushLog(d, text)
+        return text
+      })
     },
 
     helpOrphanKids: () => {

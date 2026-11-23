@@ -18,6 +18,8 @@ export const SHOP_STOCKS: Record<string, Record<string, number>> = {
     stimulant: 3,
     antidote: 3,
     bandage: 3,
+    cabbage_seed: 4,
+    fertilizer: 4,
   },
   weaponShop: {
     practice_sword: 1,

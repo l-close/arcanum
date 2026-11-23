@@ -1209,6 +1209,8 @@ button:disabled {
 
 .mini-btn:hover { border-color: var(--gold); color: var(--gold); }
 .mini-btn.danger { color: var(--red); }
+.mini-btn:disabled { opacity: 0.4; cursor: default; }
+.mini-btn:disabled:hover { border-color: var(--line); color: var(--text); }
 
 .log-list { display: flex; flex-direction: column; gap: 6px; max-height: 55vh; overflow-y: auto; }
 .log-line { font-size: 13px; color: var(--muted); border-bottom: 1px dotted rgba(255, 255, 255, 0.05); padding-bottom: 5px; }
