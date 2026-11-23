@@ -1,4 +1,5 @@
 const fs = require("fs");
+const path = require("path");
 const {
   Document, Packer, Paragraph, TextRun, HeadingLevel,
   Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle,
@@ -1618,13 +1619,14 @@ function designChildren() {
     ["M2", "地图、事件池权重与冷却、调试面板", "系统完整，内容待填"],
     ["M3", "内容补齐、校验工具、导出发布", "可发布版本"],
   ], [10, 62, 28]));
+  c.push(p("M0–M3 已全部达成，本表保留作历史记录。", { size: SMALL, color: "666666" }));
 
   c.push(h2("发布节奏"));
   c.push(bullet("网页端：push main 后自动部署 PWA；版本号照常升，vX.Y.Z 标签只作记录。"));
-  c.push(bullet("安卓 APK：默认不随网页更新构建；需要时手动触发 Build Android APK，或推 apk-vX.Y.Z 标签。"));
-  c.push(bullet("建议节奏：网页随时更新；APK 每 3–5 次网页更新或一次大功能完成后构建一次。"));
-  c.push(bullet("构建 APK 前同步提升 Android versionCode 与 versionName。"));
-  c.push(bullet("APK 固定签名已接入并配置 GitHub Secrets：workflow 解码 keystore，build.gradle 的 debug 签名读取环境变量；固定签名后的第一版仍需卸载一次，之后可覆盖更新。"));
+  c.push(bullet("安卓 APK：只有影响 App 的代码/内容更新才发正式版；推 apk-vX.Y.Z 标签构建，并附到 vX.Y.Z 的 GitHub Release；artifact 保留 14 天作备用。"));
+  c.push(bullet("纯文档、CI、工具改动只提交推送，不升版本、不出 APK。"));
+  c.push(bullet("构建 APK 前同步提升 Android versionCode 与 versionName；versionCode 必须大于上一个 apk 标签。"));
+  c.push(bullet("APK 固定签名已接入并配置 GitHub Secrets：workflow 解码 keystore，build.gradle 的 debug 签名读取环境变量；标签发布缺少 Secrets 会直接失败，手动 Run workflow 才允许回退到临时 debug 签名。"));
 
   c.push(h2("版本号规则"));
   c.push(p("版本号格式：主版本 . 小版本 . 补丁（x.y.z）。"));
@@ -1657,11 +1659,9 @@ function designChildren() {
     "主角与审判庭建立关系的起点。",
     "主角学会无吟唱施法的契机。",
     "深夜时段的内容。",
-    "生日处理。",
     "进阶魔杖之外，更多法杖与法术装备的成长路线。",
     "更高学识等级才能阅读的知识书：书籍增加学识档位门槛，不满足时显示看不懂；可买或商店提示待定；具体收益与所需档位待定。",
     "切磋每日经验上限。",
-    "精英敌人与悬赏追踪（v2.25）：灰狼首领、野猪王；接悬赏后在森林深处出现追踪。",
     "商店库存、价格与打工收入的最终平衡。",
     "祷告收益的最终平衡。",
     "后院地点的后续事件。",
@@ -1670,9 +1670,8 @@ function designChildren() {
     "净化的具体代价：一人承担 / 众人分摊 / 消耗圣物 / 被净化者失忆。",
     "塞西莉亚沉默的原因。",
     "审判庭秘密仪式的具体流程。",
-    "第一天之后的固定脚本事件与更多一次性事件。",
+    "更多一次性事件。",
     "死斗与更多野外 / 墓园敌人。",
-    "更多材料用途（兽皮、野猪牙、史莱姆凝胶）：v2.24 已接入打造消耗，继续观察掉率是否够用。",
     "森林深处材料掉率偏低：兽皮约 4.2 小时一张、野猪牙约 20.8 小时一个；先保持，后续根据试玩上调，优先考虑兽皮 / 野猪牙掉率或探索遭遇率。",
     "炼药成功率与精制率公式（v2.20 先用，后续试玩再评估）：成功率 = 配方基础值 + 炼药档位 × 15% - 配方等级 × 25%；精制率 = 配方基础值 + 炼药档位 × 10% - 配方等级 × 5%；当前线性公式对低等级炼高级药的惩罚仍偏温和，重点看 3 级、4 级配方在入门 / 初识的成功率是否仍偏高。",
     "苦叶茶等后续配方。",
@@ -1683,7 +1682,7 @@ function designChildren() {
     "工坊区其他工坊。",
     "工坊正式学徒与高级课程。",
     "温室后间的批量药草培育区。",
-    "装备刻印扩展到护甲、饰品与多刻印槽。",
+    "多刻印槽：当前每件装备 1 槽，UI 只读取第一个刻印。",
     "占卜茶室（未来）：占卜师相信可以通过星象占卜，伊芙认为星星只记录季节、不预示什么。",
     "血月（未来）：暂定每月月底随机触发；具体概率与判定待定；星象台可在触发后给出天文预告，但不解释吉凶。",
     "星象台扩展：更多星座、流星雨、彗星、月食等夜间天象。",
@@ -1693,7 +1692,6 @@ function designChildren() {
     "特殊现象：血月、狂猎、审判庭夜间巡逻（上线时间未定）。",
     "外神污染与主线推进的后续内容。",
     "假期学院食堂事件：米娅不在场时「米娅占座」不触发，假期学院食堂可能没有事件；另写一条假期专用事件，不复用「米娅占座」。",
-    "STYLE.md 后半本：同屏分工、四段双读、翻转表、冬版五条、句式库、近似组、素材表、暮节规则、量化有界、光感词表、压缩构式、锚句，待从文本工作区原样合并。",
     "v2.27.0：mealKeyFor 改为穷尽 switch；新增餐次时编译失败，不再静默返回 dinner。",
   ].forEach((t, i) => c.push(numbered(i + 1, t)));
 
@@ -1808,11 +1806,13 @@ function designChildren() {
   c.push(p("v2.26.11 · 2026-11-13 · 行动检查与上课提醒：补齐体力门槛；顶栏课程栏、课前 15 分钟与上课中提示；昏厥预警；用餐时段提示；迟到收益减半反馈；notice 去重与截断。", { size: SMALL, color: "666666" }));
   c.push(p("v2.26.12 · 2026-11-15 · 武艺课与触发器：体术课（现武艺课）改名；EventTrigger 的 class 分支改用 courseId，删除 subject；ClassSegment 保留 courseId；COURSE_WORDS 从课程表生成；STYLE.md 进入仓库并校验。", { size: SMALL, color: "666666" }));
   c.push(p("v2.26.13 · 2026-11-15 · 用餐时段：MealName 从 MEAL_WINDOWS 派生，与 MealKey 分离；三个食堂事件改用 mealWindows；米娅占座补 requires.npc；validate 增加用餐时段检查；调试列表显示用餐时段。", { size: SMALL, color: "666666" }));
+  c.push(p("v2.32.0 · 2026-11-23 · 清理已完成的待定项：生日、精英敌人与悬赏、材料用途、STYLE.md 后半本、装备刻印扩展、固定脚本事件；开发计划标为已达成；发布节奏与版本校验同步正式发布流程。", { size: SMALL, color: "666666" }));
   return c;
 }
 
-const worldOut = "E:\\open program\\game 2\\世界观设定_整理版.docx";
-const designOut = "E:\\open program\\game 2\\游戏设计文档.docx";
+const root = path.resolve(__dirname, "..", "..");
+const worldOut = path.join(root, "世界观设定_整理版.docx");
+const designOut = path.join(root, "游戏设计文档.docx");
 
 finish(worldChildren(), worldOut)
   .then(() => finish(designChildren(), designOut))
