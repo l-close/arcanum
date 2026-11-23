@@ -48,6 +48,8 @@ import {
   COOK_STAMINA,
   COOK_OPEN_START,
   COOK_OPEN_END,
+  GREENHOUSE_OPEN_START,
+  GREENHOUSE_OPEN_END,
   weatherOf,
   BOOKS,
   BOOKSHELF_SIZE,
@@ -129,6 +131,8 @@ import {
   combatBuffUntilKey,
   WORKSHOP_OPEN_START,
   WORKSHOP_OPEN_END,
+  WEAPON_SHOP_OPEN_START,
+  WEAPON_SHOP_OPEN_END,
   WORKSHOP_WORK_MINUTES,
   WORKSHOP_WORK_STAMINA,
   WORKSHOP_WORK_SPIRIT,
@@ -184,8 +188,13 @@ import {
   formatDate,
   formatMoney,
   formatTime,
+  formatHours,
+  closedHint,
+  notOpenHint,
   getLocation,
   isGateOpen,
+  GATE_OPEN_END,
+  GATE_OPEN_START,
   isVacation,
   isSummer,
   lecturePreviewPlan,
@@ -223,6 +232,8 @@ import {
   RUNE_LOOK_TEXTS,
   RUNE_SHOP_OPEN_END,
   RUNE_SHOP_OPEN_START,
+  OBSERVATORY_OPEN_START,
+  OBSERVATORY_OPEN_END,
   RUNES,
   runeApplicable,
   runeById,
@@ -2727,23 +2738,23 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (data.location === 'gate' && id === 'outside' && !isGateOpen(data.minutes)) {
-        set({ message: '城门已经关了。' })
+        set({ message: `城门已经关了。（${formatHours(GATE_OPEN_START, GATE_OPEN_END)} 可以出城）` })
         return
       }
       if (id === 'greenhouse' && !greenhouseOpenAt(data.minutes)) {
-        set({ message: '温室已经锁门了。' })
+        set({ message: `温室已经锁门了。（${formatHours(GREENHOUSE_OPEN_START, GREENHOUSE_OPEN_END)} 开放）` })
         return
       }
       if (id === 'runeShop' && !isTimeWindow(data.minutes, RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END)) {
-        set({ message: '符文工坊已经关门了。' })
+        set({ message: closedHint('符文工坊', RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END) })
         return
       }
       if (id === 'observatory' && !observatoryOpenAt(data.minutes)) {
-        set({ message: '星象台已经关门了。' })
+        set({ message: notOpenHint('星象台', OBSERVATORY_OPEN_START, OBSERVATORY_OPEN_END) })
         return
       }
       if (id === 'weaponShop' && !weaponShopOpenAt(data.minutes)) {
-        set({ message: '武具店已经关门了。' })
+        set({ message: closedHint('武具店', WEAPON_SHOP_OPEN_START, WEAPON_SHOP_OPEN_END) })
         return
       }
       const cost = edge.minutes
@@ -3870,7 +3881,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (!greenhouseOpenAt(data.minutes)) {
-        set({ message: '温室已经锁门了。' })
+        set({ message: `温室已经锁门了。（${formatHours(GREENHOUSE_OPEN_START, GREENHOUSE_OPEN_END)} 开放）` })
         return
       }
       mutate((d) => {
@@ -3895,7 +3906,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (!greenhouseOpenAt(data.minutes)) {
-        set({ message: '温室已经锁门了。' })
+        set({ message: `温室已经锁门了。（${formatHours(GREENHOUSE_OPEN_START, GREENHOUSE_OPEN_END)} 开放）` })
         return
       }
       if (data.spirit <= GREENHOUSE_IDENTIFY_SPIRIT) {
@@ -3921,7 +3932,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (!isTimeWindow(data.minutes, RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END)) {
-        set({ message: '工坊已经关门了。' })
+        set({ message: closedHint('符文工坊', RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END) })
         return
       }
       mutate((d) => {
@@ -3946,7 +3957,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (!isTimeWindow(data.minutes, RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END)) {
-        set({ message: '工坊已经关门了。' })
+        set({ message: closedHint('符文工坊', RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END) })
         return
       }
       const item = ITEMS[itemId]
@@ -3993,7 +4004,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (!observatoryOpenAt(data.minutes)) {
-        set({ message: '星象台已经关门了。' })
+        set({ message: notOpenHint('星象台', OBSERVATORY_OPEN_START, OBSERVATORY_OPEN_END) })
         return
       }
       if (data.spirit <= OBSERVE_SPIRIT) {
@@ -4043,7 +4054,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (!observatoryOpenAt(data.minutes)) {
-        set({ message: '星象台已经关门了。' })
+        set({ message: notOpenHint('星象台', OBSERVATORY_OPEN_START, OBSERVATORY_OPEN_END) })
         return
       }
       mutate((d) => {
@@ -4061,7 +4072,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (!observatoryOpenAt(data.minutes)) {
-        set({ message: '星象台已经关门了。' })
+        set({ message: notOpenHint('星象台', OBSERVATORY_OPEN_START, OBSERVATORY_OPEN_END) })
         return
       }
       mutate((d) => {
@@ -4829,7 +4840,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (!isTimeWindow(data.minutes, WORKSHOP_OPEN_START, WORKSHOP_OPEN_END)) {
-        set({ message: '工坊已经关门了。' })
+        set({ message: closedHint('药剂工坊', WORKSHOP_OPEN_START, WORKSHOP_OPEN_END) })
         return
       }
       if (data.stamina < WORKSHOP_WORK_STAMINA) {
@@ -4863,7 +4874,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (!isTimeWindow(data.minutes, WORKSHOP_OPEN_START, WORKSHOP_OPEN_END)) {
-        set({ message: '工坊已经关门了。' })
+        set({ message: closedHint('药剂工坊', WORKSHOP_OPEN_START, WORKSHOP_OPEN_END) })
         return
       }
       if (data.money < WORKSHOP_RENT_COST) {
@@ -4887,7 +4898,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (!isTimeWindow(data.minutes, WORKSHOP_OPEN_START, WORKSHOP_OPEN_END)) {
-        set({ message: '工坊已经关门了。' })
+        set({ message: closedHint('药剂工坊', WORKSHOP_OPEN_START, WORKSHOP_OPEN_END) })
         return
       }
       if (data.workshop.lessonDay === data.day) {
@@ -4921,7 +4932,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (!isTimeWindow(data.minutes, TAVERN_OPEN_START, TAVERN_OPEN_END)) {
-        set({ message: '酒馆已经打烊了。' })
+        set({ message: closedHint('酒馆', TAVERN_OPEN_START, TAVERN_OPEN_END) })
         return
       }
       if (!isTimeWindow(data.minutes, TAVERN_WORK_START, TAVERN_WORK_END)) {
@@ -4949,11 +4960,11 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (!isTimeWindow(data.minutes, TAVERN_OPEN_START, TAVERN_OPEN_END)) {
-        set({ message: '酒馆已经打烊了。', modal: null })
+        set({ message: closedHint('酒馆', TAVERN_OPEN_START, TAVERN_OPEN_END), modal: null })
         return
       }
       if (!isTimeWindow(data.minutes, TAVERN_OPEN_START, TAVERN_DRINK_END)) {
-        set({ message: '快打烊了，不能再点单。', modal: null })
+        set({ message: `快打烊了，不能再点单。（${formatTime(TAVERN_OPEN_END)} 关门）`, modal: null })
         return
       }
       const drink = DRINKS.find((d) => d.id === id)
@@ -4985,7 +4996,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (!isTimeWindow(data.minutes, TAVERN_OPEN_START, TAVERN_OPEN_END)) {
-        set({ message: '酒馆已经打烊了。' })
+        set({ message: closedHint('酒馆', TAVERN_OPEN_START, TAVERN_OPEN_END) })
         return
       }
       if (!isTimeWindow(data.minutes, TAVERN_TALK_START, TAVERN_TALK_END)) {
@@ -5246,7 +5257,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (!isTimeWindow(data.minutes, RELIEF_OPEN_START, RELIEF_OPEN_END)) {
-        set({ message: '救济院已经熄灯了。' })
+        set({ message: `救济院已经熄灯了。（${formatHours(RELIEF_OPEN_START, RELIEF_OPEN_END)} 开放）` })
         return
       }
       if (data.stamina < RELIEF_TIDY_STAMINA) {
@@ -5269,7 +5280,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (!isTimeWindow(data.minutes, RELIEF_OPEN_START, RELIEF_OPEN_END)) {
-        set({ message: '救济院已经熄灯了。' })
+        set({ message: `救济院已经熄灯了。（${formatHours(RELIEF_OPEN_START, RELIEF_OPEN_END)} 开放）` })
         return
       }
       if (!reliefHasPatients(data.day)) {
@@ -5303,7 +5314,7 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       if (!isTimeWindow(data.minutes, RELIEF_OPEN_START, RELIEF_OPEN_END)) {
-        set({ message: '玛尔塔不在，救济院已经熄灯了。' })
+        set({ message: `玛尔塔不在，救济院已经熄灯了。（${formatHours(RELIEF_OPEN_START, RELIEF_OPEN_END)} 开放）` })
         return
       }
       if (data.relief.day === data.day && data.relief.treated) {

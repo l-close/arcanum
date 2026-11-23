@@ -1807,6 +1807,7 @@ function designChildren() {
   c.push(p("v2.26.12 · 2026-11-15 · 武艺课与触发器：体术课（现武艺课）改名；EventTrigger 的 class 分支改用 courseId，删除 subject；ClassSegment 保留 courseId；COURSE_WORDS 从课程表生成；STYLE.md 进入仓库并校验。", { size: SMALL, color: "666666" }));
   c.push(p("v2.26.13 · 2026-11-15 · 用餐时段：MealName 从 MEAL_WINDOWS 派生，与 MealKey 分离；三个食堂事件改用 mealWindows；米娅占座补 requires.npc；validate 增加用餐时段检查；调试列表显示用餐时段。", { size: SMALL, color: "666666" }));
   c.push(p("v2.32.0 · 2026-11-23 · 清理已完成的待定项：生日、精英敌人与悬赏、材料用途、STYLE.md 后半本、装备刻印扩展、固定脚本事件；开发计划标为已达成；发布节奏与版本校验同步正式发布流程。", { size: SMALL, color: "666666" }));
+  c.push(p("v2.32.1 · 2026-11-23 · 关门提示补营业时间：商店、酒馆、星象台、温室、钟楼、救济院与城门统一显示时段，跨午夜标「次日」。", { size: SMALL, color: "666666" }));
   return c;
 }
 

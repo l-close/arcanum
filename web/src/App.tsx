@@ -30,6 +30,8 @@ import {
   GROCERY_OPEN_START,
   BOOKSHOP_OPEN_END,
   BOOKSHOP_OPEN_START,
+  WEAPON_SHOP_OPEN_END,
+  WEAPON_SHOP_OPEN_START,
   weaponShopOpenAt,
   COMMISSION_SOURCE_LABEL,
   MAX_ACTIVE_COMMISSIONS,
@@ -38,6 +40,8 @@ import {
   commissionSourceLocation,
   reputationText,
   observatoryOpenAt,
+  OBSERVATORY_OPEN_END,
+  OBSERVATORY_OPEN_START,
   CONSTELLATIONS,
   SEASON_LABEL,
   calendarInfo,
@@ -159,9 +163,14 @@ import {
   formatMoney,
   formatPercent,
   formatTime,
+  closedHint,
+  formatHours,
+  notOpenHint,
   getLocation,
   heartsText,
   isGateOpen,
+  GATE_OPEN_END,
+  GATE_OPEN_START,
   isCityArea,
   isLocationOpen,
   isVacation,
@@ -1791,7 +1800,7 @@ function Actions({
             <ActionBtn onClick={workShop} label="打工" cost="2 小时 · 体力 -12" />
           </>
         ) : (
-          <div className="hint">杂货店已经关门了。</div>
+          <div className="hint">{closedHint('杂货店', GROCERY_OPEN_START, GROCERY_OPEN_END)}</div>
         ))}
       {loc === 'greenhouse' &&
         (isTimeWindow(data.minutes, GREENHOUSE_OPEN_START, GREENHOUSE_OPEN_END) ? (
@@ -1801,7 +1810,9 @@ function Actions({
             <ActionBtn onClick={() => setModal('shop')} label="买药草" cost="—" />
           </>
         ) : (
-          <div className="hint">温室已经锁门了。</div>
+          <div className="hint">
+            {`温室已经锁门了。（${formatHours(GREENHOUSE_OPEN_START, GREENHOUSE_OPEN_END)} 开放）`}
+          </div>
         ))}
       {loc === 'runeShop' &&
         (isTimeWindow(data.minutes, RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END) ? (
@@ -1810,7 +1821,7 @@ function Actions({
             <ActionBtn onClick={() => setModal('engrave')} label="装备刻印" cost="30 分钟 · 按刻印收费" />
           </>
         ) : (
-          <div className="hint">工坊已经关门了。</div>
+          <div className="hint">{closedHint('符文工坊', RUNE_SHOP_OPEN_START, RUNE_SHOP_OPEN_END)}</div>
         ))}
       {loc === 'observatory' &&
         (observatoryOpenAt(data.minutes) ? (
@@ -1820,7 +1831,7 @@ function Actions({
             <ActionBtn onClick={openStarChart} label="看星图" cost="5 分钟" />
           </>
         ) : (
-          <div className="hint">星象台已经关门了。</div>
+          <div className="hint">{notOpenHint('星象台', OBSERVATORY_OPEN_START, OBSERVATORY_OPEN_END)}</div>
         ))}
       {loc === 'potionWorkshop' &&
         (isTimeWindow(data.minutes, WORKSHOP_OPEN_START, WORKSHOP_OPEN_END) ? (
@@ -1837,27 +1848,27 @@ function Actions({
             />
           </>
         ) : (
-          <div className="hint">工坊已经关门了。</div>
+          <div className="hint">{closedHint('药剂工坊', WORKSHOP_OPEN_START, WORKSHOP_OPEN_END)}</div>
         ))}
       {loc === 'bookshop' &&
         (isTimeWindow(data.minutes, BOOKSHOP_OPEN_START, BOOKSHOP_OPEN_END) ? (
           <ActionBtn onClick={() => setModal('shop')} label="买书" cost="—" />
         ) : (
-          <div className="hint">旧书铺已经关门了。</div>
+          <div className="hint">{closedHint('旧书铺', BOOKSHOP_OPEN_START, BOOKSHOP_OPEN_END)}</div>
         ))}
       {loc === 'weaponShop' &&
         (weaponShopOpenAt(data.minutes) ? (
           <ActionBtn onClick={() => setModal('shop')} label="购买与打造" cost="—" />
         ) : (
-          <div className="hint">武具店已经关门了。</div>
+          <div className="hint">{closedHint('武具店', WEAPON_SHOP_OPEN_START, WEAPON_SHOP_OPEN_END)}</div>
         ))}
       {loc === 'tavern' &&
         (() => {
           if (!isTimeWindow(data.minutes, TAVERN_OPEN_START, TAVERN_OPEN_END)) {
-            return <div className="hint">酒馆已经打烊了。</div>
+            return <div className="hint">{closedHint('酒馆', TAVERN_OPEN_START, TAVERN_OPEN_END)}</div>
           }
           if (!isTimeWindow(data.minutes, TAVERN_OPEN_START, TAVERN_DRINK_END)) {
-            return <div className="hint">快打烊了。</div>
+            return <div className="hint">{`快打烊了。（${formatTime(TAVERN_OPEN_END)} 关门）`}</div>
           }
 
           const workOpen = isTimeWindow(data.minutes, TAVERN_WORK_START, TAVERN_WORK_END)
@@ -1898,7 +1909,11 @@ function Actions({
       {loc === 'relief' &&
         (() => {
           if (!isTimeWindow(data.minutes, RELIEF_OPEN_START, RELIEF_OPEN_END)) {
-            return <div className="hint">救济院已经熄灯了。</div>
+            return (
+              <div className="hint">
+                {`救济院已经熄灯了。（${formatHours(RELIEF_OPEN_START, RELIEF_OPEN_END)} 开放）`}
+              </div>
+            )
           }
           const hasPatients = reliefHasPatients(data.day)
           const cared = data.relief.day === data.day && data.relief.cared
@@ -2015,10 +2030,14 @@ function Actions({
             cost={`${BELL_TOWER_MINUTES} 分钟 · 体力 -${BELL_TOWER_STAMINA}`}
           />
         ) : (
-          <div className="hint">钟楼的门锁着。</div>
+          <div className="hint">
+            {`钟楼的门锁着。（${formatHours(BELL_TOWER_OPEN_START, BELL_TOWER_OPEN_END)} 开放）`}
+          </div>
         ))}
       {loc === 'gate' && !isGateOpen(data.minutes) && (
-        <div className="hint">城门已经关了。</div>
+        <div className="hint">
+          {`城门已经关了。（${formatHours(GATE_OPEN_START, GATE_OPEN_END)} 可以出城）`}
+        </div>
       )}
       {loc === 'cemetery' && (
         <ActionBtn
