@@ -19,17 +19,28 @@ APK 由 GitHub Actions 云构建，不需要本地 Android SDK。默认**不随�
 1. 打开仓库的 **Actions**
 2. 选择 **Build Android APK**
 3. 点 **Run workflow**，选择 `main`
-4. 构建完成后在该次运行页面下载 `arcanum-debug-apk`
+4. 构建完成后在该次运行页面下载 `arcanum-debug-apk`（保留 14 天，备用）
 
-也可以用 `apk-vX.Y.Z` 标签触发；普通的 `vX.Y.Z` 标签只作网页版本记录，不会构建 APK。
+正式发布走标签：
+
+```text
+推送 apk-vX.Y.Z 标签
+  → 构建 fixed-signed debug APK
+  → artifact: arcanum-debug-apk（14 天）
+  → GitHub Release: vX.Y.Z / arcanum-vX.Y.Z-debug.apk（正式下载入口）
+```
+
+普通 `vX.Y.Z` 标签只作网页版本记录；`apk-vX.Y.Z` 触发 APK 构建与 Release。正式下载地址：
+
+```text
+https://github.com/l-close/arcanum/releases
+```
+
+只有影响 App 的代码/内容更新才发正式版；纯文档、CI、工具改动不发 APK。
 
 完整发布流程、版本号同步、签名和常见错误见根目录 `RELEASE.md`。
 
-建议节奏：网页随时更新，APK 每 3–5 次网页更新或一次大功能完成后构建一次。
-
-这个 APK 使用 debug 签名，适合自己和朋友安装，不适合上架。
-
-已接入固定签名（GitHub Secrets 已配置）。CI 会使用固定 keystore；固定签名后的第一版仍需卸载一次，之后可覆盖更新。未配置 Secrets 时会回退到临时 debug 签名。
+这个 APK 是 **fixed-signed debug 构建**，适合自己和朋友安装，不适合上架。标签发布缺少固定签名 Secrets 会直接失败；手动 Run workflow 才允许回退到临时 debug 签名。
 
 ## 版本号规则
 
@@ -68,9 +79,11 @@ v2.22.0 魔法城市设施 → 小版本
 
 ```text
 web/package.json 的 version
+web/package-lock.json 的 version
 web/android/app/build.gradle 的 versionName
-README 标题
+web/README.md 标题
 游戏内页脚（读取 package.json）
+STYLE.md 的课程词标记（npm.cmd run sync:style）
 Git 标签 vX.Y.Z
 ```
 
@@ -79,6 +92,7 @@ APK 另有独立递增的 `versionCode`：
 ```text
 每次 APK 发布 +1
 不参与 x.y.z 的语义
+正式包附到 vX.Y.Z 的 GitHub Release
 ```
 
 APK 标签：

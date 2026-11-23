@@ -7,7 +7,7 @@ on:
       - 'apk-*'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: android
@@ -21,6 +21,8 @@ jobs:
         working-directory: web
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -28,12 +30,51 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
       - uses: gradle/actions/setup-gradle@v4
+
+      - name: Verify tag and version
+        if: startsWith(github.ref, 'refs/tags/apk-')
+        working-directory: .
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.value }}"
+          git fetch --tags --force
+          test "$GITHUB_REF_NAME" = "apk-v$VERSION" || {
+            echo "::error::tag $GITHUB_REF_NAME does not match apk-v$VERSION"
+            exit 1
+          }
+          grep -q "versionName \"$VERSION\"" web/android/app/build.gradle || {
+            echo "::error::build.gradle versionName does not match package.json ($VERSION)"
+            exit 1
+          }
+          test "$(git rev-parse "refs/tags/v$VERSION^{commit}")" = "$GITHUB_SHA" || {
+            echo "::error::v$VERSION does not point to this commit"
+            exit 1
+          }
+          PREV_TAG=$(git tag -l 'apk-v*' --sort=-v:refname | grep -v "^${GITHUB_REF_NAME}$" | head -n1 || true)
+          if [ -n "$PREV_TAG" ]; then
+            PREV_CODE=$(git show "$PREV_TAG:web/android/app/build.gradle" | awk '/versionCode / {print $2; exit}')
+            NEW_CODE=$(awk '/versionCode / {print $2; exit}' web/android/app/build.gradle)
+            if [ -z "$PREV_CODE" ] || [ -z "$NEW_CODE" ]; then
+              echo "::error::could not read versionCode"
+              exit 1
+            fi
+            test "$NEW_CODE" -gt "$PREV_CODE" || {
+              echo "::error::versionCode $NEW_CODE must be greater than $PREV_CODE from $PREV_TAG"
+              exit 1
+            }
+          fi
 
       - run: npm ci
       - run: npm run build
@@ -48,21 +89,45 @@ jobs:
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > android/arcanum-release.p12
-            echo "ANDROID_KEYSTORE_PATH=$GITHUB_WORKSPACE/web/android/arcanum-release.p12" >> $GITHUB_ENV
-            echo "ANDROID_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> $GITHUB_ENV
-            echo "ANDROID_KEY_ALIAS=$KEY_ALIAS" >> $GITHUB_ENV
-            echo "ANDROID_KEY_PASSWORD=$KEY_PASSWORD" >> $GITHUB_ENV
-            echo "Using fixed signing keystore."
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            if [[ "$GITHUB_REF" == refs/tags/apk-* ]]; then
+              echo "::error::ANDROID_KEYSTORE_BASE64 is required for tag releases."
+              exit 1
+            fi
+            echo "ANDROID_KEYSTORE_BASE64 is not set; manual build will use the default debug signing key."
           else
-            echo "ANDROID_KEYSTORE_BASE64 is not set; falling back to the default debug signing key."
+            echo "$KEYSTORE_BASE64" | base64 -d > android/arcanum-release.p12
+            echo "ANDROID_KEYSTORE_PATH=$GITHUB_WORKSPACE/web/android/arcanum-release.p12" >> "$GITHUB_ENV"
+            echo "ANDROID_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "ANDROID_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "ANDROID_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "Using fixed signing keystore."
           fi
 
       - run: cd android && ./gradlew assembleDebug --no-daemon
+
+      - name: Prepare release asset
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk \
+            "$GITHUB_WORKSPACE/arcanum-v${{ steps.version.outputs.value }}-debug.apk"
 
       - uses: actions/upload-artifact@v4
         with:
           name: arcanum-debug-apk
           path: web/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/apk-')
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.value }}"
+          TAG="v$VERSION"
+          ASSET="arcanum-v$VERSION-debug.apk"
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --title "arcanum v$VERSION" --generate-notes
+          gh release upload "$TAG" "$ASSET" --clobber

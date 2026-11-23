@@ -32,6 +32,14 @@ npm.cmd run validate:content
 - 推送 `main` 会自动触发 PWA 部署；APK 仍只由 `apk-*` 标签触发。
 - 提交前先看 `git status`，只暂存本次相关的文件。
 
+## 正式发布
+
+- 只有影响 App 的代码/内容更新才发正式版；纯文档、CI、工具改动只提交推送，不升版本、不出 APK。
+- 每次正式版按版本规则升 `versionName`，`versionCode` +1；同步 `package.json`、`package-lock.json`、`build.gradle`、`web/README.md`，并跑 `sync:style`。
+- 校验通过后提交，打 `vX.Y.Z` 和 `apk-vX.Y.Z`，推送 `main` 和两个标签。
+- APK 由 `apk-*` 工作流构建：artifact 保留 14 天，正式包附到 `vX.Y.Z` 的 GitHub Release。
+- 已发布的版本号和标签不回头修改。
+
 ## 内容改动规范
 
 任何修改 `web/src/game/content/` 下文件的任务，完成后必须：

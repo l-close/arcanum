@@ -6,7 +6,7 @@
 
 ```text
 问：能打 APK 吗？
-答：能。推 apk-vX.Y.Z 标签，GitHub Actions 会构建。
+答：能。推 apk-vX.Y.Z 标签，GitHub Actions 会构建，并附到 vX.Y.Z 的 GitHub Release。
 本机没有 JDK / Android SDK 不是阻塞项。
 ```
 
@@ -25,9 +25,9 @@ versionCode 是否已经递增
 | 发布物 | 触发方式 | 产物 |
 |---|---|---|
 | 网页 PWA | push 到 `main` | GitHub Pages |
-| Android APK | push `apk-*` 标签 | `arcanum-debug-apk` |
+| Android APK | push `apk-*` 标签 | `arcanum-debug-apk` artifact + `vX.Y.Z` GitHub Release 资产 |
 
-普通的 `vX.Y.Z` 标签只作网页版本记录，不会构建 APK。
+普通的 `vX.Y.Z` 标签只作网页版本记录，不会触发 APK 构建；它同时作为 Release 的标签。
 
 ## 2. 标签规则
 
@@ -60,9 +60,11 @@ versionCode 57 → 58
 
 ```text
 web/package.json              version
+web/package-lock.json         version
 web/android/app/build.gradle  versionName
 web/android/app/build.gradle  versionCode
 web/README.md                 标题
+STYLE.md                      课程词标记（sync:style）
 ```
 
 规则：
@@ -71,6 +73,7 @@ web/README.md                 标题
 versionName 与 package.json 的 version 一致
 versionCode 每次 APK 发布 +1
 网页版本记录和 APK 标签使用同一个 X.Y.Z
+APK 正式包附到 vX.Y.Z 的 GitHub Release
 ```
 
 `package.json` 的版本变更后，还要同步 `STYLE.md` 的课程词版本标记：
@@ -123,11 +126,17 @@ git ls-remote --tags origin | Select-String "apk-v"
 本地标签可能是旧副本。2.29.1 那次本地比远端少两个标签，`git tag` 回答「不存在」，
 而 2.29.0 的 APK 早已用掉 `versionCode 58`——照本地判断就会沿用 58，与已发布版本撞号，覆盖安装失败。
 
+CI 也会再校验：标签必须是 `apk-v${package.json version}`、`build.gradle` 的
+`versionName` 必须一致、`vX.Y.Z` 必须指向当前提交、`versionCode` 必须大于
+上一个 `apk-*` 标签。任一不满足会直接失败。
+
 ## 5. 标准发布
+
+只对影响 App 的代码/内容更新执行本节；纯文档、CI、工具改动只提交推送，不升版本、不出 APK。
 
 ```powershell
 # 1. 同步版本号并提交
-git add web/package.json web/android/app/build.gradle web/README.md STYLE.md
+git add web/package.json web/package-lock.json web/android/app/build.gradle web/README.md STYLE.md
 git commit -m "chore: bump version to X.Y.Z"
 
 # 2. 打标签
@@ -142,7 +151,7 @@ git push origin main vX.Y.Z apk-vX.Y.Z
 
 ```text
 main        → Deploy PWA
-apk-vX.Y.Z  → Build Android APK
+apk-vX.Y.Z  → Build Android APK → vX.Y.Z Release
 ```
 
 如果标签已存在，git 会拒绝。不要强制覆盖，先确认是否应该升版本。
@@ -167,14 +176,16 @@ push main
 
 ```text
 push apk-* 标签
-  → checkout
+  → checkout（拉取全部标签与历史）
+  → 校验 tag / versionName / versionCode
   → Node 22 + Java 21
   → npm ci
   → npm run build
   → npx cap sync android
-  → 解码固定签名 keystore
+  → 解码固定签名 keystore（标签发布缺失即失败）
   → gradlew assembleDebug
-  → 上传 arcanum-debug-apk
+  → 上传 arcanum-debug-apk artifact（保留 14 天）
+  → 附 arcanum-vX.Y.Z-debug.apk 到 vX.Y.Z GitHub Release
 ```
 
 CI 使用：
@@ -194,7 +205,8 @@ Java 21
 Actions 里 Deploy PWA 是 success
 Actions 里 Build Android APK 是 success
 线上页面页脚显示 vX.Y.Z
-APK artifact 可以下载
+GitHub Release vX.Y.Z 里有 arcanum-vX.Y.Z-debug.apk
+APK artifact 也可以下载（备用）
 ```
 
 线上地址：
@@ -206,11 +218,11 @@ https://l-close.github.io/arcanum/
 APK 下载位置：
 
 ```text
-Actions 对应运行页面底部 Artifacts
-arcanum-debug-apk
+1. GitHub Releases → vX.Y.Z → arcanum-vX.Y.Z-debug.apk（正式入口）
+2. Actions 运行页面底部 Artifacts → arcanum-debug-apk（备用，保留 14 天）
 ```
 
-GitHub Actions 的 artifact 会过期。过期后不要重建旧标签，升版本重新发布。
+GitHub Actions 的 artifact 会过期；Release 资产不会因为 artifact 过期而消失。过期后不要重建旧标签，升版本重新发布。
 
 ## 8. 本机出包（可选）
 
@@ -276,7 +288,9 @@ Using fixed signing keystore.
 
 才说明固定签名生效。
 
-如果缺少 `ANDROID_KEYSTORE_BASE64`，CI 会回退到安卓默认调试签名。两版签名不同，覆盖安装会失败。
+标签发布（`apk-*`）缺少 `ANDROID_KEYSTORE_BASE64` 会**直接失败**，不会回退；这是为了避免正式包签名变化、导致覆盖安装失败。
+
+手动 Run workflow 测试时，缺少 Secrets 才允许回退到安卓默认调试签名；这种包不能当正式包分发。
 
 ### 本机
 
@@ -318,6 +332,9 @@ web/android/.gitignore 已忽略 *.apk 和 build/
 不要在同一个 versionName 下重发 APK
 不要发布 assembleRelease 的未签名包
 不要因为本机没有 JDK / SDK 就说项目不能出包
+纯文档 / CI / 工具更新不要发 APK
+标签发布缺固定签名会直接失败，不要绕过
+versionCode 必须大于上一个 apk 标签
 ```
 
 APK 不进 git，进 git 的是版本号和标签。
@@ -326,12 +343,14 @@ APK 不进 git，进 git 的是版本号和标签。
 
 ```text
 [ ] 读 AGENTS.md 和本文件
+[ ] 确认本次改动影响 App（纯文档 / CI / 工具不发版）
 [ ] 确认 .github/workflows/android.yml 存在
 [ ] 检查当前 versionCode / versionName
+[ ] 确认 versionCode 大于上一个 apk 标签
 [ ] 检查目标标签是否已经存在
 [ ] 确认本机没有 JDK / SDK 不是阻塞项
-[ ] 发布时同步 package.json、build.gradle、README
+[ ] 发布时同步 package.json、package-lock.json、build.gradle、README、STYLE
 [ ] 推送 main 和两个标签
 [ ] 等两个 workflow 成功
-[ ] 验证线上页脚和 APK artifact
+[ ] 验证线上页脚和 Release 里的 APK
 ```
