@@ -89,7 +89,7 @@ npm.cmd run sync:style
 ERROR [COURSE-WORDS] 版本不一致：STYLE.md 为 vX.Y.Z，package.json 为 vA.B.C
 ```
 
-版本语义见 `AGENTS.md`：新系统 / 新区域 / 新课程 / 一整包新事件走小版本，修复 / UI / 文本 / 平衡 / 小功能走补丁。
+版本语义见 `AGENTS.md`：新系统 / 新区域 / 新课程 / 大型玩法扩展走小版本，修复 / UI / 文本 / 平衡 / 小功能 / 事件与内容扩充走补丁。
 
 ## 4. 发布前检查
 

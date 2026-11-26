@@ -80,6 +80,8 @@ import {
   RELIEF_CARE_MINUTES,
   RELIEF_CARE_MOOD,
   RELIEF_CARE_STAMINA,
+  CEMETERY_GRAVE_CHANCE,
+  CEMETERY_SPECIAL_TEXTS,
   RELIEF_OPEN_END,
   RELIEF_OPEN_START,
   RELIEF_PATIENT_SCENES,
@@ -278,6 +280,7 @@ import {
   choiceBlockedReason,
   eventById,
   eventMatches,
+  rollEventEffects,
   type EventEffects,
   type EventTrigger,
 } from './events'
@@ -364,6 +367,7 @@ export function freshData(): GameData {
     plaza: { day: 0, fed: false },
     meals: { day: 0, breakfast: false, lunch: false, dinner: false },
     relief: { day: 0, cared: false, treated: false, volunteered: false },
+    cemetery: { lastReadDay: -1 },
     workshop: { brewKitUntilDay: 0, lessonDay: -1 },
     greenhouse: { day: -1, visited: false },
     runeShop: { day: -1, looked: false },
@@ -608,6 +612,7 @@ export function normalizeData(raw: GameData): GameData {
     plaza: raw.plaza ?? { day: 0, fed: false },
     meals: raw.meals ?? { day: 0, breakfast: false, lunch: false, dinner: false },
     relief: raw.relief ?? { day: 0, cared: false, treated: false, volunteered: false },
+    cemetery: raw.cemetery ?? { lastReadDay: -1 },
     workshop: {
       brewKitUntilDay: raw.workshop?.brewKitUntilDay ?? 0,
       lessonDay: raw.workshop?.lessonDay ?? -1,
@@ -1271,6 +1276,7 @@ function applyEventEffects(d: GameData, e?: EventEffects, expCapTier?: number): 
     })
   }
   if (e.flag) d.flags[e.flag] = true
+  if (e.flags) e.flags.forEach((flag) => { d.flags[flag] = true })
   if (e.items) {
     Object.entries(e.items).forEach(([id, qty]) => {
       if (qty > 0) d.inventory[id] = (d.inventory[id] ?? 0) + qty
@@ -1871,12 +1877,15 @@ export const useGame = create<Store>((set, get) => {
         set({ message: blocked })
         return
       }
-      const capped = cappedExpSkills(data, choice.effects, event.expCapTier)
+      const rolled = rollEventEffects(choice.effects)
+      const capped = cappedExpSkills(data, rolled.effects, event.expCapTier)
       mutate((d) => {
-        applyEventEffects(d, choice.effects, event.expCapTier)
+        applyEventEffects(d, rolled.effects, event.expCapTier)
         return ''
       })
-      const result = choice.result ?? '你做出了选择。'
+      const result = [choice.result ?? '你做出了选择。', rolled.bonusText]
+        .filter(Boolean)
+        .join(' ')
       set({
         eventResult:
           capped.length > 0
@@ -4555,8 +4564,15 @@ export const useGame = create<Store>((set, get) => {
         advanceTime(d, CEMETERY_SWEEP_MINUTES)
         d.stamina = clamp(d.stamina - CEMETERY_SWEEP_STAMINA, 0, maxStamina(d.skills.physique.tier))
         d.mood = clamp(d.mood + CEMETERY_SWEEP_MOOD, 0, 100)
-        pushLog(d, '你在墓园扫了一会儿墓。')
-        return '你把墓碑前的落叶扫到一边。守墓人看了你一眼，没有说话。'
+        let text = '你把墓碑前的落叶扫到一边。'
+        if (d.cemetery.lastReadDay !== d.day && Math.random() < CEMETERY_GRAVE_CHANCE) {
+          const special =
+            CEMETERY_SPECIAL_TEXTS[Math.floor(Math.random() * CEMETERY_SPECIAL_TEXTS.length)]
+          d.cemetery.lastReadDay = d.day
+          text += `\n${special}`
+        }
+        pushLog(d, text)
+        return text
       })
     },
 
@@ -4951,6 +4967,7 @@ export const useGame = create<Store>((set, get) => {
         pushLog(d, '你在酒馆帮了两个小时的忙。')
         return '你在酒馆帮了两个小时的忙，拿到 12 枚铜币。'
       })
+      maybeEvent({ type: 'after', action: 'work' })
     },
 
     orderDrink: (id) => {

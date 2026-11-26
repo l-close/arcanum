@@ -389,6 +389,16 @@ export const ITEMS: Record<string, ItemDef> = {
     desc: '诺拉烤的饼干，糖放得不多，边缘有一点焦。恢复 6 点体力。',
     effect: { stamina: 6 },
   },
+  plain_cookie: {
+    id: 'plain_cookie',
+    name: '厨房饼干',
+    type: 'consumable',
+    quality: 'common',
+    price: 1,
+    medium: false,
+    desc: '厨房烤的普通饼干，糖不多，边缘有点焦。恢复 4 点体力。',
+    effect: { stamina: 4 },
+  },
   cabbage_seed: {
     id: 'cabbage_seed',
     name: '白菜种子',

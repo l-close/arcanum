@@ -178,6 +178,7 @@ export type GameData = {
   plaza: { day: number; fed: boolean }
   meals: { day: number; breakfast: boolean; lunch: boolean; dinner: boolean }
   relief: { day: number; cared: boolean; treated: boolean; volunteered: boolean }
+  cemetery: { lastReadDay: number }
   workshop: WorkshopState
   greenhouse: GreenhouseState
   runeShop: RuneShopState

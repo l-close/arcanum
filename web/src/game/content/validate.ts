@@ -518,6 +518,15 @@ export function validateContent(): ContentIssue[] {
           error('events', `${event.id}: 奖励物品 ${id} 数量无效`)
         }
       }
+      for (const bonus of choice.effects?.bonusItems ?? []) {
+        if (!ITEMS[bonus.id]) error('events', `${event.id}: 随机物品 ${bonus.id} 不存在`)
+        if (!(bonus.chance >= 0 && bonus.chance <= 1)) {
+          error('events', `${event.id}: 随机物品 ${bonus.id} 概率无效`)
+        }
+        if (bonus.count !== undefined && (!Number.isInteger(bonus.count) || bonus.count <= 0)) {
+          error('events', `${event.id}: 随机物品 ${bonus.id} 数量无效`)
+        }
+      }
     }
     if (event.requires?.npc && !npcIds.has(event.requires.npc)) {
       error('events', `${event.id}: NPC ${event.requires.npc} 不存在`)

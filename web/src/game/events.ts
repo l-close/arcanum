@@ -30,7 +30,16 @@ export type EventEffects = {
   affinity?: Record<string, number>
   items?: Record<string, number>
   flag?: string
+  flags?: string[]
   meal?: MealKey
+  ranges?: {
+    money?: [number, number]
+    stamina?: [number, number]
+    spirit?: [number, number]
+    mood?: [number, number]
+    exp?: Partial<Record<SkillKey, [number, number]>>
+  }
+  bonusItems?: Array<{ id: string; chance: number; count?: number }>
 }
 
 export type EventChoice = {
@@ -41,6 +50,50 @@ export type EventChoice = {
 
 function signed(value: number): string {
   return `${value > 0 ? '+' : ''}${value}`
+}
+
+function rollRange([min, max]: [number, number]): number {
+  return min + Math.floor(Math.random() * (max - min + 1))
+}
+
+/** 把区间奖励和概率物品结算成固定效果。 */
+export function rollEventEffects(effects?: EventEffects): {
+  effects?: EventEffects
+  bonusText: string
+} {
+  if (!effects) return { effects, bonusText: '' }
+  const resolved: EventEffects = { ...effects }
+  delete resolved.ranges
+  delete resolved.bonusItems
+
+  if (effects.ranges) {
+    const r = effects.ranges
+    if (r.money) resolved.money = (resolved.money ?? 0) + rollRange(r.money)
+    if (r.stamina) resolved.stamina = (resolved.stamina ?? 0) + rollRange(r.stamina)
+    if (r.spirit) resolved.spirit = (resolved.spirit ?? 0) + rollRange(r.spirit)
+    if (r.mood) resolved.mood = (resolved.mood ?? 0) + rollRange(r.mood)
+    if (r.exp) {
+      resolved.exp = { ...(resolved.exp ?? {}) }
+      for (const [key, range] of Object.entries(r.exp)) {
+        const skill = key as SkillKey
+        resolved.exp[skill] = (resolved.exp[skill] ?? 0) + rollRange(range as [number, number])
+      }
+    }
+  }
+
+  const gained: string[] = []
+  if (effects.bonusItems?.length) {
+    const items = { ...(resolved.items ?? {}) }
+    for (const bonus of effects.bonusItems) {
+      if (Math.random() >= bonus.chance) continue
+      const count = bonus.count ?? 1
+      items[bonus.id] = (items[bonus.id] ?? 0) + count
+      gained.push(`${ITEMS[bonus.id]?.name ?? bonus.id} ×${count}`)
+    }
+    if (Object.keys(items).length > 0) resolved.items = items
+  }
+
+  return { effects: resolved, bonusText: gained.length > 0 ? `另外得到 ${gained.join('、')}。` : '' }
 }
 
 export function cappedExpSkills(
@@ -61,17 +114,29 @@ export function eventEffectSummary(
 ): string {
   if (!effects) return '无变化'
   const capped = cappedExpSkills(data, effects, expCapTier)
+  const ranges = effects.ranges
   const parts: string[] = []
   if (effects.minutes) parts.push(`${effects.minutes} 分钟`)
-  if (effects.money) parts.push(`金钱 ${signed(effects.money)}`)
-  if (effects.stamina) parts.push(`体力 ${signed(effects.stamina)}`)
-  if (effects.spirit) parts.push(`精神 ${signed(effects.spirit)}`)
-  if (effects.mood) parts.push(`心情 ${signed(effects.mood)}`)
+  if (ranges?.money) parts.push(`金钱 ${ranges.money[0]}–${ranges.money[1]}`)
+  else if (effects.money) parts.push(`金钱 ${signed(effects.money)}`)
+  if (ranges?.stamina) parts.push(`体力 ${signed(ranges.stamina[0])}～${signed(ranges.stamina[1])}`)
+  else if (effects.stamina) parts.push(`体力 ${signed(effects.stamina)}`)
+  if (ranges?.spirit) parts.push(`精神 ${signed(ranges.spirit[0])}～${signed(ranges.spirit[1])}`)
+  else if (effects.spirit) parts.push(`精神 ${signed(effects.spirit)}`)
+  if (ranges?.mood) parts.push(`心情 ${signed(ranges.mood[0])}～${signed(ranges.mood[1])}`)
+  else if (effects.mood) parts.push(`心情 ${signed(effects.mood)}`)
   if (effects.mana) parts.push(`魔力 ${signed(effects.mana)}`)
   if (effects.exp) {
     for (const [key, value] of Object.entries(effects.exp)) {
       if (!value || capped.includes(key as SkillKey)) continue
+      if (ranges?.exp?.[key as SkillKey]) continue
       parts.push(`${SKILL_LABEL[key as SkillKey]}经验 ${signed(value)}`)
+    }
+  }
+  if (ranges?.exp) {
+    for (const [key, range] of Object.entries(ranges.exp)) {
+      if (expCapTier !== undefined && data.skills[key as SkillKey].tier >= expCapTier) continue
+      parts.push(`${SKILL_LABEL[key as SkillKey]}经验 ${range[0]}–${range[1]}`)
     }
   }
   if (effects.affinity) {
@@ -81,6 +146,10 @@ export function eventEffectSummary(
       if (npc?.relationship === 'familiarity') continue
       parts.push(`${npc?.short ?? key}好感 ${signed(value)}`)
     }
+  }
+  if (effects.bonusItems?.length) {
+    const names = effects.bonusItems.map((bonus) => ITEMS[bonus.id]?.name ?? bonus.id)
+    parts.push(`可能获得：${names.join('、')}`)
   }
   if (effects.items) {
     for (const [id, qty] of Object.entries(effects.items)) {
@@ -207,7 +276,7 @@ export const EVENTS: GameEvent[] = [
       },
       {
         label: '给他披外套',
-        result: '你把外套搭在他肩上。他没醒，只是往书那边缩了缩。',
+        result: '你把外套搭在他肩上。他动了一下，半睁开眼，看清是你，没说什么，把外套往上拉了拉。',
         effects: { affinity: { luca: 2 }, mood: 1 },
       },
       { label: '悄悄走开', result: '你放轻脚步，从书架另一侧绕了过去。' },
@@ -505,7 +574,7 @@ export const EVENTS: GameEvent[] = [
     locations: ['shop'],
     days: 'all',
     text: [
-      '客人走后，你在柜台角落发现两枚铜板，应该是刚才找零时落下的。店主正在里屋整理货物。',
+      '客人走后，你在柜台角落发现几枚铜板，应该是刚才找零时落下的。店主正在里屋整理货物。',
     ],
     choices: [
       {
@@ -516,7 +585,7 @@ export const EVENTS: GameEvent[] = [
       {
         label: '自己收下',
         result: '你把铜板揣进兜里，没有说话。',
-        effects: { money: 2, mood: -1 },
+        effects: { ranges: { money: [1, 3] }, mood: -1 },
       },
       {
         label: '放在柜台上',
@@ -543,8 +612,8 @@ export const EVENTS: GameEvent[] = [
       },
       {
         label: '买一本',
-        result: '你挑了一本还算完整的旧书，付了八枚铜币。',
-        effects: { minutes: 10, money: -8, exp: { knowledge: 2 } },
+        result: '你挑了一本还算完整的旧书，付了六枚铜币。',
+        effects: { minutes: 10, money: -6, ranges: { exp: { knowledge: [1, 2] } } },
       },
       {
         label: '离开',
@@ -598,7 +667,7 @@ export const EVENTS: GameEvent[] = [
       {
         label: '买点吃的',
         result: '你买了一份刚出炉的小点心，边走边吃。',
-        effects: { minutes: 5, money: -2, stamina: 5 },
+        effects: { minutes: 5, money: -2, ranges: { stamina: [3, 6] } },
       },
       {
         label: '离开',
@@ -1045,6 +1114,523 @@ export const EVENTS: GameEvent[] = [
           '你把字条折回原来的两折，夹进课本最里面那页。诺拉问：“谁写的？”你说卢卡。她“哦”了一声，没再问。',
         effects: { spirit: 2, affinity: { luca: 1 }, items: { birthday_cookie: 3 } },
       },
+    ],
+  },
+  {
+    id: 'dorm_kitchen_raid',
+    title: '楼下的饼干罐',
+    trigger: { type: 'enter' },
+    locations: ['dorm'],
+    days: 'all',
+    timeRanges: [[at(21), at(23)]],
+    text: [
+      '走廊的灯灭了，过一会儿又亮。楼下有人压着声音笑，接着是赤脚踩过地板的声音，往厨房去了。',
+    ],
+    choices: [
+      {
+        label: '下楼看',
+        result:
+          '厨房门口蹲着两个更小的孩子，怀里抱着一罐饼干。看见你，他们僵了一下，然后把罐子往你这边推了推。你拿了一块，朝楼梯口指了指，让他们快点回去。',
+        effects: { minutes: 10, mood: 1, items: { plain_cookie: 1 } },
+      },
+      {
+        label: '不管',
+        result: '你关上门，没再管楼下的动静。笑声过一会儿就停了。',
+      },
+    ],
+  },
+  {
+    id: 'bookshop_dust',
+    title: '夹在书里的纸条',
+    trigger: { type: 'enter' },
+    locations: ['bookshop'],
+    days: 'all',
+    timeRanges: [[at(9), at(19)]],
+    requires: { notFlag: 'bookshop_note' },
+    text: [
+      '你抽出一本旧书，书页里掉出一张折过的纸条。上面写着一行地址，墨迹已经发灰。',
+    ],
+    choices: [
+      {
+        label: '买下这本书',
+        result: '你付了钱，把纸条夹回书里。店主没多问。',
+        effects: { money: -5, flag: 'bookshop_note' },
+      },
+      {
+        label: '记下地址',
+        result: '你把地址在心里默念了两遍，又把书放回架上。',
+        effects: { minutes: 10, spirit: -3, flag: 'bookshop_note' },
+      },
+      {
+        label: '夹回去',
+        result: '你把纸条夹回原处，把书推了回去。',
+      },
+    ],
+  },
+  {
+    id: 'weapon_shop_bellows',
+    title: '风箱',
+    trigger: { type: 'enter' },
+    locations: ['weaponShop'],
+    days: 'all',
+    timeRanges: [[at(8), at(19)]],
+    expCapTier: 2,
+    text: [
+      '戈登把一块烧红的铁夹到砧子上，朝风箱那边看了一眼。',
+    ],
+    choices: [
+      {
+        label: '拉风箱',
+        result: '风箱把火吹成橙黄。戈登看了一眼，说正好。',
+        effects: { minutes: 30, stamina: -3, exp: { physique: 2 } },
+      },
+      {
+        label: '站远一点看',
+        result: '戈登把铁翻了个面，随口讲了两句火候。',
+        effects: { minutes: 10, exp: { knowledge: 1 } },
+      },
+      { label: '走', result: '你从门口退了出去。' },
+    ],
+  },
+  {
+    id: 'guild_miscount',
+    title: '对不上的货单',
+    trigger: { type: 'enter' },
+    locations: ['guild'],
+    days: 'all',
+    timeRanges: [[at(8), at(19)]],
+    expCapTier: 2,
+    text: [
+      '柜台后的男人把货单翻过来又翻过去，笔尖在同一个数字上停了很久。',
+    ],
+    choices: [
+      {
+        label: '帮他核',
+        result: '你从第一行重新对了一遍，找出多算的一箱。',
+        effects: { minutes: 30, spirit: -2, exp: { knowledge: 1 }, money: 3 },
+      },
+      {
+        label: '去搬箱子',
+        result: '你把箱子挪到后院，按单子分开。',
+        effects: { minutes: 30, stamina: -3, money: 3 },
+      },
+      { label: '走', result: '你还有别的事，转身出了门。' },
+    ],
+  },
+  {
+    id: 'tavern_mercenary',
+    title: '靠窗的佣兵',
+    trigger: { type: 'enter' },
+    locations: ['tavern'],
+    days: 'all',
+    timeRanges: [[at(18), at(23)]],
+    expCapTier: 2,
+    text: [
+      '靠窗的佣兵把剑靠在桌腿上，正跟同桌的人说城外的事。声音不大，刚好够你听清几句。',
+    ],
+    choices: [
+      {
+        label: '请他一杯',
+        result: '你把杯子推过去。他停了一下，把城外的事接着说完。',
+        effects: { minutes: 10, money: -2, exp: { knowledge: 1 }, mood: 1 },
+      },
+      {
+        label: '在旁边听',
+        result: '你端着杯子在旁边坐下，听他们把话说完。',
+        effects: { minutes: 15, exp: { knowledge: 1 } },
+      },
+      { label: '走', result: '你没有停下，往楼梯口走去。' },
+    ],
+  },
+  {
+    id: 'forest_cache',
+    title: '纸条上的地址',
+    trigger: { type: 'enter' },
+    locations: ['forest'],
+    days: 'all',
+    timeRanges: [[at(6), at(18)]],
+    requires: { flag: 'bookshop_note', notFlag: 'forest_cache_done' },
+    text: [
+      '纸条上的地址是森林边缘的一棵歪树。树根下的土有翻动过的痕迹。',
+    ],
+    choices: [
+      {
+        label: '挖开',
+        result: '土里埋着一个锈铁盒。你把它撬开。',
+        effects: {
+          minutes: 20,
+          stamina: -2,
+          ranges: { money: [5, 12] },
+          bonusItems: [{ id: 'bandage', chance: 0.3 }],
+          flag: 'forest_cache_done',
+        },
+      },
+      {
+        label: '不挖',
+        result: '你把土重新踩实，记下这棵树的位置。',
+        effects: { minutes: 5 },
+      },
+      { label: '走', result: '你没有走近那棵树。' },
+    ],
+  },
+  {
+    id: 'forest_deep_camp_find',
+    title: '石坳里的旧营地',
+    trigger: { type: 'enter' },
+    locations: ['forestDeep'],
+    days: 'all',
+    timeRanges: [[at(6), at(18)]],
+    once: true,
+    text: [
+      '石坳里有一堆熄了的火，草被压平，旁边扔着半截皮带。这里之前有人住过。',
+    ],
+    choices: [
+      {
+        label: '翻找',
+        result: '你在灰里翻出几枚铜币，又从石头底下摸出一卷绷带。',
+        effects: {
+          minutes: 20,
+          money: 3,
+          items: { bandage: 1 },
+          flags: ['camp_found', 'camp_looted'],
+        },
+      },
+      {
+        label: '生火休息',
+        result: '你把火重新点起来，靠着石头坐了一会儿。',
+        effects: { minutes: 30, stamina: 6, mood: 1, flags: ['camp_found'] },
+      },
+      {
+        label: '先记下位置',
+        result: '你没有动营地里的东西，只记住了这个地方。',
+        effects: { minutes: 5, flags: ['camp_found'] },
+      },
+    ],
+  },
+  {
+    id: 'forest_deep_camp_rest_unlooted',
+    title: '营地还在',
+    trigger: { type: 'enter' },
+    locations: ['forestDeep'],
+    days: 'all',
+    timeRanges: [[at(6), at(18)]],
+    requires: { flag: 'camp_found', notFlag: 'camp_looted' },
+    text: [
+      '你回到石坳。火堆还是冷的，石头底下的东西没人动过。',
+    ],
+    choices: [
+      {
+        label: '生火休息',
+        result: '你把火重新点起来，靠着石头坐了一会儿。',
+        effects: { minutes: 30, stamina: 6, mood: 1 },
+      },
+      {
+        label: '翻找',
+        result: '你在灰里翻出几枚铜币，又从石头底下摸出一卷绷带。',
+        effects: { minutes: 20, money: 3, items: { bandage: 1 }, flag: 'camp_looted' },
+      },
+      { label: '走', result: '你没有久留。' },
+    ],
+  },
+  {
+    id: 'forest_deep_camp_rest_looted',
+    title: '营地还在',
+    trigger: { type: 'enter' },
+    locations: ['forestDeep'],
+    days: 'all',
+    timeRanges: [[at(6), at(18)]],
+    requires: { flag: 'camp_looted' },
+    text: [
+      '你回到石坳。火堆还是冷的，石头底下已经被翻空了。',
+    ],
+    choices: [
+      {
+        label: '生火休息',
+        result: '你把火重新点起来，靠着石头坐了一会儿。',
+        effects: { minutes: 30, stamina: 6, mood: 1 },
+      },
+      {
+        label: '再搜一遍',
+        result: '你又翻了一遍灰，只找到一枚铜板。',
+        effects: { minutes: 20, money: 1 },
+      },
+      { label: '走', result: '你没有久留。' },
+    ],
+  },
+  {
+    id: 'greenhouse_repot',
+    title: '分盆',
+    trigger: { type: 'enter' },
+    locations: ['greenhouse'],
+    days: 'all',
+    timeRanges: [[at(8), at(19)]],
+    expCapTier: 2,
+    text: [
+      '苔丝蹲在砖台边分盆，脚边一排空陶盆，手上全是土。',
+    ],
+    choices: [
+      {
+        label: '帮忙',
+        result: '你按她说的把根须理顺，她在旁边看着，偶尔伸手扶一下。',
+        effects: { minutes: 30, stamina: -2, exp: { cultivation: 1 } },
+      },
+      {
+        label: '问两句',
+        result: '她讲了讲哪种土透气，哪种盆不能积水。',
+        effects: { minutes: 10, exp: { knowledge: 1 } },
+      },
+      { label: '走', result: '你没有打扰她。' },
+    ],
+  },
+  {
+    id: 'potion_shop_spill',
+    title: '歪掉的药瓶',
+    trigger: { type: 'enter' },
+    locations: ['potionWorkshop'],
+    days: 'all',
+    timeRanges: [[at(8), at(19)]],
+    text: [
+      '学徒抱着一摞药瓶，最上面一瓶歪了，他腾不出手。',
+    ],
+    choices: [
+      {
+        label: '扶住瓶子',
+        result: '你伸手扶住瓶身。学徒松了口气，把整摞瓶子放稳。',
+        effects: { minutes: 5, mood: 1 },
+      },
+      {
+        label: '帮他接过去',
+        result: '你把最上面几瓶接过来，按标签放回架上。',
+        effects: { minutes: 10, stamina: -1, mood: 2 },
+      },
+      { label: '走', result: '你侧身让开，继续走自己的路。' },
+    ],
+  },
+  {
+    id: 'practice_spar',
+    title: '再打一场',
+    trigger: { type: 'after', action: 'practice' },
+    locations: ['yard'],
+    days: 'workday',
+    timeRanges: [[at(15), at(19, 30)]],
+    requires: { school: true },
+    text: [
+      '你刚练完，旁边一个学生把木剑横过来，问你要不要再打一场。',
+    ],
+    choices: [
+      {
+        label: '下场打一场',
+        result: '你们打到两个人都开始喘，才把木剑放下。',
+        effects: { minutes: 30, stamina: -4, exp: { sword: 3 } },
+      },
+      {
+        label: '只走两招',
+        result: '你接了两招，点到为止。',
+        effects: { minutes: 10, stamina: -1, exp: { sword: 1 } },
+      },
+      { label: '收剑回去', result: '你摆了摆手，把木剑放回架上。' },
+    ],
+  },
+  {
+    id: 'work_shop_rumor',
+    title: '盖着油布的货车',
+    trigger: { type: 'after', action: 'work' },
+    locations: ['shop'],
+    days: 'all',
+    timeRanges: [[at(7), at(19)]],
+    text: [
+      '常客来结账，顺口说起城门外最近多了几辆没见过的货车。',
+    ],
+    choices: [
+      {
+        label: '问他几句',
+        result: '他说那些车都盖着油布，没在集市停，卸货的人也不像本地的。',
+        effects: { minutes: 10 },
+      },
+      {
+        label: '只听着',
+        result: '你没接话，把找零递过去。他收好铜板，又提了一句：城门的守卫最近查得严。',
+        effects: { minutes: 5 },
+      },
+      { label: '继续理货', result: '你继续把货架上的罐子摆正。常客说了两句，见你没接话，就拎着东西走了。' },
+    ],
+  },
+  {
+    id: 'work_tavern_song',
+    title: '收工前的旧歌',
+    trigger: { type: 'after', action: 'work' },
+    locations: ['tavern'],
+    days: 'all',
+    timeRanges: [[at(18), at(23)]],
+    text: [
+      '收工前，靠窗的客人哼起一支旧歌，声音很轻。',
+    ],
+    choices: [
+      {
+        label: '跟着哼',
+        result: '你放轻了手上的动作，跟着哼了两句。客人没有回头。',
+        effects: { minutes: 10, mood: 2 },
+      },
+      {
+        label: '把最后几张桌子擦完',
+        result: '你在桌角发现一枚留下的铜板。',
+        effects: { minutes: 10, stamina: -1, money: 1 },
+      },
+      { label: '回后厨', result: '你没有停下手里的活。' },
+    ],
+  },
+  {
+    id: 'weekend_orphan_games',
+    title: '菜园边的旧绳',
+    trigger: { type: 'enter' },
+    locations: ['backyard'],
+    days: 'weekend',
+    timeRanges: [[at(14), at(17)]],
+    text: [
+      '后院菜园边的空地上，几个孩子把一根旧绳拉直，问你跳不跳。',
+    ],
+    choices: [
+      {
+        label: '陪他们跳',
+        result: '你被拉进绳圈，跳错了几次，还得留意别踩到菜畦。孩子们笑得更响。',
+        effects: { minutes: 30, stamina: -3, mood: 3 },
+      },
+      {
+        label: '坐在柴堆边看',
+        result: '你坐在柴堆边，看他们把绳子越拉越高。',
+        effects: { minutes: 15, mood: 2 },
+      },
+      { label: '回房', result: '你朝屋里走去。' },
+    ],
+  },
+  {
+    id: 'evening_gate_watch',
+    title: '换班',
+    trigger: { type: 'enter' },
+    locations: ['gate'],
+    days: 'all',
+    timeRanges: [[at(18), at(21)]],
+    expCapTier: 2,
+    text: [
+      '城门要换班了，守卫把拒马往中间挪，风从城外灌进来。',
+    ],
+    choices: [
+      {
+        label: '和守卫搭话',
+        result: '他说最近城外夜里不太平，回城的人最好赶在天黑前。',
+        effects: { minutes: 10 },
+      },
+      {
+        label: '帮他们把拒马挪正',
+        result: '你和守卫把拒马挪回中间，手上沾了木刺。',
+        effects: { minutes: 20, stamina: -2, exp: { physique: 1 } },
+      },
+      { label: '走', result: '你从城门边绕了过去。' },
+    ],
+  },
+  {
+    id: 'evening_town_notice',
+    title: '新贴的告示',
+    trigger: { type: 'enter' },
+    locations: ['town'],
+    days: 'all',
+    timeRanges: [[at(18), at(21)]],
+    text: [
+      '告示板前新贴了一张纸，边角还没压平。',
+    ],
+    choices: [
+      {
+        label: '读完',
+        result: '告示说城外的旧驿道在修，商队改走南边；落款是商会。',
+        effects: { minutes: 10 },
+      },
+      {
+        label: '只看标题',
+        result: '你扫了一眼标题：“驿道修缮，商队改道”。',
+        effects: { minutes: 5 },
+      },
+      { label: '走', result: '你没有停下。' },
+    ],
+  },
+  {
+    id: 'npc_luca_step1',
+    title: '错架的书',
+    trigger: { type: 'enter' },
+    locations: ['library'],
+    days: 'workday',
+    timeRanges: [[at(18), at(19)]],
+    once: true,
+    expCapTier: 2,
+    requires: { npc: 'luca', flag: 'luca_step0', school: true },
+    text: [
+      '卢卡站在最里面那排，手里捏着一张借书条，来回看同一格书架。',
+    ],
+    choices: [
+      {
+        label: '帮他一起找',
+        result: '你们把那一排从头到尾对了一遍，书被错放在上一层。',
+        effects: { minutes: 20, exp: { knowledge: 1 }, affinity: { luca: 1 } },
+      },
+      {
+        label: '指出大概位置',
+        result: '你看了眼借书条，用手指点了点上面那层，说书应该在那儿。他愣了一下，伸手去够。',
+        effects: { minutes: 5, affinity: { luca: 1 } },
+      },
+      { label: '不打扰', result: '你没有走过去。' },
+    ],
+  },
+  {
+    id: 'npc_mia_step1',
+    title: '揉皱的试卷',
+    trigger: { type: 'enter' },
+    locations: ['canteen'],
+    days: 'all',
+    mealWindows: ['午餐'],
+    once: true,
+    expCapTier: 2,
+    requires: { npc: 'mia', flag: 'mia_step0', school: true },
+    text: [
+      '米娅把一张揉皱的试卷摊在餐盘旁边，半天没动勺子。',
+    ],
+    choices: [
+      {
+        label: '陪她过一遍错题',
+        result: '你把她的错题从头看了一遍，指出两道是同一个问题。她埋头改了起来。',
+        effects: { minutes: 20, exp: { knowledge: 1 }, affinity: { mia: 2 } },
+      },
+      {
+        label: '说两句宽心话',
+        result: '你说下次会好的。她“嗯”了一声，把试卷折了起来。',
+        effects: { minutes: 5, affinity: { mia: 1 } },
+      },
+      { label: '让她自己待会儿', result: '你低头吃自己的。她过了一会儿才动勺子。' },
+    ],
+  },
+  {
+    id: 'nora_asleep_at_desk',
+    title: '灯还亮着',
+    trigger: { type: 'enter' },
+    locations: ['office'],
+    days: 'all',
+    timeRanges: [[at(21), at(21, 30)]],
+    once: true,
+    requires: { npc: 'nora', affinity: { npc: 'nora', min: 20 } },
+    text: [
+      '院长室的灯还亮着。诺拉趴在账本上睡着了，笔还夹在指间。',
+    ],
+    choices: [
+      {
+        label: '把外套盖在她肩上',
+        result:
+          '你把外套搭上去时，她动了一下，半睁开眼。看清是你，含混地说了一句“这么晚了”，又闭上眼，把外套往上拉了拉。',
+        effects: { minutes: 5, affinity: { nora: 1 }, mood: 2 },
+      },
+      {
+        label: '把账本合上，灯调小',
+        result: '你把账本合上，把灯芯调小，屋里暗下来。',
+        effects: { minutes: 2 },
+      },
+      { label: '关上门', result: '你轻轻带上门。' },
     ],
   },
 ]
