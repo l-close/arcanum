@@ -583,7 +583,13 @@ function GameScreen() {
                 </div>
               )}
               {pendingEvent ? (
-                <EventView />
+                <>
+                  <div className="narration">
+                    {locationDesc(loc, data.minutes, data.day, data.west)}
+                    {weatherText && <span className="weather-line">{weatherText}</span>}
+                  </div>
+                  <EventView />
+                </>
               ) : inScene ? (
                 <StorySceneView />
               ) : npcId ? (
@@ -1230,6 +1236,7 @@ function EventView() {
 
   return (
     <div className="event-view">
+      <div className="event-kicker">事件</div>
       <div className="event-title">{event.title}</div>
       <div className="story-text">
         {(eventResult ? [eventResult] : event.text).map((p, i) => (

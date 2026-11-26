@@ -475,15 +475,37 @@ button:disabled {
   color: var(--gold);
 }
 
-.event-view { margin-top: 8px; }
+.event-view {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.event-view::before {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 1px;
+  background: var(--gold);
+  margin-bottom: 10px;
+}
+
+.event-kicker {
+  color: var(--gold);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  margin-bottom: 6px;
+}
 
 .event-title {
   font-family: var(--serif);
-  color: var(--gold);
-  font-size: 20px;
+  color: var(--text);
+  font-size: 19px;
   letter-spacing: 0.08em;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
+
+.event-view .story-choices { margin-top: 18px; }
 
 .story-choice:disabled {
   opacity: 0.45;
