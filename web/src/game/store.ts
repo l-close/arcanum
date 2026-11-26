@@ -105,10 +105,27 @@ import {
   CEMETERY_SWEEP_MINUTES,
   CEMETERY_SWEEP_MOOD,
   CEMETERY_SWEEP_STAMINA,
-  FOREST_WALK_MINUTES,
-  FOREST_WALK_MOOD,
-  FOREST_WALK_STAMINA,
-  FOREST_ENCOUNTER_CHANCE,
+  FOREST_MOVE_MINUTES,
+  FOREST_EXPLORE_MINUTES,
+  FOREST_EXPLORE_STAMINA,
+  FOREST_DEEP_EXPLORE_MINUTES,
+  FOREST_DEEP_EXPLORE_STAMINA,
+  FOREST_DEPTH_MOVE_TEXTS,
+  FOREST_BACK_TEXTS,
+  FOREST_EMPTY_TEXTS,
+  FOREST_DEPTH_ENCOUNTER_CHANCE,
+  FOREST_ENEMY_POOLS,
+  FOREST_ELITE_CHANCE,
+  FOREST_AVOID_MINUTES,
+  FOREST_ENCOUNTER_TEXTS,
+  FOREST_CAMP_DISCOVERY_TEXT,
+  FOREST_CAMP_REST_MINUTES,
+  FOREST_CAMP_REST_STAMINA,
+  FOREST_CAMP_LOOT_MINUTES,
+  FOREST_CAMP_LOOT_COPPER,
+  FOREST_CAMP_SEARCH_MINUTES,
+  FOREST_CAMP_SEARCH_COPPER,
+  escapeResistance,
   SLEEP_MAX_MINUTES,
   SLEEP_MIN_MINUTES,
   SLEEP_MIN_RECOVERY_MINUTES,
@@ -126,7 +143,6 @@ import {
   WOLF_HIDE_DROP_CHANCE,
   BOAR_HIDE_DROP_CHANCE,
   BOAR_TUSK_DROP_CHANCE,
-  FOREST_DEEP_ENCOUNTER_CHANCE,
   herbGatherChance,
   COMBAT_BUFF_DURATION_MINUTES,
   COMBAT_BUFF_LABEL,
@@ -336,6 +352,7 @@ export function freshData(): GameData {
     weekly: { week: 0, backyard: 0 },
     backyard: { day: 0, count: 0 },
     garden: { plots: emptyGardenPlots() },
+    forest: { depth: 0, campFound: false, campLooted: false },
     rite: { day: -1, phases: [] },
     vacation: { day: 0, kids: false, help: false, tutor: false, noticeDay: 0 },
     training: { week: 0, skills: [] },
@@ -517,6 +534,11 @@ export function normalizeData(raw: GameData): GameData {
     weekly: raw.weekly ?? { week: 0, backyard: 0 },
     backyard: raw.backyard ?? { day: 0, count: 0 },
     garden: normalizeGarden(raw.garden),
+    forest: {
+      depth: Math.max(0, Math.min(2, raw.forest?.depth ?? 0)),
+      campFound: !!raw.forest?.campFound,
+      campLooted: !!raw.forest?.campLooted,
+    },
     rite: raw.rite ?? { day: -1, phases: [] },
     vacation: (() => {
       const legacy = (raw as GameData & { summer?: GameData['vacation'] }).summer
@@ -1090,6 +1112,27 @@ function emptyGardenPlots(): GardenPlot[] {
   return Array.from({ length: GARDEN_PLOTS }, () => emptyGardenPlot())
 }
 
+function forestDepthOf(data: GameData): number {
+  if (data.location === 'forestDeep') return 3
+  if (data.location === 'forest') return Math.max(0, Math.min(2, data.forest.depth))
+  return -1
+}
+
+function pickWeighted(pool: Array<[string, number]>): string {
+  const total = pool.reduce((sum, [, weight]) => sum + weight, 0)
+  let roll = Math.random() * total
+  for (const [id, weight] of pool) {
+    roll -= weight
+    if (roll <= 0) return id
+  }
+  return pool[pool.length - 1][0]
+}
+
+function pickForestEmptyText(depth: number): string {
+  const texts = FOREST_EMPTY_TEXTS[depth] ?? FOREST_EMPTY_TEXTS[0]
+  return texts[Math.floor(Math.random() * texts.length)]
+}
+
 function normalizeGarden(raw?: GameData['garden']): GameData['garden'] {
   const source = raw?.plots ?? []
   return {
@@ -1333,6 +1376,13 @@ type BattleStartSnapshot = {
   bonusCopper: number
 }
 
+export type PendingEncounter = {
+  enemyId: string
+  prelude: string
+  bonusCopper: number
+  tracking: boolean
+}
+
 type Store = {
   screen: Screen
   player: Player
@@ -1348,6 +1398,7 @@ type Store = {
   storyTarget: number | null
   pendingEvent: string | null
   eventResult: string | null
+  pendingEncounter: PendingEncounter | null
   pendingChangmingRole: ChangmingRole | null
   battle: BattleState | null
   battleStart: BattleStartSnapshot | null
@@ -1426,7 +1477,7 @@ type Store = {
   escortArrive: () => void
   escortAbort: () => void
   returnFromEscort: () => void
-  startWildBattle: (enemyId: string, bonusCopper: number, tracking?: boolean) => void
+  startWildBattle: (enemyId: string, bonusCopper: number, tracking?: boolean, prelude?: string) => void
   eat: () => void
   rest: () => void
   sleep: (hours: number) => void
@@ -1457,8 +1508,13 @@ type Store = {
   joinRite: () => void
   prepareRite: () => void
   sweepGrave: () => void
-  walkForest: () => void
-  exploreForestDeep: () => void
+  forestExplore: () => void
+  forestDeeper: () => void
+  forestBack: () => void
+  forestCampRest: () => void
+  forestCampLoot: () => void
+  forestCampSearch: () => void
+  resolveEncounter: (action: 'fight' | 'avoid') => void
   gatherHerbs: () => void
   careHerbs: () => void
   brewPotion: (recipeId: string) => void
@@ -1730,6 +1786,7 @@ export const useGame = create<Store>((set, get) => {
     storyTarget: null,
     pendingEvent: null,
     eventResult: null,
+    pendingEncounter: null,
     pendingChangmingRole: null,
     battle: null,
     battleStart: null,
@@ -1753,6 +1810,7 @@ export const useGame = create<Store>((set, get) => {
         storyTarget: null,
         pendingEvent: null,
         eventResult: null,
+        pendingEncounter: null,
         pendingChangmingRole: null,
         battle: null,
         battleStart: null,
@@ -1779,6 +1837,7 @@ export const useGame = create<Store>((set, get) => {
         storyTarget: null,
         pendingEvent: null,
         eventResult: null,
+        pendingEncounter: null,
         pendingChangmingRole: null,
         battle: null,
         battleStart: null,
@@ -2649,6 +2708,16 @@ export const useGame = create<Store>((set, get) => {
       if (!battle || (battle.phase !== 'player' && battle.phase !== 'submenu')) return
       const enemy = ENEMIES[battle.enemyId]
       const b: BattleState = { ...battle, log: [...battle.log] }
+      if (battle.kind === 'wild' && Math.random() < escapeResistance(battle.enemyId)) {
+        b.playerGauge = 0
+        b.phase = 'filling'
+        b.submenu = null
+        b.casting = null
+        b.actions += 1
+        battleLog(b, '你转身想退，被它拦了回来。')
+        set({ battle: b })
+        return
+      }
       b.phase = 'defeat'
       b.submenu = null
       b.result = battle.kind === 'wild' ? `你转身退开，${enemy?.name ?? '它'}没有追上来。` : '你抬手认输，练习到此为止。'
@@ -2771,6 +2840,7 @@ export const useGame = create<Store>((set, get) => {
       mutate((d) => {
         advanceTime(d, cost)
         d.location = id
+        if (id === 'forest') d.forest.depth = 0
         pushLog(d, `你从${from.name}走到了${to.name}。`)
         let text = `你走了 ${cost} 分钟，来到${to.name}。`
         if (data.location === 'gate' && id === 'town' && (d.minutes >= 22 * 60 || d.minutes < 6 * 60)) {
@@ -3528,7 +3598,7 @@ export const useGame = create<Store>((set, get) => {
       })
     },
 
-    startWildBattle: (enemyId, bonusCopper, tracking = false) => {
+    startWildBattle: (enemyId, bonusCopper, tracking = false, prelude) => {
       const { data, battle } = get()
       if (battle) return
       const enemy = ENEMIES[enemyId]
@@ -3545,7 +3615,7 @@ export const useGame = create<Store>((set, get) => {
         elapsedTicks: 0,
         casting: null,
         actions: 0,
-        log: [enemy.intro, '行动条开始充能。'],
+        log: [...(prelude ? [prelude] : []), enemy.intro, '行动条开始充能。'],
         phase: 'filling',
         submenu: null,
         result: '',
@@ -4576,88 +4646,202 @@ export const useGame = create<Store>((set, get) => {
       })
     },
 
-    walkForest: () => {
+    forestExplore: () => {
       const { data } = get()
-      if (data.location !== 'forest') {
-        set({ message: '这里没有林子可走。' })
+      const depth = forestDepthOf(data)
+      if (depth < 0) {
+        set({ message: '这里不是森林。' })
         return
       }
-      const encounter = Math.random() < FOREST_ENCOUNTER_CHANCE
-      const enemyId = Math.random() < 0.6 ? 'slime' : 'viper'
-      mutate((d) => {
-        advanceTime(d, FOREST_WALK_MINUTES)
-        d.stamina = clamp(d.stamina - FOREST_WALK_STAMINA, 0, maxStamina(d.skills.physique.tier))
-        d.mood = clamp(d.mood + FOREST_WALK_MOOD, 0, 100)
-        pushLog(d, '你在林子里走了一会儿。')
-        if (!encounter) return '林子里很安静，只有枝叶晃动的声音。'
-        return enemyId === 'viper'
-          ? '草叶间传来细碎的沙沙声。'
-          : '灌木里传来黏腻的声响。'
-      })
+      const deep = depth === 3
+      const minutes = deep ? FOREST_DEEP_EXPLORE_MINUTES : FOREST_EXPLORE_MINUTES
+      const stamina = deep ? FOREST_DEEP_EXPLORE_STAMINA : FOREST_EXPLORE_STAMINA
+      if (data.stamina < stamina) {
+        set({ message: '你太累了，先休息一下。' })
+        return
+      }
+
+      const encounter = Math.random() < (FOREST_DEPTH_ENCOUNTER_CHANCE[depth] ?? 0)
+      let enemyId: string | null = null
+      let prelude = ''
       if (encounter) {
-        const enemy = ENEMIES[enemyId]
-        const state = get()
-        const nextBattle: BattleState = {
-          kind: 'wild',
-          enemyId,
-          enemyHp: enemy.hp,
-          playerHp: Math.max(1, state.data.hp),
-          playerGauge: 0,
-          enemyGauge: 0,
-          elapsedTicks: 0,
-          casting: null,
-          actions: 0,
-          log: [enemy.intro, '行动条开始充能。'],
-          phase: 'filling',
-          submenu: null,
-          result: '',
-          usedSkills: [],
+        if (deep && Math.random() < FOREST_ELITE_CHANCE) {
+          enemyId = Math.random() < 0.5 ? 'gray_wolf_alpha' : 'boar_king'
+        } else {
+          enemyId = pickWeighted(FOREST_ENEMY_POOLS[depth])
         }
+        prelude = FOREST_ENCOUNTER_TEXTS[enemyId] ?? '前面的枝叶被撞开了。'
+      }
+
+      mutate((d) => {
+        advanceTime(d, minutes)
+        d.stamina = clamp(d.stamina - stamina, 0, maxStamina(d.skills.physique.tier))
+        const text = encounter ? prelude : pickForestEmptyText(depth)
+        pushLog(d, text)
+        return text
+      })
+
+      if (enemyId) {
         set({
-          battle: nextBattle,
-          battleStart: {
-            data: structuredClone(state.data),
-            battle: structuredClone(nextBattle),
+          pendingEncounter: {
+            enemyId,
+            prelude,
             bonusCopper: 0,
+            tracking: false,
           },
-          message: '',
         })
       }
     },
 
-    exploreForestDeep: () => {
+    forestDeeper: () => {
       const { data } = get()
-      if (data.location !== 'forestDeep') {
-        set({ message: '这里不是森林深处。' })
+      const depth = forestDepthOf(data)
+      if (depth < 0 || data.location === 'forestDeep') {
+        set({ message: '这里不能再往深处走了。' })
         return
       }
-      if (data.stamina < 6) {
-        set({ message: '你太累了，先休息一下。' })
+      if (depth >= 2) {
+        mutate((d) => {
+          advanceTime(d, FOREST_MOVE_MINUTES)
+          d.location = 'forestDeep'
+          const text = FOREST_DEPTH_MOVE_TEXTS[2]
+          pushLog(d, text)
+          return text
+        })
+        maybeEvent({ type: 'enter' })
         return
       }
-      const encounter = Math.random() < FOREST_DEEP_ENCOUNTER_CHANCE
-      const elite = encounter && Math.random() < 0.05
-      const enemyId = elite
-        ? Math.random() < 0.5
-          ? 'gray_wolf_alpha'
-          : 'boar_king'
-        : Math.random() < 0.6
-          ? 'boar'
-          : 'gray_wolf'
       mutate((d) => {
-        advanceTime(d, 30)
-        d.stamina = clamp(d.stamina - 6, 0, maxStamina(d.skills.physique.tier))
-        const text = encounter
-          ? elite
-            ? '前面的灌木被撞开，这一次撞开它的东西很大。'
-            : '前面的灌木被什么东西撞开，枝叶还在晃。'
-          : '你往林子深处走了一段。除了被踩倒的草和新泥印，什么也没发现。'
+        advanceTime(d, FOREST_MOVE_MINUTES)
+        d.forest.depth = depth + 1
+        let text = FOREST_DEPTH_MOVE_TEXTS[depth]
+        if (d.forest.depth === 2 && !d.forest.campFound) {
+          d.forest.campFound = true
+          text += `\n${FOREST_CAMP_DISCOVERY_TEXT}`
+        }
         pushLog(d, text)
         return text
       })
-      if (encounter) {
-        get().startWildBattle(enemyId, 0)
+    },
+
+    forestBack: () => {
+      const { data } = get()
+      const depth = forestDepthOf(data)
+      if (data.location === 'forestDeep') {
+        mutate((d) => {
+          advanceTime(d, FOREST_MOVE_MINUTES)
+          d.location = 'forest'
+          d.forest.depth = 2
+          const text = FOREST_BACK_TEXTS[2]
+          pushLog(d, text)
+          return text
+        })
+        return
       }
+      if (depth <= 0) {
+        set({ message: '你已经在外围了。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, FOREST_MOVE_MINUTES)
+        d.forest.depth = depth - 1
+        const text = FOREST_BACK_TEXTS[2 - depth]
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    forestCampRest: () => {
+      const { data } = get()
+      if (data.location !== 'forest' || data.forest.depth !== 2 || !data.forest.campFound) {
+        set({ message: '这里没有营地。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, FOREST_CAMP_REST_MINUTES)
+        d.stamina = clamp(
+          d.stamina + FOREST_CAMP_REST_STAMINA,
+          0,
+          maxStamina(d.skills.physique.tier),
+        )
+        const text = `你在营地里歇了一会儿。体力恢复 ${FOREST_CAMP_REST_STAMINA}。`
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    forestCampLoot: () => {
+      const { data } = get()
+      if (
+        data.location !== 'forest' ||
+        data.forest.depth !== 2 ||
+        !data.forest.campFound ||
+        data.forest.campLooted
+      ) {
+        set({ message: '营地已经被翻过了。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, FOREST_CAMP_LOOT_MINUTES)
+        d.money += FOREST_CAMP_LOOT_COPPER
+        d.inventory.bandage = (d.inventory.bandage ?? 0) + 1
+        d.forest.campLooted = true
+        const text = `你在灰里翻出 ${FOREST_CAMP_LOOT_COPPER} 枚铜币，又从石头底下摸出一卷绷带。`
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    forestCampSearch: () => {
+      const { data } = get()
+      if (
+        data.location !== 'forest' ||
+        data.forest.depth !== 2 ||
+        !data.forest.campFound ||
+        !data.forest.campLooted
+      ) {
+        set({ message: '这里没有可以再搜的东西。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, FOREST_CAMP_SEARCH_MINUTES)
+        d.money += FOREST_CAMP_SEARCH_COPPER
+        const text = `你又翻了一遍灰，只找到 ${FOREST_CAMP_SEARCH_COPPER} 枚铜板。`
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    resolveEncounter: (action) => {
+      const { data, pendingEncounter, battle } = get()
+      if (!pendingEncounter || battle) return
+      const { enemyId, prelude, bonusCopper, tracking } = pendingEncounter
+
+      if (action === 'fight' || tracking) {
+        set({ pendingEncounter: null })
+        get().startWildBattle(enemyId, bonusCopper, tracking, prelude)
+        return
+      }
+
+      if (Math.random() < escapeResistance(enemyId)) {
+        const text = '你刚退开，身后的枝叶被撞开。'
+        mutate((d) => {
+          advanceTime(d, FOREST_AVOID_MINUTES)
+          pushLog(d, text)
+          return text
+        })
+        set({ pendingEncounter: null })
+        get().startWildBattle(enemyId, 0, false, text)
+        return
+      }
+
+      mutate((d) => {
+        advanceTime(d, FOREST_AVOID_MINUTES)
+        const text = '你退开了，没有惊动它。'
+        pushLog(d, text)
+        return text
+      })
+      set({ pendingEncounter: null, message: '你退开了。' })
     },
 
     gatherHerbs: () => {
@@ -5470,6 +5654,7 @@ export const useGame = create<Store>((set, get) => {
         storyTarget: null,
         pendingEvent: null,
         eventResult: null,
+        pendingEncounter: null,
         battle,
         battleStart: battle
           ? {
@@ -5567,6 +5752,7 @@ export const useGame = create<Store>((set, get) => {
         storyTarget: null,
         pendingEvent: null,
         eventResult: null,
+        pendingEncounter: null,
         pendingChangmingRole: null,
         battle: null,
         battleStart: null,

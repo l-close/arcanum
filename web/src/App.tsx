@@ -45,9 +45,16 @@ import {
   CONSTELLATIONS,
   SEASON_LABEL,
   calendarInfo,
-  FOREST_WALK_MINUTES,
-  FOREST_WALK_MOOD,
-  FOREST_WALK_STAMINA,
+  FOREST_MOVE_MINUTES,
+  FOREST_EXPLORE_MINUTES,
+  FOREST_EXPLORE_STAMINA,
+  FOREST_DEEP_EXPLORE_MINUTES,
+  FOREST_DEEP_EXPLORE_STAMINA,
+  FOREST_CAMP_REST_MINUTES,
+  FOREST_CAMP_REST_STAMINA,
+  FOREST_CAMP_LOOT_MINUTES,
+  FOREST_CAMP_SEARCH_MINUTES,
+  FOREST_CAMP_HINT,
   ITEMS,
   LOCATIONS,
   NPCS,
@@ -419,6 +426,7 @@ function GameScreen() {
   const storyTarget = useGame((s) => s.storyTarget)
   const storyRoute = useGame((s) => s.storyRoute)
   const pendingEvent = useGame((s) => s.pendingEvent)
+  const pendingEncounter = useGame((s) => s.pendingEncounter)
   const battle = useGame((s) => s.battle)
   const clearNotice = useGame((s) => s.clearNotice)
   const clearMessage = useGame((s) => s.clearMessage)
@@ -477,6 +485,8 @@ function GameScreen() {
   }, [data.day, checkGarden])
 
   const loc = getLocation(data.location)
+  const inForestRoute =
+    data.location === 'forestDeep' || (data.location === 'forest' && data.forest.depth > 0)
   const weather = weatherOf(data.day)
   const weatherText = weatherScene(data.location, data.day)
   const npcsHere = npcsAt(data.location, data.day, data.minutes)
@@ -582,7 +592,15 @@ function GameScreen() {
                   <button className="mini-btn" onClick={clearNotice}>知道了</button>
                 </div>
               )}
-              {pendingEvent ? (
+              {pendingEncounter ? (
+                <>
+                  <div className="narration">
+                    {locationDesc(loc, data.minutes, data.day, data.west)}
+                    {weatherText && <span className="weather-line">{weatherText}</span>}
+                  </div>
+                  <EncounterView />
+                </>
+              ) : pendingEvent ? (
                 <>
                   <div className="narration">
                     {locationDesc(loc, data.minutes, data.day, data.west)}
@@ -618,14 +636,14 @@ function GameScreen() {
                       clearMessage()
                     }}
                   />
-                  {(!inTransition || storyRoute.length > 0) && (
+                  {!inForestRoute && (!inTransition || storyRoute.length > 0) && (
                     <>
                       <div className="divider" />
                       <div className="section-title">去别处</div>
                       <MoveList restrictedTarget={inTransition ? storyRoute[0] ?? null : null} />
                     </>
                   )}
-                  <CityMap location={data.location} />
+                  {!inForestRoute && <CityMap location={data.location} />}
                 </>
               )}
             </>
@@ -1272,6 +1290,33 @@ function EventView() {
   )
 }
 
+function EncounterView() {
+  const pending = useGame((s) => s.pendingEncounter)
+  const resolve = useGame((s) => s.resolveEncounter)
+  if (!pending) return null
+  const enemy = ENEMIES[pending.enemyId]
+  return (
+    <div className="event-view">
+      <div className="event-kicker">遭遇</div>
+      <div className="event-title">{enemy?.name ?? '未知'}</div>
+      <div className="story-text">
+        <p>{pending.prelude}</p>
+      </div>
+      <div className="story-choices">
+        <button className="story-choice" onClick={() => resolve('fight')}>
+          <span className="story-choice-label">上前</span>
+        </button>
+        {!pending.tracking && (
+          <button className="story-choice" onClick={() => resolve('avoid')}>
+            <span className="story-choice-label">绕开</span>
+            <span className="choice-effects">10 分钟 · 可能被追上</span>
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function StatusRail() {
   const data = useGame((s) => s.data)
   const battle = useGame((s) => s.battle)
@@ -1413,8 +1458,12 @@ function Actions({
   const joinRite = useGame((s) => s.joinRite)
   const prepareRite = useGame((s) => s.prepareRite)
   const sweepGrave = useGame((s) => s.sweepGrave)
-  const walkForest = useGame((s) => s.walkForest)
-  const exploreForestDeep = useGame((s) => s.exploreForestDeep)
+  const forestExplore = useGame((s) => s.forestExplore)
+  const forestDeeper = useGame((s) => s.forestDeeper)
+  const forestBack = useGame((s) => s.forestBack)
+  const forestCampRest = useGame((s) => s.forestCampRest)
+  const forestCampLoot = useGame((s) => s.forestCampLoot)
+  const forestCampSearch = useGame((s) => s.forestCampSearch)
   const gatherHerbs = useGame((s) => s.gatherHerbs)
   const trackElite = useGame((s) => s.trackElite)
   const careHerbs = useGame((s) => s.careHerbs)
@@ -2054,16 +2103,62 @@ function Actions({
         />
       )}
       {loc === 'forest' && (
-        <ActionBtn
-          onClick={walkForest}
-          label="走走"
-          cost={`${FOREST_WALK_MINUTES} 分钟 · 体力 -${FOREST_WALK_STAMINA} · 心情 +${FOREST_WALK_MOOD}`}
-        />
+        <>
+          <ActionBtn
+            onClick={forestExplore}
+            label="探索"
+            cost={`${FOREST_EXPLORE_MINUTES} 分钟 · 体力 -${FOREST_EXPLORE_STAMINA}`}
+          />
+          <ActionBtn
+            onClick={forestDeeper}
+            label="往深处走"
+            cost={`${FOREST_MOVE_MINUTES} 分钟`}
+          />
+          {data.forest.depth > 0 && (
+            <ActionBtn
+              onClick={forestBack}
+              label="往外围走"
+              cost={`${FOREST_MOVE_MINUTES} 分钟`}
+            />
+          )}
+          {data.forest.depth === 2 && data.forest.campFound && (
+            <>
+              <div className="hint">{FOREST_CAMP_HINT}</div>
+              <ActionBtn
+                onClick={forestCampRest}
+                label="在营地休息"
+                cost={`${FOREST_CAMP_REST_MINUTES} 分钟 · 体力 +${FOREST_CAMP_REST_STAMINA}`}
+              />
+              {data.forest.campLooted ? (
+                <ActionBtn
+                  onClick={forestCampSearch}
+                  label="再搜一遍"
+                  cost={`${FOREST_CAMP_SEARCH_MINUTES} 分钟`}
+                />
+              ) : (
+                <ActionBtn
+                  onClick={forestCampLoot}
+                  label="翻找营地"
+                  cost={`${FOREST_CAMP_LOOT_MINUTES} 分钟`}
+                />
+              )}
+            </>
+          )}
+        </>
       )}
       {loc === 'forestDeep' && (
         <>
-          <ActionBtn onClick={exploreForestDeep} label="探索" cost="30 分钟 · 体力 -6" />
+          <ActionBtn
+            onClick={forestExplore}
+            label="探索"
+            cost={`${FOREST_DEEP_EXPLORE_MINUTES} 分钟 · 体力 -${FOREST_DEEP_EXPLORE_STAMINA}`}
+          />
           <ActionBtn onClick={gatherHerbs} label="采药" cost="30 分钟 · 体力 -3 · 种植 +1" />
+          <ActionBtn
+            onClick={forestBack}
+            label="往外围走"
+            cost={`${FOREST_MOVE_MINUTES} 分钟`}
+          />
           {data.commissions.accepted.map((entry) => {
             const def = commissionById(entry.id)
             if (!def || def.objective.kind !== 'hunt') return null
@@ -2255,7 +2350,7 @@ function MoveList({ restrictedTarget }: { restrictedTarget?: string | null }) {
 
   const year = currentYear(data.day)
   const exits = exitsOf(data.location)
-    .filter((e) => e.to !== data.location && isLocationOpen(e.to, year))
+    .filter((e) => !e.hidden && e.to !== data.location && isLocationOpen(e.to, year))
     .map((e) => ({ loc: getLocation(e.to), minutes: e.minutes }))
 
   const children = exits.filter((e) => e.loc.parent === loc.id)

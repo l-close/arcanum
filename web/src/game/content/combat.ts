@@ -400,3 +400,22 @@ export const ENEMIES: Record<string, EnemyDef> = {
     bleedChance: 0.45,
   },
 }
+
+/** 绕开 / 战斗中逃跑的失败率，按敌人决定。 */
+export const ESCAPE_RESISTANCE: Record<string, number> = {
+  dummy: 0,
+  practice_dummy: 0,
+  slime: 0.05,
+  viper: 0.15,
+  corrupted_dog: 0.25,
+  erosion_body: 0.15,
+  deserter: 0.2,
+  gray_wolf: 0.2,
+  boar: 0.25,
+  gray_wolf_alpha: 0.35,
+  boar_king: 0.4,
+}
+
+export function escapeResistance(enemyId: string): number {
+  return ESCAPE_RESISTANCE[enemyId] ?? 0.2
+}

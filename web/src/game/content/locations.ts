@@ -368,7 +368,7 @@ export function timePeriod(minutes: number): 0 | 1 | 2 | 3 {
   return 3
 }
 
-export type Exit = { to: string; minutes: number }
+export type Exit = { to: string; minutes: number; hidden?: boolean }
 
 const AREA_LINKS: Record<string, Exit[]> = {
   town: [
@@ -432,7 +432,9 @@ const LEGACY_EXITS: Record<string, Exit[]> = {
   forest: [
     { to: 'outside', minutes: 5 },
     { to: 'cemetery', minutes: 5 },
+    { to: 'forestDeep', minutes: 10, hidden: true },
   ],
+  forestDeep: [{ to: 'forest', minutes: 10, hidden: true }],
 }
 
 export function exitsOf(id: string): Exit[] {

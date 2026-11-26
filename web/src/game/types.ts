@@ -161,6 +161,7 @@ export type GameData = {
   weekly: { week: number; backyard: number }
   backyard: { day: number; count: number }
   garden: { plots: GardenPlot[] }
+  forest: { depth: number; campFound: boolean; campLooted: boolean }
   rite: { day: number; phases: string[] }
   vacation: { day: number; kids: boolean; help: boolean; tutor: boolean; noticeDay: number }
   training: { week: number; skills: SkillKey[] }

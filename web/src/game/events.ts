@@ -1246,12 +1246,12 @@ export const EVENTS: GameEvent[] = [
     id: 'forest_cache',
     title: '纸条上的地址',
     trigger: { type: 'enter' },
-    locations: ['forest'],
+    locations: ['forestDeep'],
     days: 'all',
     timeRanges: [[at(6), at(18)]],
     requires: { flag: 'bookshop_note', notFlag: 'forest_cache_done' },
     text: [
-      '纸条上的地址是森林边缘的一棵歪树。树根下的土有翻动过的痕迹。',
+      '纸条上的地址指向森林更深处的一棵歪树。树根下的土有翻动过的痕迹。',
     ],
     choices: [
       {
@@ -1271,90 +1271,6 @@ export const EVENTS: GameEvent[] = [
         effects: { minutes: 5 },
       },
       { label: '走', result: '你没有走近那棵树。' },
-    ],
-  },
-  {
-    id: 'forest_deep_camp_find',
-    title: '石坳里的旧营地',
-    trigger: { type: 'enter' },
-    locations: ['forestDeep'],
-    days: 'all',
-    timeRanges: [[at(6), at(18)]],
-    once: true,
-    text: [
-      '石坳里有一堆熄了的火，草被压平，旁边扔着半截皮带。这里之前有人住过。',
-    ],
-    choices: [
-      {
-        label: '翻找',
-        result: '你在灰里翻出几枚铜币，又从石头底下摸出一卷绷带。',
-        effects: {
-          minutes: 20,
-          money: 3,
-          items: { bandage: 1 },
-          flags: ['camp_found', 'camp_looted'],
-        },
-      },
-      {
-        label: '生火休息',
-        result: '你把火重新点起来，靠着石头坐了一会儿。',
-        effects: { minutes: 30, stamina: 6, mood: 1, flags: ['camp_found'] },
-      },
-      {
-        label: '先记下位置',
-        result: '你没有动营地里的东西，只记住了这个地方。',
-        effects: { minutes: 5, flags: ['camp_found'] },
-      },
-    ],
-  },
-  {
-    id: 'forest_deep_camp_rest_unlooted',
-    title: '营地还在',
-    trigger: { type: 'enter' },
-    locations: ['forestDeep'],
-    days: 'all',
-    timeRanges: [[at(6), at(18)]],
-    requires: { flag: 'camp_found', notFlag: 'camp_looted' },
-    text: [
-      '你回到石坳。火堆还是冷的，石头底下的东西没人动过。',
-    ],
-    choices: [
-      {
-        label: '生火休息',
-        result: '你把火重新点起来，靠着石头坐了一会儿。',
-        effects: { minutes: 30, stamina: 6, mood: 1 },
-      },
-      {
-        label: '翻找',
-        result: '你在灰里翻出几枚铜币，又从石头底下摸出一卷绷带。',
-        effects: { minutes: 20, money: 3, items: { bandage: 1 }, flag: 'camp_looted' },
-      },
-      { label: '走', result: '你没有久留。' },
-    ],
-  },
-  {
-    id: 'forest_deep_camp_rest_looted',
-    title: '营地还在',
-    trigger: { type: 'enter' },
-    locations: ['forestDeep'],
-    days: 'all',
-    timeRanges: [[at(6), at(18)]],
-    requires: { flag: 'camp_looted' },
-    text: [
-      '你回到石坳。火堆还是冷的，石头底下已经被翻空了。',
-    ],
-    choices: [
-      {
-        label: '生火休息',
-        result: '你把火重新点起来，靠着石头坐了一会儿。',
-        effects: { minutes: 30, stamina: 6, mood: 1 },
-      },
-      {
-        label: '再搜一遍',
-        result: '你又翻了一遍灰，只找到一枚铜板。',
-        effects: { minutes: 20, money: 1 },
-      },
-      { label: '走', result: '你没有久留。' },
     ],
   },
   {
