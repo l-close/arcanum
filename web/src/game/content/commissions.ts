@@ -2,7 +2,7 @@
 
 import { hash01 } from './rng'
 
-export type CommissionSource = 'guild' | 'workshop'
+export type CommissionSource = 'guild' | 'workshop' | 'tavern'
 
 export type CommissionObjective =
   | { kind: 'items'; items: Record<string, number> }
@@ -26,6 +26,7 @@ export const MAX_ACTIVE_COMMISSIONS = 3
 export const COMMISSION_BOARD_SIZE: Record<CommissionSource, number> = {
   guild: 3,
   workshop: 2,
+  tavern: 1,
 }
 
 export const REPUTATION_MAX = 50
@@ -58,12 +59,15 @@ export function commissionPay(def: CommissionDef, reputation: number): number {
 }
 
 export function commissionSourceLocation(source: CommissionSource): string {
-  return source === 'guild' ? 'guild' : 'potionWorkshop'
+  if (source === 'guild') return 'guild'
+  if (source === 'workshop') return 'potionWorkshop'
+  return 'tavern'
 }
 
 export const COMMISSION_SOURCE_LABEL: Record<CommissionSource, string> = {
   guild: '商会',
   workshop: '工坊',
+  tavern: '酒馆',
 }
 
 export const COMMISSIONS: CommissionDef[] = [
@@ -271,6 +275,16 @@ export const COMMISSIONS: CommissionDef[] = [
     reputation: 2,
     minReputation: 30,
   },
+  {
+    id: 'tavern_lanfruit',
+    source: 'tavern',
+    name: '兰果订单',
+    desc: '格蕾塔想用兰果试新酒，收 5 个兰果。',
+    objective: { kind: 'items', items: { lanfruit: 5 } },
+    days: 4,
+    money: 30,
+    reputation: 0,
+  },
 ]
 
 export function commissionById(id: string): CommissionDef | undefined {
@@ -296,7 +310,7 @@ export const ADVANCED_COMMISSION_CHANCE = 0.5
  */
 export function buildCommissionBoard(week: number, reputation: number): string[] {
   const board: string[] = []
-  const sources: CommissionSource[] = ['guild', 'workshop']
+  const sources: CommissionSource[] = ['guild', 'workshop', 'tavern']
   for (const source of sources) {
     const size = COMMISSION_BOARD_SIZE[source]
     const byHash = (prefix: string, a: CommissionDef, b: CommissionDef) =>

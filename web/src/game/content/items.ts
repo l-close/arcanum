@@ -28,6 +28,8 @@ export type ItemDef = {
   type: ItemType
   quality: Quality
   price: number
+  /** 指定可出售的地点；不填则沿用商店的类型规则。 */
+  sellAt?: string[]
   desc: string
   slot?: EquipmentSlot
   medium: boolean
@@ -43,6 +45,7 @@ export type ItemDef = {
     stamina?: number
     mana?: number
     hp?: number
+    mood?: number
     combatBuff?: CombatBuffKey
     /** 解除的中毒层数。 */
     poisonCure?: number
@@ -425,6 +428,45 @@ export const ITEMS: Record<string, ItemDef> = {
     price: 3,
     medium: false,
     desc: '后院里收下来的白菜，叶片紧实，根上还带着泥。可以拿去食堂做汤。',
+  },
+  lanfruit: {
+    id: 'lanfruit',
+    name: '兰果',
+    type: 'consumable',
+    quality: 'common',
+    price: 4,
+    sellAt: ['shop'],
+    medium: false,
+    desc: '后院里收下来的小串蓝紫果子，带一点花香。可以直接吃。',
+    effect: { stamina: 3, mood: 1 },
+  },
+  lanfruit_seed: {
+    id: 'lanfruit_seed',
+    name: '兰果种子',
+    type: 'material',
+    quality: 'common',
+    price: 3,
+    medium: false,
+    desc: '兰果的种子，小小一颗，带着一点甜味。',
+  },
+  bitterleaf_seed: {
+    id: 'bitterleaf_seed',
+    name: '苦叶种子',
+    type: 'material',
+    quality: 'common',
+    price: 2,
+    medium: false,
+    desc: '从林子里翻出来的苦叶种子，外壳发硬。',
+  },
+  lanfruit_jam: {
+    id: 'lanfruit_jam',
+    name: '兰果酱',
+    type: 'consumable',
+    quality: 'common',
+    price: 5,
+    medium: false,
+    desc: '一小罐兰果熬成的酱，颜色发紫，甜里带一点花香。',
+    effect: { stamina: 8, mood: 3 },
   },
   cabbage_soup: {
     id: 'cabbage_soup',

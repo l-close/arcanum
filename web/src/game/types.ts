@@ -76,7 +76,7 @@ export type StarWatchState = {
   watched: boolean
 }
 
-export type CommissionSource = 'guild' | 'workshop'
+export type CommissionSource = 'guild' | 'workshop' | 'tavern'
 
 export type AcceptedCommission = {
   id: string
@@ -132,8 +132,10 @@ export type ChangmingState = {
   done: boolean
 }
 
+export type GardenCropId = 'cabbage' | 'lanfruit' | 'bitterleaf'
+
 export type GardenPlot = {
-  crop: 'cabbage' | null
+  crop: GardenCropId | null
   growth: number
   plantedDay: number
   lastGrowDay: number

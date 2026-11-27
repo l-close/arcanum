@@ -166,10 +166,10 @@ export const DRINKS: DrinkDef[] = [
   },
   {
     id: 'fruit_wine',
-    name: '果酒',
+    name: '兰果酒',
     price: 3,
     minutes: 15,
-    desc: '带一点甜味的低度果酒。',
+    desc: '兰果酿的低度果酒，带一点花香。',
     effect: { mood: 2, spirit: 1 },
   },
   {

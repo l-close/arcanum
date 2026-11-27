@@ -55,6 +55,12 @@ import {
   FOREST_CAMP_LOOT_MINUTES,
   FOREST_CAMP_SEARCH_MINUTES,
   FOREST_CAMP_HINT,
+  GARDEN_CROPS,
+  GARDEN_CROP_ORDER,
+  LANFRUIT_ID,
+  LANFRUIT_JAM_ID,
+  JAM_MINUTES,
+  JAM_STAMINA,
   ITEMS,
   LOCATIONS,
   NPCS,
@@ -117,11 +123,8 @@ import {
   combatBuffUntilKey,
   absoluteMinutes,
   canSellAt,
-  CABBAGE_GROWTH,
   CABBAGE_ID,
-  CABBAGE_SEED_ID,
   CABBAGE_SOUP_ID,
-  CABBAGE_YIELD,
   FERTILIZER_ID,
   FERTILIZE_MINUTES,
   FERTILIZE_STAMINA,
@@ -679,6 +682,7 @@ function GameScreen() {
       {modal === 'academyBoard' && <AcademyBoardModal />}
       {modal === 'changmingConfirm' && <ChangmingConfirmModal />}
       {modal === 'guildBoard' && <GuildBoardModal />}
+      {modal === 'tavernOrders' && <TavernOrdersModal />}
       {modal === 'workshopOrders' && <WorkshopOrdersModal />}
       {modal === 'commissions' && <CommissionsModal />}
       {modal === 'bestiary' && <BestiaryModal />}
@@ -1446,7 +1450,6 @@ function Actions({
   const helpBackyard = useGame((s) => s.helpBackyard)
   const teleport = useGame((s) => s.teleport)
   const helpOrphanKids = useGame((s) => s.helpOrphanKids)
-  const plantCabbage = useGame((s) => s.plantCabbage)
   const waterPlot = useGame((s) => s.waterPlot)
   const waterAll = useGame((s) => s.waterAll)
   const fertilizePlot = useGame((s) => s.fertilizePlot)
@@ -1942,6 +1945,7 @@ function Actions({
                 </div>
               )}
               <ActionBtn onClick={() => setModal('drinks')} label="来一杯" cost="10–15 分钟" />
+              <ActionBtn onClick={() => setModal('tavernOrders')} label="酒馆订单" cost="—" />
               {talkOpen ? (
                 <ActionBtn
                   onClick={listenTavern}
@@ -4066,25 +4070,31 @@ function CalendarModal() {
 function GardenModal() {
   const data = useGame((s) => s.data)
   const setModal = useGame((s) => s.setModal)
-  const plantCabbage = useGame((s) => s.plantCabbage)
+  const plantCrop = useGame((s) => s.plantCrop)
   const waterPlot = useGame((s) => s.waterPlot)
   const waterAll = useGame((s) => s.waterAll)
   const fertilizePlot = useGame((s) => s.fertilizePlot)
   const harvestPlot = useGame((s) => s.harvestPlot)
   const harvestAll = useGame((s) => s.harvestAll)
-  const seed = data.inventory[CABBAGE_SEED_ID] ?? 0
   const fertilizer = data.inventory[FERTILIZER_ID] ?? 0
-  const cabbages = data.inventory[CABBAGE_ID] ?? 0
   const weather = weatherOf(data.day)
   const rain = weather === 'rain'
-  const waterTargets = data.garden.plots.filter(
-    (plot) => plot.crop && plot.growth < CABBAGE_GROWTH && plot.lastGrowDay !== data.day,
-  )
-  const readyTargets = data.garden.plots.filter(
-    (plot) => plot.crop && plot.growth >= CABBAGE_GROWTH,
-  )
+  const waterTargets = data.garden.plots.filter((plot) => {
+    const crop = plot.crop ? GARDEN_CROPS[plot.crop] : null
+    return !!crop && plot.growth < crop.growth && plot.lastGrowDay !== data.day
+  })
+  const readyTargets = data.garden.plots.filter((plot) => {
+    const crop = plot.crop ? GARDEN_CROPS[plot.crop] : null
+    return !!crop && plot.growth >= crop.growth
+  })
   const waterStamina = waterTargets.length * WATER_STAMINA
   const harvestStamina = readyTargets.length * HARVEST_STAMINA
+  const seedLine = GARDEN_CROP_ORDER.map(
+    (id) => `${GARDEN_CROPS[id].name}种子 ×${data.inventory[GARDEN_CROPS[id].seedId] ?? 0}`,
+  ).join(' · ')
+  const noSeeds = GARDEN_CROP_ORDER.every(
+    (id) => (data.inventory[GARDEN_CROPS[id].seedId] ?? 0) <= 0,
+  )
 
   return (
     <ModalShell title="菜园" onClose={() => setModal(null)}>
@@ -4094,7 +4104,7 @@ function GardenModal() {
           : `今天${WEATHER_LABEL[weather]} · ${waterTargets.length} 块地需要浇水。没浇水的日子只暂停生长，不枯死。`}
       </div>
       <div className="hint">
-        白菜种子 ×{seed} · 肥料 ×{fertilizer} · 白菜 ×{cabbages}
+        {seedLine} · 肥料 ×{fertilizer}
       </div>
       <div className="row-head" style={{ flexWrap: 'wrap', margin: '8px 0' }}>
         <button
@@ -4118,50 +4128,61 @@ function GardenModal() {
       </div>
       <div className="shop-list">
         {data.garden.plots.map((plot, index) => {
-          const ready = !!plot.crop && plot.growth >= CABBAGE_GROWTH
+          const crop = plot.crop ? GARDEN_CROPS[plot.crop] : null
+          const ready = !!crop && plot.growth >= crop.growth
           const watered = plot.lastGrowDay === data.day
           const fertilized = plot.fertilizedDay === data.day
-          const status = !plot.crop
-            ? `白菜种子 ×${seed}`
+          const status = !crop
+            ? noSeeds
+              ? '没有种子。'
+              : '空地，可以种植。'
             : ready
               ? '成熟，可以收获。'
               : `${rain ? '雨天自动浇水' : watered ? '今天已浇水' : '今天还没浇水'}${
                   fertilized ? ' · 今天已施肥' : ''
-                } · 还需 ${CABBAGE_GROWTH - plot.growth} 天`
+                } · 还需 ${crop.growth - plot.growth} 天`
           return (
             <div className="shop-row" key={index}>
               <div className="row-head">
-                <span className="item-name">{plot.crop ? '白菜' : '空地'}</span>
-                <span className={plot.crop ? 'shop-price' : 'shop-stock'}>
-                  {plot.crop
+                <span className="item-name">{crop ? crop.name : '空地'}</span>
+                <span className={crop ? 'shop-price' : 'shop-stock'}>
+                  {crop
                     ? ready
                       ? '可以收获'
-                      : `生长 ${plot.growth} / ${CABBAGE_GROWTH}`
+                      : `生长 ${plot.growth} / ${crop.growth}`
                     : '可种植'}
                 </span>
               </div>
               <div className="item-desc">{status}</div>
               <div className="row-head" style={{ flexWrap: 'wrap' }}>
-                {!plot.crop && (
-                  <button
-                    className="mini-btn"
-                    disabled={seed <= 0 || data.stamina < PLANT_STAMINA}
-                    onClick={() => plantCabbage(index)}
-                  >
-                    种白菜（{PLANT_MINUTES} 分钟 · 体力 -{PLANT_STAMINA}）
-                  </button>
-                )}
-                {plot.crop && ready && (
+                {!crop &&
+                  GARDEN_CROP_ORDER.map((id) => {
+                    const def = GARDEN_CROPS[id]
+                    const count = data.inventory[def.seedId] ?? 0
+                    if (count <= 0) return null
+                    return (
+                      <button
+                        className="mini-btn"
+                        key={id}
+                        disabled={data.stamina < PLANT_STAMINA}
+                        onClick={() => plantCrop(index, id)}
+                      >
+                        种{def.name}（{PLANT_MINUTES} 分钟 · 体力 -{PLANT_STAMINA}）
+                      </button>
+                    )
+                  })}
+                {!crop && noSeeds && <span className="hint">没有种子。</span>}
+                {crop && ready && (
                   <button
                     className="mini-btn"
                     disabled={data.stamina < HARVEST_STAMINA}
                     onClick={() => harvestPlot(index)}
                   >
-                    收获（{HARVEST_MINUTES} 分钟 · 体力 -{HARVEST_STAMINA} · 白菜 ×
-                    {CABBAGE_YIELD}）
+                    收获（{HARVEST_MINUTES} 分钟 · 体力 -{HARVEST_STAMINA} · {crop.name} ×
+                    {crop.yield}）
                   </button>
                 )}
-                {plot.crop && !ready && (
+                {crop && !ready && (
                   <>
                     <button
                       className="mini-btn"
@@ -4196,19 +4217,24 @@ function GardenModal() {
 function CookModal() {
   const data = useGame((s) => s.data)
   const setModal = useGame((s) => s.setModal)
-  const cook = useGame((s) => s.cookCabbageSoup)
+  const cookSoup = useGame((s) => s.cookCabbageSoup)
+  const cookJam = useGame((s) => s.cookLanfruitJam)
   const cabbages = data.inventory[CABBAGE_ID] ?? 0
   const soups = data.inventory[CABBAGE_SOUP_ID] ?? 0
-  const possible = Math.floor(cabbages / 2)
-  const allStamina = possible * COOK_STAMINA
+  const lanfruits = data.inventory[LANFRUIT_ID] ?? 0
+  const jams = data.inventory[LANFRUIT_JAM_ID] ?? 0
+  const soupPossible = Math.floor(cabbages / 2)
+  const jamPossible = lanfruits
+  const soupStamina = soupPossible * COOK_STAMINA
+  const jamStamina = jamPossible * JAM_STAMINA
 
   return (
     <ModalShell title="借灶做饭" onClose={() => setModal(null)}>
       <div className="hint">
-        每份 {COOK_MINUTES} 分钟，体力 -{COOK_STAMINA}。做好的汤放在背包，随时喝；不占食堂餐次。
+        做好的食物放在背包，随时吃；不占食堂餐次。熟食不能出售。
       </div>
       <div className="hint">
-        白菜 ×{cabbages} · 白菜汤 ×{soups}
+        白菜 ×{cabbages} · 白菜汤 ×{soups} · 兰果 ×{lanfruits} · 兰果酱 ×{jams}
       </div>
       <div className="shop-list">
         <div className="shop-row">
@@ -4224,18 +4250,46 @@ function CookModal() {
             <button
               className="mini-btn"
               disabled={cabbages < 2 || data.stamina < COOK_STAMINA}
-              onClick={() => cook(false)}
+              onClick={() => cookSoup(false)}
             >
               做一份（{COOK_MINUTES} 分钟 · 体力 -{COOK_STAMINA}）
             </button>
             <button
               className="mini-btn"
-              disabled={possible === 0 || data.stamina < allStamina}
-              onClick={() => cook(true)}
+              disabled={soupPossible === 0 || data.stamina < soupStamina}
+              onClick={() => cookSoup(true)}
             >
-              {possible === 0
+              {soupPossible === 0
                 ? '全部做'
-                : `全部做（${possible} 份 · ${possible * COOK_MINUTES} 分钟 · 体力 -${allStamina}）`}
+                : `全部做（${soupPossible} 份 · ${soupPossible * COOK_MINUTES} 分钟 · 体力 -${soupStamina}）`}
+            </button>
+          </div>
+        </div>
+        <div className="shop-row">
+          <div className="row-head">
+            <span className="item-name">兰果酱</span>
+            <span className="shop-price">体力 +8 · 心情 +3</span>
+          </div>
+          <div className="item-desc">兰果 ×1 → 兰果酱 ×1</div>
+          <div className="item-desc">
+            {JAM_MINUTES} 分钟 · 体力 -{JAM_STAMINA} · 不消耗食堂餐次
+          </div>
+          <div className="row-head" style={{ flexWrap: 'wrap' }}>
+            <button
+              className="mini-btn"
+              disabled={lanfruits < 1 || data.stamina < JAM_STAMINA}
+              onClick={() => cookJam(false)}
+            >
+              做一罐（{JAM_MINUTES} 分钟 · 体力 -{JAM_STAMINA}）
+            </button>
+            <button
+              className="mini-btn"
+              disabled={jamPossible === 0 || data.stamina < jamStamina}
+              onClick={() => cookJam(true)}
+            >
+              {jamPossible === 0
+                ? '全部做'
+                : `全部做（${jamPossible} 罐 · ${jamPossible * JAM_MINUTES} 分钟 · 体力 -${jamStamina}）`}
             </button>
           </div>
         </div>
@@ -4243,6 +4297,11 @@ function CookModal() {
       {cabbages < 2 && (
         <div className="hint" style={{ marginTop: 10 }}>
           白菜不够，先去后院收菜。
+        </div>
+      )}
+      {lanfruits < 1 && (
+        <div className="hint" style={{ marginTop: 10 }}>
+          兰果不够，先去后院收果。
         </div>
       )}
     </ModalShell>
@@ -4397,7 +4456,7 @@ function DrinkModal() {
   )
 }
 
-function CommissionSection({ source }: { source: 'guild' | 'workshop' }) {
+function CommissionSection({ source }: { source: 'guild' | 'workshop' | 'tavern' }) {
   const data = useGame((s) => s.data)
   const acceptCommission = useGame((s) => s.acceptCommission)
   const deliverCommission = useGame((s) => s.deliverCommission)
@@ -4617,6 +4676,15 @@ function WorkshopOrdersModal() {
   return (
     <ModalShell title="药剂工坊 · 订单" wide onClose={() => setModal(null)}>
       <CommissionSection source="workshop" />
+    </ModalShell>
+  )
+}
+
+function TavernOrdersModal() {
+  const setModal = useGame((s) => s.setModal)
+  return (
+    <ModalShell title="酒馆 · 订单" wide onClose={() => setModal(null)}>
+      <CommissionSection source="tavern" />
     </ModalShell>
   )
 }

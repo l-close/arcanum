@@ -11,6 +11,7 @@ import type {
   ExamResult,
   GameData,
   GardenPlot,
+  GardenCropId,
   Gender,
   GuildState,
   Player,
@@ -28,11 +29,15 @@ import {
   DRINKS,
   ENEMIES,
   ITEMS,
-  CABBAGE_GROWTH,
   CABBAGE_ID,
-  CABBAGE_SEED_ID,
   CABBAGE_SOUP_ID,
-  CABBAGE_YIELD,
+  GARDEN_CROPS,
+  gardenCrop,
+  LANFRUIT_ID,
+  LANFRUIT_JAM_ID,
+  BITTERLEAF_SEED_ID,
+  JAM_MINUTES,
+  JAM_STAMINA,
   FERTILIZER_ID,
   FERTILIZE_GROWTH,
   FERTILIZE_MINUTES,
@@ -1138,10 +1143,12 @@ function normalizeGarden(raw?: GameData['garden']): GameData['garden'] {
   return {
     plots: Array.from({ length: GARDEN_PLOTS }, (_, index) => {
       const plot = source[index]
-      if (!plot || plot.crop !== 'cabbage') return emptyGardenPlot()
+      if (!plot?.crop) return emptyGardenPlot()
+      const crop = GARDEN_CROPS[plot.crop as GardenCropId]
+      if (!crop) return emptyGardenPlot()
       return {
-        crop: 'cabbage' as const,
-        growth: clamp(Number(plot.growth ?? 0), 0, CABBAGE_GROWTH),
+        crop: crop.id,
+        growth: clamp(Number(plot.growth ?? 0), 0, crop.growth),
         plantedDay: Number.isFinite(plot.plantedDay) ? plot.plantedDay : 0,
         lastGrowDay: Number.isFinite(plot.lastGrowDay) ? plot.lastGrowDay : -1,
         fertilizedDay: Number.isFinite(plot.fertilizedDay) ? plot.fertilizedDay : -1,
@@ -1366,7 +1373,7 @@ function applyChangmingEffects(d: GameData, e?: ChangmingEffects): void {
   }
 }
 
-type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'brew' | 'workshop' | 'engrave' | 'starChart' | 'calendar' | 'commissions' | 'workshopOrders' | 'bestiary' | 'changmingConfirm' | 'garden' | 'cook' | null
+type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'tavernOrders' | 'brew' | 'workshop' | 'engrave' | 'starChart' | 'calendar' | 'commissions' | 'workshopOrders' | 'bestiary' | 'changmingConfirm' | 'garden' | 'cook' | null
 
 type TitlePanel = 'saves' | 'export' | 'import' | null
 
@@ -1495,13 +1502,14 @@ type Store = {
   askCalendar: () => void
   openStarChart: () => void
   helpBackyard: () => void
-  plantCabbage: (plot: number) => void
+  plantCrop: (plot: number, crop: GardenCropId) => void
   waterPlot: (plot: number) => void
   waterAll: () => void
   fertilizePlot: (plot: number) => void
   harvestPlot: (plot: number) => void
   harvestAll: () => void
   cookCabbageSoup: (all: boolean) => void
+  cookLanfruitJam: (all: boolean) => void
   helpOrphanKids: () => void
   helpOrphanage: () => void
   tutorKids: () => void
@@ -2083,9 +2091,11 @@ export const useGame = create<Store>((set, get) => {
       let changed = false
       const next = structuredClone(data)
       for (const plot of next.garden.plots) {
-        if (!plot.crop || plot.growth >= CABBAGE_GROWTH) continue
+        if (!plot.crop) continue
+        const crop = gardenCrop(plot.crop)
+        if (plot.growth >= crop.growth) continue
         if (plot.lastGrowDay === data.day) continue
-        plot.growth = Math.min(CABBAGE_GROWTH, plot.growth + 1)
+        plot.growth = Math.min(crop.growth, plot.growth + 1)
         plot.lastGrowDay = data.day
         changed = true
       }
@@ -2616,10 +2626,11 @@ export const useGame = create<Store>((set, get) => {
       }
       const healHp = def.effect?.hp ?? 0
       const healMana = def.effect?.mana ?? 0
+      const healMood = def.effect?.mood ?? 0
       const poisonCure = def.effect?.poisonCure ?? 0
       const bleedCure = def.effect?.bleedCure ?? 0
       const regenGain = def.effect?.regen ?? 0
-      if (!healHp && !healMana && !poisonCure && !bleedCure && !regenGain) return
+      if (!healHp && !healMana && !healMood && !poisonCure && !bleedCure && !regenGain) return
       const hpMax = maxHp(data.skills.physique.tier)
       if (poisonCure > 0 && !battle.playerPoison) {
         set({ message: '你现在没有中毒。' })
@@ -4200,7 +4211,7 @@ export const useGame = create<Store>((set, get) => {
       maybeEvent({ type: 'after', action: 'backyard' })
     },
 
-    plantCabbage: (index) => {
+    plantCrop: (index, cropId) => {
       const { data } = get()
       if (data.location !== 'backyard') {
         set({ message: '这里不是后院。' })
@@ -4209,11 +4220,13 @@ export const useGame = create<Store>((set, get) => {
       const plot = data.garden.plots[index]
       if (!plot) return
       if (plot.crop) {
-        set({ message: '这块地已经种了白菜。' })
+        set({ message: '这块地已经种了东西。' })
         return
       }
-      if ((data.inventory[CABBAGE_SEED_ID] ?? 0) <= 0) {
-        set({ message: '没有白菜种子。' })
+      const crop = GARDEN_CROPS[cropId]
+      if (!crop) return
+      if ((data.inventory[crop.seedId] ?? 0) <= 0) {
+        set({ message: `没有${crop.name}种子。` })
         return
       }
       if (data.stamina < PLANT_STAMINA) {
@@ -4223,16 +4236,16 @@ export const useGame = create<Store>((set, get) => {
       mutate((d) => {
         advanceTime(d, PLANT_MINUTES)
         d.stamina = clamp(d.stamina - PLANT_STAMINA, 0, maxStamina(d.skills.physique.tier))
-        d.inventory[CABBAGE_SEED_ID] = (d.inventory[CABBAGE_SEED_ID] ?? 0) - 1
-        if (d.inventory[CABBAGE_SEED_ID] <= 0) delete d.inventory[CABBAGE_SEED_ID]
+        d.inventory[crop.seedId] = (d.inventory[crop.seedId] ?? 0) - 1
+        if (d.inventory[crop.seedId] <= 0) delete d.inventory[crop.seedId]
         d.garden.plots[index] = {
-          crop: 'cabbage',
+          crop: crop.id,
           growth: 0,
           plantedDay: d.day,
           lastGrowDay: -1,
           fertilizedDay: -1,
         }
-        const text = '你翻松一块地，把白菜种子埋了下去。'
+        const text = `你翻松一块地，把${crop.name}种子埋了下去。`
         pushLog(d, text)
         return text
       })
@@ -4249,7 +4262,8 @@ export const useGame = create<Store>((set, get) => {
         set({ message: '这块地还没种东西。' })
         return
       }
-      if (plot.growth >= CABBAGE_GROWTH) {
+      const crop = gardenCrop(plot.crop)
+      if (plot.growth >= crop.growth) {
         set({ message: '这块地已经可以收获了。' })
         return
       }
@@ -4270,9 +4284,10 @@ export const useGame = create<Store>((set, get) => {
         d.stamina = clamp(d.stamina - WATER_STAMINA, 0, maxStamina(d.skills.physique.tier))
         const target = d.garden.plots[index]
         if (!target?.crop) return '这块地还没种东西。'
-        target.growth = Math.min(CABBAGE_GROWTH, target.growth + 1)
+        const crop = gardenCrop(target.crop)
+        target.growth = Math.min(crop.growth, target.growth + 1)
         target.lastGrowDay = d.day
-        const text = '你给白菜浇了水。'
+        const text = `你给${crop.name}浇了水。`
         pushLog(d, text)
         return text
       })
@@ -4291,7 +4306,10 @@ export const useGame = create<Store>((set, get) => {
       const targets = data.garden.plots
         .map((plot, index) => ({ plot, index }))
         .filter(
-          ({ plot }) => plot.crop && plot.growth < CABBAGE_GROWTH && plot.lastGrowDay !== data.day,
+          ({ plot }) =>
+            plot.crop &&
+            plot.growth < gardenCrop(plot.crop).growth &&
+            plot.lastGrowDay !== data.day,
         )
       if (targets.length === 0) {
         set({ message: '没有需要浇水的菜地。' })
@@ -4307,8 +4325,10 @@ export const useGame = create<Store>((set, get) => {
         d.stamina = clamp(d.stamina - stamina, 0, maxStamina(d.skills.physique.tier))
         for (const { index } of targets) {
           const target = d.garden.plots[index]
-          if (!target?.crop || target.growth >= CABBAGE_GROWTH) continue
-          target.growth = Math.min(CABBAGE_GROWTH, target.growth + 1)
+          if (!target?.crop) continue
+          const crop = gardenCrop(target.crop)
+          if (target.growth >= crop.growth) continue
+          target.growth = Math.min(crop.growth, target.growth + 1)
           target.lastGrowDay = d.day
         }
         const text = `你浇了 ${targets.length} 块菜地。`
@@ -4328,7 +4348,8 @@ export const useGame = create<Store>((set, get) => {
         set({ message: '这块地还没种东西。' })
         return
       }
-      if (plot.growth >= CABBAGE_GROWTH) {
+      const crop = gardenCrop(plot.crop)
+      if (plot.growth >= crop.growth) {
         set({ message: '这块地已经可以收获了。' })
         return
       }
@@ -4351,9 +4372,10 @@ export const useGame = create<Store>((set, get) => {
         if (d.inventory[FERTILIZER_ID] <= 0) delete d.inventory[FERTILIZER_ID]
         const target = d.garden.plots[index]
         if (!target?.crop) return '这块地还没种东西。'
-        target.growth = Math.min(CABBAGE_GROWTH, target.growth + FERTILIZE_GROWTH)
+        const targetCrop = gardenCrop(target.crop)
+        target.growth = Math.min(targetCrop.growth, target.growth + FERTILIZE_GROWTH)
         target.fertilizedDay = d.day
-        const text = '你给白菜施了肥。'
+        const text = `你给${targetCrop.name}施了肥。`
         pushLog(d, text)
         return text
       })
@@ -4366,8 +4388,13 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       const plot = data.garden.plots[index]
-      if (!plot?.crop || plot.growth < CABBAGE_GROWTH) {
-        set({ message: '这块地的白菜还没长好。' })
+      if (!plot?.crop) {
+        set({ message: '这块地还没种东西。' })
+        return
+      }
+      const crop = gardenCrop(plot.crop)
+      if (plot.growth < crop.growth) {
+        set({ message: `这块地的${crop.name}还没长好。` })
         return
       }
       if (data.stamina < HARVEST_STAMINA) {
@@ -4377,10 +4404,10 @@ export const useGame = create<Store>((set, get) => {
       mutate((d) => {
         advanceTime(d, HARVEST_MINUTES)
         d.stamina = clamp(d.stamina - HARVEST_STAMINA, 0, maxStamina(d.skills.physique.tier))
-        d.inventory[CABBAGE_ID] = (d.inventory[CABBAGE_ID] ?? 0) + CABBAGE_YIELD
+        d.inventory[crop.produceId] = (d.inventory[crop.produceId] ?? 0) + crop.yield
         addExp(d, 'cultivation', 2)
         d.garden.plots[index] = emptyGardenPlot()
-        const text = `你收了一块白菜，得到 ${CABBAGE_YIELD} 个白菜。`
+        const text = `你收了一块${crop.name}，得到 ${crop.yield} 个${crop.name}。`
         pushLog(d, text)
         return text
       })
@@ -4394,7 +4421,7 @@ export const useGame = create<Store>((set, get) => {
       }
       const targets = data.garden.plots
         .map((plot, index) => ({ plot, index }))
-        .filter(({ plot }) => plot.crop && plot.growth >= CABBAGE_GROWTH)
+        .filter(({ plot }) => plot.crop && plot.growth >= gardenCrop(plot.crop).growth)
         .map(({ index }) => index)
       if (targets.length === 0) {
         set({ message: '没有可以收获的菜地。' })
@@ -4408,10 +4435,18 @@ export const useGame = create<Store>((set, get) => {
       mutate((d) => {
         advanceTime(d, targets.length * HARVEST_MINUTES)
         d.stamina = clamp(d.stamina - stamina, 0, maxStamina(d.skills.physique.tier))
-        d.inventory[CABBAGE_ID] = (d.inventory[CABBAGE_ID] ?? 0) + CABBAGE_YIELD * targets.length
+        const gained = new Map<string, number>()
+        for (const index of targets) {
+          const target = d.garden.plots[index]
+          if (!target?.crop) continue
+          const crop = gardenCrop(target.crop)
+          d.inventory[crop.produceId] = (d.inventory[crop.produceId] ?? 0) + crop.yield
+          gained.set(crop.name, (gained.get(crop.name) ?? 0) + crop.yield)
+          d.garden.plots[index] = emptyGardenPlot()
+        }
         addExp(d, 'cultivation', 2 * targets.length)
-        for (const index of targets) d.garden.plots[index] = emptyGardenPlot()
-        const text = `你收了 ${targets.length} 块白菜，得到 ${CABBAGE_YIELD * targets.length} 个白菜。`
+        const detail = [...gained.entries()].map(([name, qty]) => `${name} ×${qty}`).join('、')
+        const text = `你收了 ${targets.length} 块地，得到 ${detail}。`
         pushLog(d, text)
         return text
       })
@@ -4449,6 +4484,42 @@ export const useGame = create<Store>((set, get) => {
           count === 1
             ? '你在食堂借灶做了一份白菜汤。'
             : `你在食堂借灶做了 ${count} 份白菜汤。`
+        pushLog(d, text)
+        return text
+      })
+    },
+
+    cookLanfruitJam: (all) => {
+      const { data } = get()
+      if (data.location !== 'orphanCanteen') {
+        set({ message: '这里没有灶台。' })
+        return
+      }
+      if (!isTimeWindow(data.minutes, COOK_OPEN_START, COOK_OPEN_END)) {
+        set({ message: '灶台已经熄了。' })
+        return
+      }
+      const have = data.inventory[LANFRUIT_ID] ?? 0
+      const count = all ? have : have >= 1 ? 1 : 0
+      if (count <= 0) {
+        set({ message: '兰果不够，1 个兰果才能做一罐。' })
+        return
+      }
+      const stamina = count * JAM_STAMINA
+      if (data.stamina < stamina) {
+        set({ message: all ? '体力不足，先做一罐吧。' : '体力不足，先休息一下。' })
+        return
+      }
+      mutate((d) => {
+        advanceTime(d, count * JAM_MINUTES)
+        d.stamina = clamp(d.stamina - stamina, 0, maxStamina(d.skills.physique.tier))
+        d.inventory[LANFRUIT_ID] = (d.inventory[LANFRUIT_ID] ?? 0) - count
+        if (d.inventory[LANFRUIT_ID] <= 0) delete d.inventory[LANFRUIT_ID]
+        d.inventory[LANFRUIT_JAM_ID] = (d.inventory[LANFRUIT_JAM_ID] ?? 0) + count
+        const text =
+          count === 1
+            ? '你在食堂借灶熬了一罐兰果酱。'
+            : `你在食堂借灶熬了 ${count} 罐兰果酱。`
         pushLog(d, text)
         return text
       })
@@ -4855,18 +4926,27 @@ export const useGame = create<Store>((set, get) => {
         return
       }
       const success = Math.random() < herbGatherChance(data.skills.cultivation.tier)
-      const herbId = Math.random() < 0.5 ? 'bloodherb' : 'bitterleaf'
+      const roll = Math.random()
+      const outcome = !success
+        ? null
+        : roll < 0.45
+          ? 'bloodherb'
+          : roll < 0.9
+            ? 'bitterleaf'
+            : BITTERLEAF_SEED_ID
       mutate((d) => {
         advanceTime(d, 30)
         d.stamina = clamp(d.stamina - 3, 0, maxStamina(d.skills.physique.tier))
         addExp(d, 'cultivation', 1)
-        if (success) {
-          d.inventory[herbId] = (d.inventory[herbId] ?? 0) + 1
-          const def = ITEMS[herbId]
+        if (outcome) {
+          d.inventory[outcome] = (d.inventory[outcome] ?? 0) + 1
+          const def = ITEMS[outcome]
           const text =
-            herbId === 'bloodherb'
+            outcome === 'bloodherb'
               ? '你在树根边找到了止血草。'
-              : '你摘了几片苦叶。'
+              : outcome === 'bitterleaf'
+                ? '你摘了几片苦叶。'
+                : '你翻土时带出几颗苦叶种子。'
           pushLog(d, text)
           return `${text} 获得${def.name} ×1。种植经验 +1。`
         }
@@ -5372,6 +5452,7 @@ export const useGame = create<Store>((set, get) => {
         if (def.effect?.mana) d.mana = clamp(d.mana + def.effect.mana, 0, 100)
         if (def.effect?.stamina) d.stamina = clamp(d.stamina + def.effect.stamina, 0, maxStamina(d.skills.physique.tier))
         if (def.effect?.hp) d.hp = clamp(d.hp + def.effect.hp, 0, maxHp(d.skills.physique.tier))
+        if (def.effect?.mood) d.mood = clamp(d.mood + def.effect.mood, 0, 100)
         pushLog(d, `你使用了${def.name}。`)
         return `你使用了${def.name}。`
       })

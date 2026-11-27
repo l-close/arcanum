@@ -19,6 +19,7 @@ export const SHOP_STOCKS: Record<string, Record<string, number>> = {
     antidote: 3,
     bandage: 3,
     cabbage_seed: 4,
+    lanfruit_seed: 4,
     fertilizer: 4,
   },
   weaponShop: {
@@ -89,6 +90,7 @@ export const WORKSHOP_HERB_PRICES: Record<string, number> = {
 export function canSellAt(location: string, id: string): boolean {
   const def = ITEMS[id]
   if (!def) return false
+  if (def.sellAt) return def.sellAt.includes(location)
   if (location === 'potionWorkshop') {
     if (def.type === 'material') return WORKSHOP_HERBS.has(id)
     return CRAFTED_POTIONS.has(id)
