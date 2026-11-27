@@ -69,7 +69,7 @@ export const COMMISSIONS: CommissionDef[] = [
     id: 'guild_hide',
     source: 'guild',
     name: '清点皮货',
-    desc: '商会收购未鞣兽皮，供货棚与鞍具修补使用。',
+    desc: '商会收购兽皮，供货棚与鞍具修补使用。',
     objective: { kind: 'items', items: { beast_hide: 3 } },
     days: 4,
     money: 35,
