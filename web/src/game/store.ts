@@ -676,8 +676,7 @@ export function normalizeData(raw: GameData): GameData {
       const reputation = clamp(Math.floor(rep), 0, REPUTATION_MAX)
       const stored = raw.commissions
       const sameWeek = stored?.week === week
-      const expectedBoardSize =
-        COMMISSION_BOARD_SIZE.guild + COMMISSION_BOARD_SIZE.workshop
+      const expectedBoardSize = COMMISSION_BOARD_SIZE
       const storedBoard = sameWeek && Array.isArray(stored?.board)
         ? stored.board.filter((id) => {
             const def = commissionById(id)
@@ -1373,7 +1372,7 @@ function applyChangmingEffects(d: GameData, e?: ChangmingEffects): void {
   }
 }
 
-type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'tavernOrders' | 'brew' | 'workshop' | 'engrave' | 'starChart' | 'calendar' | 'commissions' | 'workshopOrders' | 'bestiary' | 'changmingConfirm' | 'garden' | 'cook' | null
+type Modal = 'sleep' | 'study' | 'practice' | 'battleSelect' | 'wait' | 'save' | 'export' | 'import' | 'log' | 'debug' | 'inventory' | 'shop' | 'drinks' | 'relations' | 'stats' | 'eventPicker' | 'plazaNotices' | 'bookshelf' | 'reading' | 'exam' | 'examHandoff' | 'examOpen' | 'westBoard' | 'westRecord' | 'academyBoard' | 'guildBoard' | 'brew' | 'workshop' | 'engrave' | 'starChart' | 'calendar' | 'commissions' | 'bestiary' | 'changmingConfirm' | 'garden' | 'cook' | null
 
 type TitlePanel = 'saves' | 'export' | 'import' | null
 

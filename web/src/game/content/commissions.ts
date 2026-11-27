@@ -23,11 +23,7 @@ export type CommissionDef = {
 
 export const MAX_ACTIVE_COMMISSIONS = 3
 
-export const COMMISSION_BOARD_SIZE: Record<CommissionSource, number> = {
-  guild: 3,
-  workshop: 2,
-  tavern: 1,
-}
+export const COMMISSION_BOARD_SIZE = 6
 
 export const REPUTATION_MAX = 50
 
@@ -58,10 +54,8 @@ export function commissionPay(def: CommissionDef, reputation: number): number {
   return Math.round(def.money * (1 + reputationPayBonus(reputation)))
 }
 
-export function commissionSourceLocation(source: CommissionSource): string {
-  if (source === 'guild') return 'guild'
-  if (source === 'workshop') return 'potionWorkshop'
-  return 'tavern'
+export function commissionSourceLocation(_source: CommissionSource): string {
+  return 'guild'
 }
 
 export const COMMISSION_SOURCE_LABEL: Record<CommissionSource, string> = {
@@ -279,7 +273,7 @@ export const COMMISSIONS: CommissionDef[] = [
     id: 'tavern_lanfruit',
     source: 'tavern',
     name: '兰果订单',
-    desc: '格蕾塔想用兰果试新酒，收 5 个兰果。',
+    desc: '酒馆兰果酒需求增加，收购兰果 5 个。',
     objective: { kind: 'items', items: { lanfruit: 5 } },
     days: 4,
     money: 30,
@@ -309,33 +303,42 @@ export const ADVANCED_COMMISSION_CHANCE = 0.5
  * 同一周结果固定。
  */
 export function buildCommissionBoard(week: number, reputation: number): string[] {
-  const board: string[] = []
-  const sources: CommissionSource[] = ['guild', 'workshop', 'tavern']
-  for (const source of sources) {
-    const size = COMMISSION_BOARD_SIZE[source]
-    const byHash = (prefix: string, a: CommissionDef, b: CommissionDef) =>
-      hash01(seedOf(`${week}:${source}:${prefix}:${a.id}`)) -
-      hash01(seedOf(`${week}:${source}:${prefix}:${b.id}`))
-    const base = COMMISSIONS.filter(
-      (commission) =>
-        commission.source === source && (commission.minReputation ?? 0) === 0,
-    ).sort((a, b) => byHash('base', a, b))
-    const advanced = COMMISSIONS.filter(
-      (commission) =>
-        commission.source === source &&
-        (commission.minReputation ?? 0) > 0 &&
-        (commission.minReputation ?? 0) <= reputation,
-    ).sort((a, b) => byHash('advanced', a, b))
-    const roll = hash01(seedOf(`${week}:${source}:advanced-roll`))
-    if (advanced.length > 0 && roll < ADVANCED_COMMISSION_CHANCE) {
-      const pick = Math.floor(
-        hash01(seedOf(`${week}:${source}:advanced-pick`)) * advanced.length,
-      )
-      const chosen = advanced[Math.min(pick, advanced.length - 1)]
-      board.push(...base.slice(0, Math.max(0, size - 1)).map((c) => c.id), chosen.id)
-    } else {
-      board.push(...base.slice(0, size).map((c) => c.id))
+  const byHash = (prefix: string, a: CommissionDef, b: CommissionDef) =>
+    hash01(seedOf(`${week}:${prefix}:${a.id}`)) - hash01(seedOf(`${week}:${prefix}:${b.id}`))
+  const base = COMMISSIONS.filter((commission) => (commission.minReputation ?? 0) === 0).sort(
+    (a, b) => byHash('base', a, b),
+  )
+  const advanced = COMMISSIONS.filter(
+    (commission) =>
+      (commission.minReputation ?? 0) > 0 && (commission.minReputation ?? 0) <= reputation,
+  ).sort((a, b) => byHash('advanced', a, b))
+
+  let advancedCount = 0
+  if (advanced.length > 0) {
+    advancedCount = 1
+    if (
+      advanced.length >= 2 &&
+      hash01(seedOf(`${week}:advanced-second`)) < ADVANCED_COMMISSION_CHANCE
+    ) {
+      advancedCount = 2
     }
   }
-  return board
+
+  const picked = [
+    ...base.slice(0, Math.max(0, COMMISSION_BOARD_SIZE - advancedCount)),
+    ...advanced.slice(0, advancedCount),
+  ]
+  if (picked.length < COMMISSION_BOARD_SIZE) {
+    for (const def of [...advanced, ...base]) {
+      if (picked.length >= COMMISSION_BOARD_SIZE) break
+      if (!picked.some((entry) => entry.id === def.id)) picked.push(def)
+    }
+  }
+
+  return picked
+    .sort(
+      (a, b) =>
+        hash01(seedOf(`${week}:order:${a.id}`)) - hash01(seedOf(`${week}:order:${b.id}`)),
+    )
+    .map((def) => def.id)
 }

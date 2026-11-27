@@ -33,11 +33,9 @@ import {
   WEAPON_SHOP_OPEN_END,
   WEAPON_SHOP_OPEN_START,
   weaponShopOpenAt,
-  COMMISSION_SOURCE_LABEL,
   MAX_ACTIVE_COMMISSIONS,
   commissionById,
   commissionPay,
-  commissionSourceLocation,
   reputationText,
   observatoryOpenAt,
   OBSERVATORY_OPEN_END,
@@ -682,8 +680,6 @@ function GameScreen() {
       {modal === 'academyBoard' && <AcademyBoardModal />}
       {modal === 'changmingConfirm' && <ChangmingConfirmModal />}
       {modal === 'guildBoard' && <GuildBoardModal />}
-      {modal === 'tavernOrders' && <TavernOrdersModal />}
-      {modal === 'workshopOrders' && <WorkshopOrdersModal />}
       {modal === 'commissions' && <CommissionsModal />}
       {modal === 'bestiary' && <BestiaryModal />}
       {modal === 'shop' && <ShopModal />}
@@ -1896,7 +1892,6 @@ function Actions({
         (isTimeWindow(data.minutes, WORKSHOP_OPEN_START, WORKSHOP_OPEN_END) ? (
           <>
             <ActionBtn onClick={() => setModal('shop')} label="买卖药剂" cost="—" />
-            <ActionBtn onClick={() => setModal('workshopOrders')} label="委托订单" cost="—" />
             <ActionBtn onClick={() => setModal('workshop')} label="租借与请教" cost="—" />
             <ActionBtn
               onClick={workPotionWorkshop}
@@ -1945,7 +1940,6 @@ function Actions({
                 </div>
               )}
               <ActionBtn onClick={() => setModal('drinks')} label="来一杯" cost="10–15 分钟" />
-              <ActionBtn onClick={() => setModal('tavernOrders')} label="酒馆订单" cost="—" />
               {talkOpen ? (
                 <ActionBtn
                   onClick={listenTavern}
@@ -4456,7 +4450,7 @@ function DrinkModal() {
   )
 }
 
-function CommissionSection({ source }: { source: 'guild' | 'workshop' | 'tavern' }) {
+function CommissionSection() {
   const data = useGame((s) => s.data)
   const acceptCommission = useGame((s) => s.acceptCommission)
   const deliverCommission = useGame((s) => s.deliverCommission)
@@ -4464,11 +4458,10 @@ function CommissionSection({ source }: { source: 'guild' | 'workshop' | 'tavern'
   const [confirmId, setConfirmId] = useState<string | null>(null)
   const accepted = data.commissions.accepted
     .map((entry) => ({ entry, def: commissionById(entry.id) }))
-    .filter((row) => row.def?.source === source)
   const acceptedIds = new Set(accepted.map((row) => row.entry.id))
   const board = data.commissions.board
     .map((id) => commissionById(id))
-    .filter((def): def is NonNullable<typeof def> => !!def && def.source === source)
+    .filter((def): def is NonNullable<typeof def> => !!def)
   const full = data.commissions.accepted.length >= MAX_ACTIVE_COMMISSIONS
 
   const requirements = (def: NonNullable<ReturnType<typeof commissionById>>) => {
@@ -4507,6 +4500,7 @@ function CommissionSection({ source }: { source: 'guild' | 'workshop' | 'tavern'
         <span>已接 {data.commissions.accepted.length} / {MAX_ACTIVE_COMMISSIONS}</span>
         <span>下周一刷新</span>
       </div>
+      <p className="hint">城内各处委托统一由商会受理；所有委托均在商会办事处交付。</p>
 
       {accepted.length > 0 && (
         <div className="commission-group">
@@ -4659,7 +4653,7 @@ function GuildBoardModal() {
           护送
         </button>
       </div>
-      {tab === 'commission' && <CommissionSection source="guild" />}
+      {tab === 'commission' && <CommissionSection />}
       {tab === 'job' &&
         (allDone ? (
           <p className="package-text">本周帮工已经全部完成。</p>
@@ -4667,24 +4661,6 @@ function GuildBoardModal() {
           <div className="guild-list">{jobs.map(jobRow)}</div>
         ))}
       {tab === 'escort' && <div className="guild-list">{jobRow('escort')}</div>}
-    </ModalShell>
-  )
-}
-
-function WorkshopOrdersModal() {
-  const setModal = useGame((s) => s.setModal)
-  return (
-    <ModalShell title="药剂工坊 · 订单" wide onClose={() => setModal(null)}>
-      <CommissionSection source="workshop" />
-    </ModalShell>
-  )
-}
-
-function TavernOrdersModal() {
-  const setModal = useGame((s) => s.setModal)
-  return (
-    <ModalShell title="酒馆 · 订单" wide onClose={() => setModal(null)}>
-      <CommissionSection source="tavern" />
     </ModalShell>
   )
 }
@@ -4709,19 +4685,15 @@ function CommissionsModal() {
               <div className="shop-row" key={def.id}>
                 <div className="row-head">
                   <span className="item-name">{def.name}</span>
-                  <span className="shop-stock">{COMMISSION_SOURCE_LABEL[def.source]}</span>
                   <span className="shop-stock">剩余 {remaining} 天</span>
                 </div>
                 <div className="item-desc">{def.desc}</div>
-                <div className="hint">
-                  交付地点：{getLocation(commissionSourceLocation(def.source)).name}
-                </div>
               </div>
             )
           })}
         </div>
       )}
-      <p className="hint">委托详情请在对应地点查看和交付。</p>
+      <p className="hint">所有委托均在商会办事处交付。</p>
     </ModalShell>
   )
 }

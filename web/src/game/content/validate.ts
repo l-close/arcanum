@@ -342,16 +342,14 @@ export function validateContent(): ContentIssue[] {
     }
   }
 
-  for (const source of ['guild', 'workshop'] as const) {
-    const pool = COMMISSIONS.filter(
-      (commission) => commission.source === source && (commission.minReputation ?? 0) === 0,
+  const baseCommissionPool = COMMISSIONS.filter(
+    (commission) => (commission.minReputation ?? 0) === 0,
+  )
+  if (baseCommissionPool.length < COMMISSION_BOARD_SIZE) {
+    error(
+      'commissions',
+      `名誉 0 时可选委托不足 ${COMMISSION_BOARD_SIZE} 条`,
     )
-    if (pool.length < COMMISSION_BOARD_SIZE[source]) {
-      error(
-        'commissions',
-        `${source}: 名誉 0 时可选委托不足 ${COMMISSION_BOARD_SIZE[source]} 条`,
-      )
-    }
   }
 
   for (const spell of Object.values(SPELLS)) {
